@@ -51,7 +51,7 @@ setup(
         # -*- Extra requirements: -*-
         'z3c.jbot',
         'plone.api>=1.8.4',
-        'plone.restapi < 8.0.0',
+        'plone.restapi',
         'plone.app.dexterity',
     ],
     extras_require={
