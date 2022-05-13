@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<object name="portal_types" meta_type="Plone Types Tool">
+  <property name="title">Controls the available contenttypes in your portal</property>
+  <!--<object name="example_ct" meta_type="Dexterity FTI"/>-->
+  <object name="Bpm Proxy" meta_type="Dexterity FTI"/>
+</object>

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from collective.bpmproxy.testing import (
-    COLLECTIVE_BPMPROXY_ACCEPTANCE_TESTING  # noqa: E501,
+    COLLECTIVE_BPMPROXY_ACCEPTANCE_TESTING  # noqa: E501,,
 )
 from plone.app.testing import ROBOT_TEST_LEVEL
 from plone.testing import layered
