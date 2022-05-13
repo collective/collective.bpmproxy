@@ -4,15 +4,12 @@
     xmlns:plone="http://namespaces.plone.org/plone"
     i18n_domain="collective.bpmproxy">
 
-  -*- extra stuff goes here -*-
-
   <browser:page
     name="view"
-    for="Products.CMFCore.interfaces.IFolderish"
+    for="..content.bpm_proxy.IBpmProxy"
     class=".bpm_proxy_start_form_view.BpmProxyStartFormView"
     template="bpm_proxy_start_form_view.pt"
     permission="zope2.View"
     />
-
 
 </configure>
