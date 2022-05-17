@@ -1,0 +1,34 @@
+{
+  "name": "collective-bpmproxy",
+  "private": true,
+  "version": "0.0.1",
+  "scripts": {
+    "build": "rollup -c",
+    "watch": "rollup -w -c",
+    "prettier:check": "prettier --check \"src/**/{*.ts,*.tsx}\"",
+    "prettier:format": "prettier --write \"src/**/{*.ts,*.tsx}\"",
+    "upgrade": "npx npm-check-updates -u"
+  },
+  "importSort": {
+    ".js, .jsx": {
+      "style": "module"
+    }
+  },
+  "devDependencies": {
+    "@babel/core": "^7.17.10",
+    "@babel/preset-react": "^7.16.7",
+    "@bpmn-io/form-js": "^0.7.1",
+    "@rollup/plugin-alias": "^3.1.9",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-image": "^2.1.1",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "@rollup/plugin-replace": "^4.0.0",
+    "@rollup/plugin-typescript": "^8.3.2",
+    "import-sort-style-module": "^6.0.0",
+    "prettier": "^2.6.2",
+    "prettier-plugin-import-sort": "0.0.7",
+    "rollup": "^2.72.1"
+  }
+}

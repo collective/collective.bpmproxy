@@ -6,11 +6,17 @@
       metal:use-macro="context/main_template/macros/master">
 <body>
   <metal:block fill-slot="content-core">
-      <h2 i18n:translate="">Sample View !!!</h2>
-      <p tal:content="context/process_definition_key">This gets replaced</p>
-      <form action="" method="POST">
-      <input type="hidden" name="action" value="start"/>
-      <button type="submit">Start</button>
+      <h2 i18n:translate="">Sample View</h2>
+      <form id="collective-bpmproxy-form" 
+            tal:attributes="data-schema view/schema|string:{}">
+        <!-- HERE BE MODELER FORM -->
+      </form>
+      <form id="collective-bpmproxy-form-submit"
+            action="" method="POST">
+        <input type="hidden" 
+               id="collective-bpmproxy-form-data"
+               name="collective-bpmproxy-form-data"
+               value="{}" />
       </form>
       <p tal:content="view/msg">This gets replaced</p>
   </metal:block>

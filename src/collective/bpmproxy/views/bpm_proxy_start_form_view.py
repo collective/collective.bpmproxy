@@ -23,18 +23,19 @@ class BpmProxyStartFormView(BrowserView):
     # the configure.zcml registration of this view.
     # template = ViewPageTemplateFile('bpm_proxy_start_form_view.pt')
 
+    msg = ""
+    schema = "{}"
+
     def __call__(self):
         # Implement your own actions:
-        if self.request.method == "POST" \
-                and self.request.form.get("action") == "start":
+        key = self.context.process_definition_key
+        if self.request.method == "POST":
             self.msg = _(u'Started')
             # Enter a context with an instance of the API client
             with generic_camunda_client.ApiClient(configuration) as api_client:
-                # Create an instance of the API class
                 api_instance = generic_camunda_client.ProcessDefinitionApi(api_client)
-                key = self.context.process_definition_key
+                # Create an instance of the API class
                 start_process_instance_dto = {"variables":{"aVariable":{"value":"aStringValue","type":"String"},"anotherVariable":{"value":True,"type":"Boolean"}},"businessKey":"myBusinessKey"} # StartProcessInstanceDto |  (optional)
-
                 try:
                     # Start Instance
                     api_response = api_instance.start_process_instance_by_key(key, start_process_instance_dto=start_process_instance_dto)
@@ -42,5 +43,9 @@ class BpmProxyStartFormView(BrowserView):
                 except ApiException as e:
                     print("Exception when calling ProcessDefinitionApi->start_process_instance_by_key: %s\n" % e)
         else:
-            self.msg = _(u'A small message')
+            with generic_camunda_client.ApiClient(configuration) as api_client:
+                api_instance = generic_camunda_client.ProcessDefinitionApi(api_client)
+                data = api_instance.get_deployed_start_form_by_key(key)
+                with open(data) as fp:
+                    self.schema = fp.read()
         return self.index()
