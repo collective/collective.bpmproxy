@@ -1,9 +1,11 @@
 import alias from "@rollup/plugin-alias";
 import commonjs from "@rollup/plugin-commonjs";
+import css from 'rollup-plugin-import-css';
 import image from "@rollup/plugin-image";
 import json from "@rollup/plugin-json";
 import replace from "@rollup/plugin-replace";
 import resolve from "@rollup/plugin-node-resolve";
+import typescript from "@rollup/plugin-typescript";
 
 const plugins = [
   replace({
@@ -17,8 +19,10 @@ const plugins = [
   commonjs({
     include: "node_modules/**",
   }),
+  typescript(),
   image(),
-  json()
+  json(),
+  css(),
 ];
 
 export default [
@@ -27,10 +31,10 @@ export default [
       if (warning.code === 'THIS_IS_UNDEFINED') { return; }
       superOnWarn(warning);
     },
-    input: "src/bpmproxy.js",
+    input: "src/index.ts",
     output: {
-      file: "bpmproxy.js",
+      file: "bundle.js",
     },
     plugins,
-  },
+  }
 ];

@@ -4,9 +4,9 @@
   <records prefix="plone.bundles/collective.bpmproxy"
            interface='Products.CMFPlone.interfaces.IBundleRegistry'>
     <value key="enabled">True</value>
-    <value key="jscompilation">++plone++collective.bpmproxy/bpmproxy.js</value>
-    <value key="csscompilation"></value>
-    <value key="load_async">False</value>
+    <value key="jscompilation">++plone++collective.bpmproxy/bundle.js</value>
+    <value key="csscompilation">++plone++collective.bpmproxy/bundle.css</value>
+    <value key="load_async">True</value>
     <value key="load_defer">False</value>
   </records>
 
