@@ -17,7 +17,6 @@
                name="collective-bpmproxy-form-data"
                value="{}" />
       </form>
-      <p tal:content="view/msg">This gets replaced</p>
   </metal:block>
 </body>
 </html>

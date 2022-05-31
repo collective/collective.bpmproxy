@@ -7,8 +7,16 @@
   <browser:page
     name="view"
     for="..content.bpm_proxy.IBpmProxy"
-    class=".bpm_proxy_start_form_view.BpmProxyStartFormView"
-    template="bpm_proxy_start_form_view.pt"
+    class=".bpm_proxy_form_view.BpmProxyStartFormView"
+    template="bpm_proxy_form_view.pt"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    name="task"
+    for="..content.bpm_proxy.IBpmProxy"
+    class=".bpm_proxy_form_view.BpmProxyTaskFormView"
+    template="bpm_proxy_form_view.pt"
     permission="zope2.View"
     />
 
