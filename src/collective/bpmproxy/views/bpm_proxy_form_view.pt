@@ -7,7 +7,8 @@
 <body>
   <metal:block fill-slot="content-core">
       <form id="collective-bpmproxy-form" 
-            tal:attributes="data-schema view/schema|string:{}">
+            tal:attributes="data-schema view/schema|string:{};
+                            data-data view/data|string:{}">
         <!-- MODELER FORM PLACEHOLDER -->
       </form>
       <form id="collective-bpmproxy-form-submit"

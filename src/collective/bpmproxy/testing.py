@@ -21,11 +21,12 @@ class CollectiveBpmproxyLayer(PloneSandboxLayer):
         # The z3c.autoinclude feature is disabled in the Plone fixture base
         # layer.
         import plone.restapi
+
         self.loadZCML(package=plone.restapi)
         self.loadZCML(package=collective.bpmproxy)
 
     def setUpPloneSite(self, portal):
-        applyProfile(portal, 'collective.bpmproxy:default')
+        applyProfile(portal, "collective.bpmproxy:default")
 
 
 COLLECTIVE_BPMPROXY_FIXTURE = CollectiveBpmproxyLayer()
@@ -33,13 +34,13 @@ COLLECTIVE_BPMPROXY_FIXTURE = CollectiveBpmproxyLayer()
 
 COLLECTIVE_BPMPROXY_INTEGRATION_TESTING = IntegrationTesting(
     bases=(COLLECTIVE_BPMPROXY_FIXTURE,),
-    name='CollectiveBpmproxyLayer:IntegrationTesting',
+    name="CollectiveBpmproxyLayer:IntegrationTesting",
 )
 
 
 COLLECTIVE_BPMPROXY_FUNCTIONAL_TESTING = FunctionalTesting(
     bases=(COLLECTIVE_BPMPROXY_FIXTURE,),
-    name='CollectiveBpmproxyLayer:FunctionalTesting',
+    name="CollectiveBpmproxyLayer:FunctionalTesting",
 )
 
 
@@ -49,5 +50,5 @@ COLLECTIVE_BPMPROXY_ACCEPTANCE_TESTING = FunctionalTesting(
         REMOTE_LIBRARY_BUNDLE_FIXTURE,
         z2.ZSERVER_FIXTURE,
     ),
-    name='CollectiveBpmproxyLayer:AcceptanceTesting',
+    name="CollectiveBpmproxyLayer:AcceptanceTesting",
 )
