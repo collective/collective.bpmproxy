@@ -4,7 +4,10 @@
 *.mo
 *.py?
 *.swp
+*.pem
 # dirs
+.idea/
+.mvn/
 bin/
 buildout-cache/
 develop-eggs/
@@ -18,6 +21,7 @@ parts/
 dist/*
 test.plone_addon/
 var/
+target/
 # files
 .installed.cfg
 .mr.developer.cfg
