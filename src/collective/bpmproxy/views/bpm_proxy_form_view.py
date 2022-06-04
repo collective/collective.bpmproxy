@@ -1,22 +1,30 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-import generic_camunda_client
-from generic_camunda_client.rest import ApiException
-from pprint import pprint
-from zope.interface import implementer
-from zope.publisher.interfaces import IPublishTraverse
+
 from collective.bpmproxy import _
-from Products.Five.browser import BrowserView
-from zope.publisher.interfaces import NotFound
+from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
 from plone.uuid.interfaces import IUUID
-from enum import Enum
+from Products.Five.browser import BrowserView
+from zope.interface import implementer
+from zope.publisher.interfaces import IPublishTraverse, NotFound
 
+import datetime
+import generic_camunda_client
 import json
-import plone.api
+import jwt
 import logging
+import os
+import plone.api
 
+
+CAMUNDA_API_URL_ENV = "CAMUNDA_API_URL"
+CAMUNDA_API_URL_DEFAULT = "http://localhost:8081/engine-rest"
+CAMUNDA_API_PRIVATE_KEY_ENV = "CAMUNDA_API_PRIVATE_KEY"
 FORM_DATA_KEY = "collective-bpmproxy-form-data"
+
+# openssl ecparam -name prime256v1 -genkey -noout -out ec-prime256v1-priv-key.pem
+# openssl ec -in ec-prime256v1-priv-key.pem -pubout > ec-prime256v1-pub-key.pem
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +44,38 @@ class Type:
     INFO = "info"
     WARN = "warn"
     ERROR = "error"
+
+
+def get_api_url():
+    return os.environ.get(CAMUNDA_API_URL_ENV) or CAMUNDA_API_URL_DEFAULT
+
+
+def get_token(username, groups):
+    private_key = os.environ.get(CAMUNDA_API_PRIVATE_KEY_ENV)
+    if private_key and os.path.exists(private_key):
+        with open(private_key, "r", encoding="utf-8") as fp:
+            private_key = fp.read()
+    if not private_key:
+        return None
+    return jwt.encode(
+        {
+            "sub": username,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
+            "groups": groups,
+        },
+        private_key,
+        algorithm="ES256",
+    ).decode("utf-8")
+
+
+def get_authorization():
+    user = plone.api.user.get_current()
+    token = get_token(
+        username=user and user.getUserName() or None,
+        groups=user
+        and [g.getId() for g in plone.api.group.get_groups(user=user) or []],
+    )
+    return token and "Bearer " + token or None
 
 
 def infer_value(value):
@@ -70,14 +110,13 @@ class BpmProxyStartFormView(BrowserView):
 
     def update(self):
         self.key = self.context.process_definition_key
-
-        # TODO: Read dynamically either form plone registry or from addon config
-        self.api = generic_camunda_client.Configuration(
-            host="http://localhost:8081/engine-rest"
-        )
+        self.api = generic_camunda_client.Configuration(host=get_api_url())
+        self.authorization = get_authorization()
 
     def _view(self):
-        with generic_camunda_client.ApiClient(self.api) as client:
+        with generic_camunda_client.ApiClient(
+            self.api, header_name="Authorization", header_value=self.authorization
+        ) as client:
             api = generic_camunda_client.ProcessDefinitionApi(client)
             schema = api.get_deployed_start_form_by_key(self.key)
             with open(schema) as fp:
@@ -85,7 +124,9 @@ class BpmProxyStartFormView(BrowserView):
         return self.index()
 
     def _submit(self):
-        with generic_camunda_client.ApiClient(self.api) as client:
+        with generic_camunda_client.ApiClient(
+            self.api, header_name="Authorization", header_value=self.authorization
+        ) as client:
             api = generic_camunda_client.ProcessDefinitionApi(client)
             data = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             payload = {
@@ -144,14 +185,13 @@ class BpmProxyTaskFormView(BrowserView):
 
     def update(self):
         self.key = self.context.process_definition_key
-
-        # TODO: Read dynamically either form plone registry or from addon config
-        self.api = generic_camunda_client.Configuration(
-            host="http://localhost:8081/engine-rest"
-        )
+        self.api = generic_camunda_client.Configuration(host=get_api_url())
+        self.authorization = get_authorization()
 
     def _view(self):
-        with generic_camunda_client.ApiClient(self.api) as client:
+        with generic_camunda_client.ApiClient(
+            self.api, header_name="Authorization", header_value=self.authorization
+        ) as client:
             api = generic_camunda_client.TaskApi(client)
             try:
                 schema = api.get_deployed_form(self.task_id)
@@ -171,7 +211,9 @@ class BpmProxyTaskFormView(BrowserView):
                 raise NotFound(self, self.task_id, self.request)
 
     def _submit(self):
-        with generic_camunda_client.ApiClient(self.api) as client:
+        with generic_camunda_client.ApiClient(
+            self.api, header_name="Authorization", header_value=self.authorization
+        ) as client:
             api = generic_camunda_client.TaskApi(client)
             data = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             payload = {

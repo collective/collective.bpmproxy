@@ -48,12 +48,13 @@ setup(
     python_requires=">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*",
     install_requires=[
         'setuptools',
-        'generic-camunda-client',
         # -*- Extra requirements: -*-
-        'z3c.jbot',
+        'generic-camunda-client',
         'plone.api>=1.8.4',
-        'plone.restapi',
         'plone.app.dexterity',
+        'plone.restapi',
+        'pyjwt',
+        'z3c.jbot',
     ],
     extras_require={
         'test': [
