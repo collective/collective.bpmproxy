@@ -107,6 +107,7 @@ class BpmProxyStartFormView(BrowserView):
 
         self.state = State.NEW
         self.schema = "{}"
+        self.tasks = []
 
     def update(self):
         self.key = self.context.process_definition_key
@@ -121,6 +122,10 @@ class BpmProxyStartFormView(BrowserView):
             schema = api.get_deployed_start_form_by_key(self.key)
             with open(schema) as fp:
                 self.schema = fp.read()
+            tasks_api = generic_camunda_client.TaskApi(client)
+            self.tasks = tasks_api.query_tasks(
+                task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
+            )
         return self.index()
 
     def _submit(self):
@@ -142,6 +147,10 @@ class BpmProxyStartFormView(BrowserView):
                     message=_("Submit successful."),
                     request=self.request,
                     type=Type.INFO,
+                )
+                tasks_api = generic_camunda_client.TaskApi(client)
+                self.tasks = tasks_api.query_tasks(
+                    task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
                 )
             except ApiException as e:
                 self.state = State.ERROR
@@ -175,6 +184,7 @@ class BpmProxyTaskFormView(BrowserView):
         self.data = "{}"
         self.schema = "{}"
         self.task_id = None
+        self.tasks = []
 
     def publishTraverse(self, request, name):
         if self.task_id is None:  # ../task_id
@@ -194,6 +204,13 @@ class BpmProxyTaskFormView(BrowserView):
         ) as client:
             api = generic_camunda_client.TaskApi(client)
             try:
+                # Sanity check. Task belongs to this context.
+                tasks = api.query_tasks(
+                    task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
+                )
+                if self.task_id not in [t.id for t in tasks]:
+                    raise NotFound(self, self.task_id, self.request)
+                # Get from schema and existing data.
                 schema = api.get_deployed_form(self.task_id)
                 variables = generic_camunda_client.TaskVariableApi(
                     client
@@ -228,6 +245,7 @@ class BpmProxyTaskFormView(BrowserView):
                     request=self.request,
                     type=Type.INFO,
                 )
+                self.request.response.redirect(self.context.absolute_url())
             except ApiException as e:
                 self.state = State.ERROR
                 plone.api.portal.show_message(

@@ -6,18 +6,28 @@
       metal:use-macro="context/main_template/macros/master">
 <body>
   <metal:block fill-slot="content-core">
-      <form id="collective-bpmproxy-form" 
+      <form id="collective-bpmproxy-form"
             tal:attributes="data-schema view/schema|string:{};
                             data-data view/data|string:{}">
         <!-- MODELER FORM PLACEHOLDER -->
       </form>
       <form id="collective-bpmproxy-form-submit"
             action="" method="POST">
-        <input type="hidden" 
+        <input type="hidden"
                id="collective-bpmproxy-form-data"
                name="collective-bpmproxy-form-data"
                value="{}" />
       </form>
+    <tal:condition condition="view/tasks|nothing">
+      <h2 i18n:translate="">Existing tasks</h2>
+      <ul>
+        <li tal:repeat="task view/tasks">
+          <a href="@@task/1234"
+             tal:attributes="href string:${context/absolute_url}/@@task/${task/id}"
+             tal:content="task/name">Title</a>
+        </li>
+      </ul>
+    </tal:condition>
   </metal:block>
 </body>
 </html>
