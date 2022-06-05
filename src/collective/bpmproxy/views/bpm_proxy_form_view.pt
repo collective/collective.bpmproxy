@@ -19,14 +19,31 @@
                value="{}" />
       </form>
     <tal:condition condition="view/tasks|nothing">
-      <h2 i18n:translate="">Existing tasks</h2>
-      <ul>
-        <li tal:repeat="task view/tasks">
-          <a href="@@task/1234"
-             tal:attributes="href string:${context/absolute_url}/@@task/${task/id}"
-             tal:content="task/name">Title</a>
-        </li>
-      </ul>
+      <h2 i18n:translate="">Available tasks</h2>
+      <table
+        class="pat-datatables table table-striped table-bordered dataTable no-footer">
+        <thead>
+        <th i18n:translate="">Task</th>
+        <th i18n:translate="">Description</th>
+        <th i18n:translate="">Assignee</th>
+        <th i18n:translate="">Created</th>
+        </thead>
+        <tbody>
+        <tr tal:repeat="task view/tasks">
+          <td>
+            <a href="@@task/1234"
+               tal:attributes="href string:${context/absolute_url}/@@task/${task/id}"
+               tal:content="task/name">Title</a>
+          </td>
+          <td tal:content="task/description">Task</td>
+          <td tal:content="task/assignee">johndoe</td>
+          <td tal:attributes="data-order task/created/isoformat">
+            <time class="pat-display-time" data-pat-display-time="from-now: true"
+             tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </tal:condition>
   </metal:block>
 </body>
