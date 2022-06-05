@@ -139,6 +139,10 @@ def enforce_schema(data, schema_json):
         if default is not None and data.get(key) is None:
             data[key] = default
 
+        # Skip validation of disabled fields
+        if component.get("disabled"):
+            continue
+
         # Backend validation
         validation = component.get("validate") or {}
 
@@ -357,7 +361,7 @@ class BpmProxyTaskFormView(BrowserView):
                 self.data = json.dumps(data)
                 self.schema = schema
                 plone.api.portal.show_message(
-                    message=_("Invalid of missing data."),
+                    message=_("Invalid or missing data."),
                     request=self.request,
                     type=Type.ERROR,
                 )
