@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
-import six
-
 from collective.bpmproxy import _
 from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
@@ -19,6 +17,7 @@ import logging
 import os
 import plone.api
 import re
+import six
 
 
 CAMUNDA_API_URL_ENV = "CAMUNDA_API_URL"
@@ -109,17 +108,17 @@ def convert_tales_expressions(schema_json):
     if '"defaultValue": "here/memberId"' in schema_json:
         schema_json = schema_json.replace(
             '"defaultValue": "here/memberId"',
-            '"defaultValue": ' + json.dumps(user.getUserName() or '')
+            '"defaultValue": ' + json.dumps(user.getUserName() or ""),
         )
     if '"defaultValue": "here/memberFullName"' in schema_json:
         schema_json = schema_json.replace(
             '"defaultValue": "here/memberFullName"',
-            '"defaultValue": ' + json.dumps(user.getProperty("fullname") or '')
+            '"defaultValue": ' + json.dumps(user.getProperty("fullname") or ""),
         )
     if '"defaultValue": "here/memberEmail"' in schema_json:
         schema_json = schema_json.replace(
             '"defaultValue": "here/memberEmail"',
-            '"defaultValue": ' + json.dumps(user.getProperty("email") or '')
+            '"defaultValue": ' + json.dumps(user.getProperty("email") or ""),
         )
     return schema_json
 
@@ -144,28 +143,34 @@ def enforce_schema(data, schema_json):
         validation = component.get("validate") or {}
 
         pattern = validation.get("pattern")
-        assert not pattern or re.match(pattern, data.get(key) or ''), \
-            'Field ' + key + ' must match pattern /' + pattern + '/.'
+        assert not pattern or re.match(pattern, data.get(key) or ""), (
+            "Field " + key + " must match pattern /" + pattern + "/."
+        )
 
         required = validation.get("required")
-        assert not required or data.get(key) not in [None, ''], \
-            'Field ' + key + ' is required.'
+        assert not required or data.get(key) not in [None, ""], (
+            "Field " + key + " is required."
+        )
 
         min_value = validation.get("min")
-        assert min_value is None or data.get(key) or 0 >= min_value, \
-            'Field ' + key + ' must have minimum value of ' + min_value + '.'
+        assert min_value is None or data.get(key) or 0 >= min_value, (
+            "Field " + key + " must have minimum value of " + min_value + "."
+        )
 
         max_value = validation.get("max")
-        assert max_value is None or data.get(key) or 0 <= max_value, \
-            'Field ' + key + ' must have maximum value of ' + max_value + '.'
+        assert max_value is None or data.get(key) or 0 <= max_value, (
+            "Field " + key + " must have maximum value of " + max_value + "."
+        )
 
         min_length = validation.get("minLength")
-        assert min_length is None or len(data.get(key) or '') >= min_length, \
-            'Field ' + key + ' must have minimum length of ' + min_length + '.'
+        assert min_length is None or len(data.get(key) or "") >= min_length, (
+            "Field " + key + " must have minimum length of " + min_length + "."
+        )
 
         max_length = validation.get("maxLength")
-        assert max_length is None or len(data.get(key) or '') <= max_length, \
-            'Field ' + key + ' must have maximum length of ' + max_length + '.'
+        assert max_length is None or len(data.get(key) or "") <= max_length, (
+            "Field " + key + " must have maximum length of " + max_length + "."
+        )
 
     return data
 
@@ -344,7 +349,9 @@ class BpmProxyTaskFormView(BrowserView):
                     request=self.request,
                     type=Type.ERROR,
                 )
-                logger.error("Exception when calling TaskApi->complete: %s %s\n", e, payload)
+                logger.error(
+                    "Exception when calling TaskApi->complete: %s %s\n", e, payload
+                )
             except AssertionError as e:
                 self.state = State.ERROR
                 self.data = json.dumps(data)
