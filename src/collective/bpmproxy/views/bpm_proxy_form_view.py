@@ -100,7 +100,8 @@ def infer_variables(data):
 
 
 def flatten_variables(variables):
-    return dict((name, variable.value) for name, variable in variables.items())
+    return dict([(name, variable.value) for name, variable in variables.items()
+                if variable.value is not None])
 
 
 def convert_tales_expressions(schema_json):
