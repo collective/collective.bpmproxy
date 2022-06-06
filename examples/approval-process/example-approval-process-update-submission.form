@@ -22,9 +22,7 @@
       "id": "Field_0jf3qti",
       "key": "topic",
       "validate": {
-        "required": true,
-        "minLength": 10,
-        "maxLength": 1000
+        "required": true
       },
       "description": "Update your submission"
     },
