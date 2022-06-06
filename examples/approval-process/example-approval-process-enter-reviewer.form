@@ -1,0 +1,71 @@
+{
+  "components": [
+    {
+      "text": "## Enter Reviewer",
+      "type": "text",
+      "id": "Field_0mj01ci"
+    },
+    {
+      "label": "Topic",
+      "type": "textfield",
+      "id": "Field_025c7ph",
+      "key": "topic",
+      "disabled": true,
+      "description": "Submission topic",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Reviewer user name",
+      "type": "textfield",
+      "id": "Field_04ropdy",
+      "key": "reviewer",
+      "disabled": false,
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "here/memberId",
+      "description": "Enter reviewer user name"
+    },
+    {
+      "label": "Reviewer full name",
+      "type": "textfield",
+      "id": "Field_0bj52j8",
+      "key": "reviewerFullName",
+      "disabled": false,
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "here/memberFullName",
+      "description": "Enter reviewer full name"
+    },
+    {
+      "label": "Reviewer email",
+      "type": "textfield",
+      "id": "Field_0jf3qti",
+      "key": "reviewerEmail",
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "here/memberEmail",
+      "description": "Enter reviewer email address"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_03md3ej",
+      "key": "field_0k6ys9e"
+    }
+  ],
+  "type": "default",
+  "id": "example-approval-enter-reviewer",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.0.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

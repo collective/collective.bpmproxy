@@ -1,0 +1,64 @@
+{
+  "components": [
+    {
+      "text": "## Approve Submission\n",
+      "type": "text",
+      "id": "Field_0mj01ci"
+    },
+    {
+      "label": "Topic",
+      "type": "textfield",
+      "id": "Field_0jf3qti",
+      "key": "topic",
+      "validate": {
+        "required": true
+      },
+      "disabled": true
+    },
+    {
+      "values": [
+        {
+          "label": "Yes",
+          "value": "yes"
+        },
+        {
+          "label": "Maybe, with changes",
+          "value": "maybe"
+        },
+        {
+          "value": "no",
+          "label": "No"
+        }
+      ],
+      "label": "Approve?",
+      "type": "radio",
+      "id": "Field_1mn1ltb",
+      "key": "approval",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Comment",
+      "type": "textfield",
+      "id": "Field_02z4zuj",
+      "key": "comment"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_03md3ej",
+      "key": "field_0k6ys9e"
+    }
+  ],
+  "type": "default",
+  "id": "example-approval-review-submission",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.0.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

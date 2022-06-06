@@ -3,3 +3,4 @@ graft docs
 include *.rst
 global-exclude *.pyc *.nix
 prune camunda
+prune examples

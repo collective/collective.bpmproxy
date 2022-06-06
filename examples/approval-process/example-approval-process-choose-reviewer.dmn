@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:camunda="http://camunda.org/schema/1.0/dmn" id="Definitions_0f4qeus" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.0.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.17.0">
+  <decision id="example-approval-choose-reviewer" name="Choose Reviewer" camunda:historyTimeToLive="P7D">
+    <decisionTable id="DecisionTable_0qut10d" hitPolicy="FIRST">
+      <input id="Input_1" label="Topic">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>topic</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="User name" name="username" typeRef="string" />
+      <output id="OutputClause_1yf5j57" label="Full name" name="fullname" typeRef="string" />
+      <output id="OutputClause_1uolduw" label="Email address" name="email" typeRef="string" />
+      <rule id="DecisionRule_019n67q">
+        <inputEntry id="UnaryTests_017llyo">
+          <text>contains(lower case(?), "hello")</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_145ejzb">
+          <text>"janedoe"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_05rkpev">
+          <text>"Jane Doe"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0a4e5v2">
+          <text>"janedoe@example.com"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="example-approval-choose-reviewer">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

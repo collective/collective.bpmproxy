@@ -6,18 +6,6 @@
       metal:use-macro="context/main_template/macros/master">
 <body>
   <metal:block fill-slot="content-core">
-    <form id="collective-bpmproxy-form"
-          tal:attributes="data-schema view/schema|string:{};
-                          data-data view/data|string:{}">
-      <!-- MODELER FORM PLACEHOLDER -->
-    </form>
-    <form id="collective-bpmproxy-form-submit"
-          action="" method="POST">
-      <input type="hidden"
-             id="collective-bpmproxy-form-data"
-             name="collective-bpmproxy-form-data"
-             value="{}" />
-    </form>
     <tal:condition condition="view/tasks|nothing">
       <h2 i18n:translate="">Available tasks</h2>
       <table
@@ -39,12 +27,24 @@
           <td tal:content="task/assignee">johndoe</td>
           <td tal:attributes="data-order task/created/isoformat">
             <time class="pat-display-time" data-pat-display-time="from-now: true"
-             tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
+               tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
           </td>
         </tr>
         </tbody>
       </table>
     </tal:condition>
+    <form id="collective-bpmproxy-form"
+          tal:attributes="data-schema view/schema|string:{};
+                          data-data view/data|string:{}">
+      <!-- MODELER FORM PLACEHOLDER -->
+    </form>
+    <form id="collective-bpmproxy-form-submit"
+          action="" method="POST">
+      <input type="hidden"
+             id="collective-bpmproxy-form-data"
+             name="collective-bpmproxy-form-data"
+             value="{}" />
+    </form>
   </metal:block>
 </body>
 </html>

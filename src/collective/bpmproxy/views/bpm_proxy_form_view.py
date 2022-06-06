@@ -100,8 +100,13 @@ def infer_variables(data):
 
 
 def flatten_variables(variables):
-    return dict([(name, variable.value) for name, variable in variables.items()
-                if variable.value is not None])
+    return dict(
+        [
+            (name, variable.value)
+            for name, variable in variables.items()
+            if variable.value is not None
+        ]
+    )
 
 
 def convert_tales_expressions(schema_json):
@@ -240,6 +245,8 @@ class BpmProxyStartFormView(BrowserView):
                 )
             except ApiException as e:
                 self.state = State.ERROR
+                self.data = json.dumps(data)
+                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Unexpected error on submit."),
                     request=self.request,
@@ -322,6 +329,8 @@ class BpmProxyTaskFormView(BrowserView):
                     self.schema = convert_tales_expressions(fp.read())
                 return self.index()
             except ApiException as e:
+                logger.error("Exception when fetching task for rendering: %s\n", e)
+                logger.warning(e)
                 raise NotFound(self, self.task_id, self.request)
 
     def _submit(self):
@@ -349,6 +358,8 @@ class BpmProxyTaskFormView(BrowserView):
                 self.request.response.redirect(self.context.absolute_url())
             except ApiException as e:
                 self.state = State.ERROR
+                self.data = json.dumps(data)
+                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Unexpected error on submit."),
                     request=self.request,

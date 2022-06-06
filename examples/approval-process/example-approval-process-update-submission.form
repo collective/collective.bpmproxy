@@ -1,0 +1,48 @@
+{
+  "components": [
+    {
+      "text": "## Update Submission\n",
+      "type": "text",
+      "id": "Field_0mj01ci"
+    },
+    {
+      "label": "Comments",
+      "type": "textfield",
+      "id": "Field_04ropdy",
+      "key": "comment",
+      "disabled": true,
+      "validate": {
+        "required": true
+      },
+      "description": "Reviewer comments"
+    },
+    {
+      "label": "Your topic",
+      "type": "textfield",
+      "id": "Field_0jf3qti",
+      "key": "topic",
+      "validate": {
+        "required": true,
+        "minLength": 10,
+        "maxLength": 1000
+      },
+      "description": "Update your submission"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_03md3ej",
+      "key": "field_0k6ys9e"
+    }
+  ],
+  "type": "default",
+  "id": "example-approval-update-submission",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.0.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

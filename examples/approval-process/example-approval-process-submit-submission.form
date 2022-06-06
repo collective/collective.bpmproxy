@@ -1,0 +1,59 @@
+{
+  "components": [
+    {
+      "text": "## New Submission\n",
+      "type": "text",
+      "id": "Field_0mj01ci"
+    },
+    {
+      "label": "Your name",
+      "type": "textfield",
+      "id": "Field_04ropdy",
+      "key": "authorFullName",
+      "disabled": true,
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "here/memberFullName",
+      "description": "Enter your full name"
+    },
+    {
+      "label": "Your email",
+      "type": "textfield",
+      "id": "Field_0bj52j8",
+      "key": "authorEmail",
+      "disabled": true,
+      "validate": {
+        "required": true
+      },
+      "defaultValue": "here/memberEmail",
+      "description": "Enter your email address"
+    },
+    {
+      "label": "Your topic",
+      "type": "textfield",
+      "id": "Field_0jf3qti",
+      "key": "topic",
+      "validate": {
+        "required": true
+      },
+      "description": "Enter your submission"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_03md3ej",
+      "key": "field_0k6ys9e"
+    }
+  ],
+  "type": "default",
+  "id": "example-approval-submit-submission",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.0.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}
