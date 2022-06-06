@@ -3,10 +3,8 @@
 # from plone.autoform import directives
 from collective.bpmproxy import _
 from plone.dexterity.content import Item
-
 # from plone.namedfile import field as namedfile
 from plone.supermodel import model
-
 # from plone.supermodel.directives import fieldset
 # from z3c.form.browser.radio import RadioFieldWidget
 from zope import schema
@@ -15,8 +13,10 @@ from zope import schema
 class IBpmProxy(model.Schema):
     """Marker interface and Dexterity Python Schema for BpmProxy"""
 
-    process_definition_key = schema.TextLine(
-        title=_(u"Process Definition"), required=True
+    process_definition_key = schema.Choice(
+        title=_(u"Process Definition"),
+        required=True,
+        vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
     # If you want, you can load a xml model created TTW here
