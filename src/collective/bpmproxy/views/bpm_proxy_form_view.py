@@ -5,6 +5,7 @@ from collective.bpmproxy import _
 from collective.bpmproxy.utils import get_api_url, get_authorization
 from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
+from plone.stringinterp.interfaces import IStringInterpolator
 from plone.uuid.interfaces import IUUID
 from Products.Five.browser import BrowserView
 from zope.interface import implementer
@@ -72,47 +73,41 @@ def flatten_variables(variables):
     )
 
 
-def convert_tales_expressions(schema_json):
-    user = plone.api.user.get_current()
-    if '"defaultValue": "here/memberId"' in schema_json:
-        schema_json = schema_json.replace(
-            '"defaultValue": "here/memberId"',
-            '"defaultValue": ' + json.dumps(user.getUserName() or ""),
-        )
-    if '"defaultValue": "here/memberFullName"' in schema_json:
-        schema_json = schema_json.replace(
-            '"defaultValue": "here/memberFullName"',
-            '"defaultValue": ' + json.dumps(user.getProperty("fullname") or ""),
-        )
-    if '"defaultValue": "here/memberEmail"' in schema_json:
-        schema_json = schema_json.replace(
-            '"defaultValue": "here/memberEmail"',
-            '"defaultValue": ' + json.dumps(user.getProperty("email") or ""),
-        )
-    return schema_json
+def interpolate(value, interpolator):
+    if isinstance(value, six.text_type):
+        return interpolator(value).strip()
+    elif isinstance(value, list) or isinstance(value, tuple):
+        return [interpolate(v) for v in value]
+    elif isinstance(value, dict):
+        return dict([(k, interpolate(v)) for k, v in value.items()])
+    return value
 
 
-def enforce_schema(data, schema_json):
+def prepare_form(schema_json, default_data, default_values, interpolator):
     schema = json.loads(schema_json)
+    data = {}
     for component in schema.get("components") or []:
         key = component.get("key")
-        if not key:
-            continue
+        if default_data.get(key) is not None:
+            value = default_data[key]
+            if isinstance(value, six.text_type):
+                data[key] = value.strip()
+            else:
+                data[key] = value
+        elif key in default_values:
+            data[key] = interpolate(default_values[key], interpolator)
+    return json.dumps(schema), json.dumps(data)
 
-        # Trim strings
-        if isinstance(data.get(key), six.text_type):
-            data[key] = data[key].strip()
 
-        # Apply default value
-        default = component.get("defaultValue")
-        if default is not None and data.get(key) is None:
-            data[key] = default
+def validate(data, schema_json):
+    schema = json.loads(schema_json)
 
-        # Skip validation of disabled fields
+    for component in schema.get("components") or []:
         if component.get("disabled"):
+            # Skip validation of disabled fields
             continue
 
-        # Backend validation
+        key = component.get("key")
         validation = component.get("validate") or {}
 
         pattern = validation.get("pattern")
@@ -145,8 +140,6 @@ def enforce_schema(data, schema_json):
             "Field " + key + " must have maximum length of " + max_length + "."
         )
 
-    return data
-
 
 class BpmProxyStartFormView(BrowserView):
     def __init__(self, context, request):
@@ -169,8 +162,11 @@ class BpmProxyStartFormView(BrowserView):
             header_value=self.authorization,
         ) as client:
             api = generic_camunda_client.ProcessDefinitionApi(client)
+            interpolator = IStringInterpolator(self.context)
             with open(api.get_deployed_start_form_by_key(self.key)) as fp:
-                self.schema = convert_tales_expressions(fp.read())
+                self.schema, self.data = prepare_form(
+                    fp.read(), {}, self.context.default_values, interpolator
+                )
             tasks_api = generic_camunda_client.TaskApi(client)
             self.tasks = tasks_api.query_tasks(
                 task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
@@ -184,13 +180,25 @@ class BpmProxyStartFormView(BrowserView):
             header_value=self.authorization,
         ) as client:
             api = generic_camunda_client.ProcessDefinitionApi(client)
-            with open(api.get_deployed_start_form_by_key(self.key)) as fp:
-                schema = convert_tales_expressions(fp.read())
+            interpolator = IStringInterpolator(self.context)
             data = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
+            with open(api.get_deployed_start_form_by_key(self.key)) as fp:
+                self.schema, self.data = prepare_form(
+                    fp.read(), data, self.context.default_values, interpolator
+                )
             try:
-                data.update({"portalUrl": plone.api.portal.get().absolute_url()})
+                data = json.loads(self.data)
+                validate(data, self.schema)
+                data.update(
+                    dict(
+                        [
+                            (k, interpolator(v))
+                            for k, v in self.context.process_variables.items()
+                        ]
+                    )
+                )
                 payload = {
-                    "variables": infer_variables(enforce_schema(data, schema)),
+                    "variables": infer_variables(data),
                     "businessKey": IUUID(self.context),
                 }
                 api.start_process_instance_by_key(
@@ -208,8 +216,6 @@ class BpmProxyStartFormView(BrowserView):
                 )
             except ApiException as e:
                 self.state = State.ERROR
-                self.data = json.dumps(data)
-                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Unexpected error on submit."),
                     request=self.request,
@@ -222,8 +228,6 @@ class BpmProxyStartFormView(BrowserView):
                 )
             except AssertionError as e:
                 self.state = State.ERROR
-                self.data = json.dumps(data)
-                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Invalid or missing data."),
                     request=self.request,
@@ -287,14 +291,16 @@ class BpmProxyTaskFormView(BrowserView):
                 ).get_task_local_variables(self.task_id)
                 data = flatten_variables(variables)
                 data.update(flatten_variables(local_variables))
-                self.data = json.dumps(data)
+                interpolator = IStringInterpolator(self.context)
                 with open(api.get_deployed_form(self.task_id)) as fp:
-                    self.schema = convert_tales_expressions(fp.read())
-                return self.index()
+                    self.schema, self.data = prepare_form(
+                        fp.read(), data, self.context.default_values, interpolator
+                    )
             except ApiException as e:
                 logger.error("Exception when fetching task for rendering: %s\n", e)
                 logger.warning(e)
                 raise NotFound(self, self.task_id, self.request)
+        return self.index()
 
     def _submit(self):
         with generic_camunda_client.ApiClient(
@@ -303,12 +309,26 @@ class BpmProxyTaskFormView(BrowserView):
             header_value=self.authorization,
         ) as client:
             api = generic_camunda_client.TaskApi(client)
-            data = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
+            # Get from schema and existing data.
+            variables = generic_camunda_client.TaskVariableApi(
+                client
+            ).get_task_variables(self.task_id)
+            local_variables = generic_camunda_client.TaskLocalVariableApi(
+                client
+            ).get_task_local_variables(self.task_id)
+            data = flatten_variables(variables)
+            data.update(flatten_variables(local_variables))
+            data.update(json.loads(self.request.form.get(FORM_DATA_KEY) or "{}"))
+            interpolator = IStringInterpolator(self.context)
             with open(api.get_deployed_form(self.task_id)) as fp:
-                schema = convert_tales_expressions(fp.read())
+                self.schema, self.data = prepare_form(
+                    fp.read(), data, self.context.default_values, interpolator
+                )
             try:
+                data = json.loads(self.data)
+                validate(data, self.schema)
                 payload = {
-                    "variables": infer_variables(enforce_schema(data, schema)),
+                    "variables": infer_variables(data),
                     "withVariablesInReturn": True,
                 }
                 api.complete(self.task_id, complete_task_dto=payload)
@@ -321,8 +341,6 @@ class BpmProxyTaskFormView(BrowserView):
                 self.request.response.redirect(self.context.absolute_url())
             except ApiException as e:
                 self.state = State.ERROR
-                self.data = json.dumps(data)
-                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Unexpected error on submit."),
                     request=self.request,
@@ -333,8 +351,6 @@ class BpmProxyTaskFormView(BrowserView):
                 )
             except AssertionError as e:
                 self.state = State.ERROR
-                self.data = json.dumps(data)
-                self.schema = schema
                 plone.api.portal.show_message(
                     message=_("Invalid or missing data."),
                     request=self.request,

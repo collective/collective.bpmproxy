@@ -13,6 +13,12 @@
   -->
   <!--<includeDependencies package="." />-->
 
+  <adapter
+    for=".content.bpm_proxy.IBpmProxy * *"
+    factory=".content.bpm_proxy.PatternsSettings"
+    provides="Products.CMFPlone.interfaces.IPatternsSettings"
+    name="collective_bpmproxy" />
+
   <include package=".browser" />
 
   <include file="permissions.zcml" />
