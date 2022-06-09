@@ -20,7 +20,7 @@ public class Configuration implements ProcessEngineConfigurationCustomizer {
 
     private static final Logger log = LoggerFactory.getLogger(Configuration.class);
 
-    @Value("${plone.publicKey:ec-prime256v1-pub-key.pem}")
+    @Value("${plone.public-key:ec-prime256v1-pub-key.pem}")
     private String jwtPublicKey;
 
     @Override

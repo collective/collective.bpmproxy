@@ -65,4 +65,4 @@ datasources:
     password: postgres
 
 plone:
-  publicKey: ec-prime256v1-pub-key.pem
+  public-key: ec-prime256v1-pub-key.pem
