@@ -1,0 +1,10 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+  <utility
+      name="collective.bpmproxy.actions.StartInstance"
+      component=".actions.StartInstanceAction"
+      />
+  <utility
+      name="collective.bpmproxy.actions.StartInstance"
+      component=".actions.StartInstanceHandler"
+      />
+</configure>
