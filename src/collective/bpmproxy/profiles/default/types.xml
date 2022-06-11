@@ -3,4 +3,5 @@
   <property name="title">Controls the available contenttypes in your portal</property>
   <!--<object name="example_ct" meta_type="Dexterity FTI"/>-->
   <object name="Bpm Proxy" meta_type="Dexterity FTI"/>
+  <object name="Bpm Attachments" meta_type="Dexterity FTI"/>
 </object>

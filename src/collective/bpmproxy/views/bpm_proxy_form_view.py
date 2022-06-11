@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-
 from collective.bpmproxy import _
 from collective.bpmproxy.utils import get_api_url, get_authorization
 from generic_camunda_client.rest import ApiException

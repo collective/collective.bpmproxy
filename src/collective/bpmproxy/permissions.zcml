@@ -7,6 +7,12 @@
   <!-- -*- extra stuff goes here -*- -->
 
     <permission
+        id="collective.bpmproxy.AddBpmAttachments"
+        title="collective.bpmproxy: Add BpmAttachments"
+    />
+
+
+    <permission
         id="collective.bpmproxy.AddBpmProxy"
         title="collective.bpmproxy: Add BpmProxy"
     />
