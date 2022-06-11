@@ -33,11 +33,12 @@
         </tbody>
       </table>
     </tal:condition>
-    <form id="collective-bpmproxy-form"
+    <div id="collective-bpmproxy-form"
+         style="margin-left: -16px"
           tal:attributes="data-schema view/schema|string:{};
                           data-data view/data|string:{}">
       <!-- MODELER FORM PLACEHOLDER -->
-    </form>
+    </div>
     <form id="collective-bpmproxy-form-submit"
           action="" method="POST">
       <input type="hidden"

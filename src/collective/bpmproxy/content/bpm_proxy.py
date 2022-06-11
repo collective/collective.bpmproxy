@@ -34,6 +34,12 @@ class IBpmProxy(model.Schema):
         vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
+    attachments_enabled = schema.Bool(
+        title=_(u"Accept attachments"),
+        required=False,
+        default=False,
+    )
+
     form.widget("process_variables", klass="pat-code-editor")
     process_variables = JSONField(
         title=_(u"Initial process variables"),

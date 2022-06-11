@@ -4,4 +4,5 @@
   <!--<object name="example_ct" meta_type="Dexterity FTI"/>-->
   <object name="Bpm Proxy" meta_type="Dexterity FTI"/>
   <object name="Bpm Attachments" meta_type="Dexterity FTI"/>
+  <object name="Bpm Attachment" meta_type="Dexterity FTI"/>
 </object>

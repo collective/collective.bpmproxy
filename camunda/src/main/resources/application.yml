@@ -52,7 +52,7 @@ micronaut:
       cookie-secure: true
   server:
     host: localhost
-    port: 8080
+    port: 8081
     max-request-size: 10MB
     cors:
       enabled: true

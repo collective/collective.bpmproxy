@@ -7,6 +7,7 @@ from plone.protect.authenticator import check
 from plone.stringinterp.interfaces import IStringInterpolator
 from plone.uuid.interfaces import IUUID
 from Products.Five.browser import BrowserView
+from uuid import uuid4
 from zope.interface import implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 
@@ -167,8 +168,9 @@ class BpmProxyStartFormView(BrowserView):
                     fp.read(), {}, self.context.default_values, interpolator
                 )
             tasks_api = generic_camunda_client.TaskApi(client)
+            needle = IUUID(self.context) + ":%"
             self.tasks = tasks_api.query_tasks(
-                task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
+                task_query_dto=dict(processInstanceBusinessKeyLike=needle),
             )
         return self.index()
 
@@ -198,7 +200,10 @@ class BpmProxyStartFormView(BrowserView):
                 )
                 payload = {
                     "variables": infer_variables(data),
-                    "businessKey": IUUID(self.context),
+                    "businessKey": ":".join([
+                        IUUID(self.context),
+                        str(uuid4()),
+                    ]),
                 }
                 api.start_process_instance_by_key(
                     self.key, start_process_instance_dto=payload
@@ -210,8 +215,9 @@ class BpmProxyStartFormView(BrowserView):
                     type=Type.INFO,
                 )
                 tasks_api = generic_camunda_client.TaskApi(client)
+                needle = IUUID(self.context) + ":%"
                 self.tasks = tasks_api.query_tasks(
-                    task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
+                    task_query_dto=dict(processInstanceBusinessKeyLike=needle),
                 )
             except ApiException as e:
                 self.state = State.ERROR
@@ -276,8 +282,9 @@ class BpmProxyTaskFormView(BrowserView):
             api = generic_camunda_client.TaskApi(client)
             try:
                 # Sanity check. Task belongs to this context.
+                needle = IUUID(self.context) + ":%"
                 tasks = api.query_tasks(
-                    task_query_dto=dict(processInstanceBusinessKey=IUUID(self.context))
+                    task_query_dto=dict(processInstanceBusinessKeyLike=needle),
                 )
                 if self.task_id not in [t.id for t in tasks]:
                     raise NotFound(self, self.task_id, self.request)

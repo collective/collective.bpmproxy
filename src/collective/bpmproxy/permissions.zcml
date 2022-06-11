@@ -11,14 +11,10 @@
         title="collective.bpmproxy: Add BpmAttachments"
     />
 
-
     <permission
         id="collective.bpmproxy.AddBpmProxy"
         title="collective.bpmproxy: Add BpmProxy"
     />
 
-
-
   </configure>
-
 </configure>
