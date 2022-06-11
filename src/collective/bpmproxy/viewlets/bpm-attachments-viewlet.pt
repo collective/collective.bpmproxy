@@ -1,0 +1,6 @@
+<div class="days_to_conf">
+  <form action="${view/view/task_id}/@@add-attachment">
+    <input type="submit" value="Add attachment"
+           class="btn btn-secondary" />
+  </form>
+</div>
