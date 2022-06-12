@@ -250,6 +250,67 @@ class BpmProxyStartFormView(BrowserView):
             return self._view()
 
 
+class BpmProxyTaskAttachmentsView(BrowserView):
+    def __init__(self, context, request):
+        self.context = context.context
+        self.request = request
+        self.task_id = context.task_id
+
+    def update(self):
+        self.key = self.context.process_definition_key
+        self.api = generic_camunda_client.Configuration(host=get_api_url())
+        self.authorization = get_authorization()
+
+    def __call__(self):
+        self.update()
+        with generic_camunda_client.ApiClient(
+            self.api,
+            header_name=self.authorization and "Authorization" or None,
+            header_value=self.authorization,
+        ) as client:
+            api = generic_camunda_client.TaskApi(client)
+            try:
+                # Sanity check. Task belongs to this context.
+                needle = IUUID(self.context) + ":%"
+                tasks = dict([(task.id, task) for task in api.query_tasks(
+                    task_query_dto=dict(processInstanceBusinessKeyLike=needle),
+                )])
+                task = tasks.get(self.task_id)
+                if task is None:
+                    raise NotFound(self, self.task_id, self.request)
+                return str(task)
+            # {'assignee': None,
+            #  'camunda_form_ref': {'binding': {'binding': None,
+            #                                   'key': None,
+            #                                   'version': None},
+            #                       'key': {'binding': None, 'key': None,
+            #                               'version': None},
+            #                       'version': None},
+            #  'case_definition_id': None,
+            #  'case_execution_id': None,
+            #  'case_instance_id': None,
+            #  'created': datetime.datetime(2022, 6, 11, 20, 29, 11, 712000,
+            #                               tzinfo=tzoffset(None, 10800)),
+            #  'delegation_state': None,
+            #  'description': None,
+            #  'due': None,
+            #  'execution_id': '16531',
+            #  'follow_up': None,
+            #  'form_key': None,
+            #  'id': '16563',
+            #  'name': 'Enter reviewer manually',
+            #  'owner': None,
+            #  'parent_task_id': None,
+            #  'priority': 50,
+            #  'process_definition_id': 'example-approval-process:12:16418',
+            #  'process_instance_id': '16531',
+            #  'suspended': False,
+            #  'task_definition_key': 'Activity_00e5qi0',
+            #  'tenant_id': None}
+            finally:
+                pass
+
+
 @implementer(IPublishTraverse)
 class BpmProxyTaskFormView(BrowserView):
     def __init__(self, context, request):

@@ -20,4 +20,11 @@
     permission="zope2.View"
     />
 
+  <browser:page
+    name="add-attachment"
+    for=".bpm_proxy_form_view.BpmProxyTaskFormView"
+    class=".bpm_proxy_form_view.BpmProxyTaskAttachmentsView"
+    permission="zope2.View"
+  />
+
 </configure>
