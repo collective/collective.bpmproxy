@@ -59,10 +59,14 @@ micronaut:
 
 datasources:
   default:
-    url: jdbc:postgresql://localhost:5432/postgres
-    driverClassName: org.postgresql.Driver
-    username: postgres
-    password: postgres
+#   url: jdbc:postgresql://localhost:5432/postgres
+#   driverClassName: org.postgresql.Driver
+#   username: postgres
+#   password: postgres
+    url: jdbc:h2:mem:default;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password: ""
+    driverClassName: org.h2.Driver
 
 plone:
   public-key: ec-prime256v1-pub-key.pem

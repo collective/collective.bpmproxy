@@ -7,23 +7,23 @@
   <browser:page
     name="view"
     for="..content.bpm_proxy.IBpmProxy"
-    class=".bpm_proxy_form_view.BpmProxyStartFormView"
-    template="bpm_proxy_form_view.pt"
+    class=".bpm_form_view.BpmProxyStartFormView"
+    template="bpm_form_view.pt"
     permission="zope2.View"
     />
 
   <browser:page
     name="task"
     for="..content.bpm_proxy.IBpmProxy"
-    class=".bpm_proxy_form_view.BpmProxyTaskFormView"
-    template="bpm_proxy_form_view.pt"
+    class=".bpm_form_view.BpmProxyTaskFormView"
+    template="bpm_form_view.pt"
     permission="zope2.View"
     />
 
   <browser:page
     name="add-attachment"
-    for=".bpm_proxy_form_view.BpmProxyTaskFormView"
-    class=".bpm_proxy_form_view.BpmProxyTaskAttachmentsView"
+    for=".bpm_form_view.BpmProxyTaskFormView"
+    class=".bpm_attachments_view.BpmProxyTaskAttachmentsView"
     permission="zope2.View"
   />
 

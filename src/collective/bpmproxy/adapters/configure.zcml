@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="collective.bpmproxy">
+
+  <adapter
+    for="..content.bpm_proxy.IBpmProxy * *"
+    factory=".patterns.PatternsSettings"
+    provides="Products.CMFPlone.interfaces.IPatternsSettings"
+    name="collective_bpmproxy" />
+
+  <adapter factory=".security.AttachmentsLocalRoleProvider" />
+
+</configure>

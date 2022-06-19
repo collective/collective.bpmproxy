@@ -7,18 +7,6 @@
 
   <i18n:registerTranslations directory="locales" />
 
-  <!--
-    Be careful if you use general includeDependencies, it can have side effects!
-    Better import explicit packages or configurations ;)
-  -->
-  <!--<includeDependencies package="." />-->
-
-  <adapter
-    for=".content.bpm_proxy.IBpmProxy * *"
-    factory=".content.bpm_proxy.PatternsSettings"
-    provides="Products.CMFPlone.interfaces.IPatternsSettings"
-    name="collective_bpmproxy" />
-
   <include package=".browser" />
 
   <include file="permissions.zcml" />
@@ -50,9 +38,10 @@
 
   <include package=".viewlets" />
 
-    <include package=".vocabularies" />
-
+  <include package=".vocabularies" />
 
   <include package=".views" />
+
+  <include package=".adapters" />
 
 </configure>

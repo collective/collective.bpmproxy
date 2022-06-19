@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
-from plone.dexterity.content import Item
-from plone.supermodel import model
+from plone.app.contenttypes.interfaces import IFile
 
 
-class IBpmAttachment(model.Schema):
-    """ Marker interface for BpmAttachment
-    """
+class IBpmAttachment(IFile):
+    """Marker interface for BpmAttachment"""

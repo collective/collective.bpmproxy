@@ -48,6 +48,26 @@ Documentation
 
 Full documentation for end users can be found in the "docs" folder, and is also available online at http://docs.plone.org/foo/bar
 
+Generate private key for Plone-Camunda JWT-authentication::
+
+    $ openssl ecparam -name prime256v1 -genkey -noout -out ec-prime256v1-priv-key.pem
+
+Generate public key for Plone-Camunda JWT-authentication::
+
+    $ openssl ec -in ec-prime256v1-priv-key.pem -pubout > ec-prime256v1-pub-key.pem
+
+Configure Plone with environment variables::
+
+    CAMUNDA_API_URL=http://localhost:8081/engine-rest
+    CAMUNDA_API_PRIVATE_KEY=ec-prime256v1-priv-key.pem
+
+where http://localhost:8081/engine-rest is full Camunda Platform 7 REST API base URL and ec-prime256v1-priv-key.pem is full path to your Camunda-Plone JWT-authentication private key (or the value of the private key).
+
+Configure Camunda with the usual Micronaut Camunda Platform 7 environment variables, and::
+
+    PLONE_PUBLIC_KEY=ec-prime256v1-pub-key.pem
+
+where ec-prime256v1-pub-key.pem is full path to your Camunda-Plone JWT-authentication public key (or the value of the private key).
 
 Translations
 ------------

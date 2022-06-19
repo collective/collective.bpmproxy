@@ -2,7 +2,7 @@
 
 # from plone import api
 from collective.bpmproxy import _
-from collective.bpmproxy.utils import get_api_url, get_authorization
+from collective.bpmproxy.client import get_api_url, get_authorization
 from plone.dexterity.interfaces import IDexterityContent
 from zope.globalrequest import getRequest
 from zope.interface import implementer

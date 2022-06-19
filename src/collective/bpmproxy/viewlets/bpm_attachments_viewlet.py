@@ -4,12 +4,11 @@ from plone.app.layout.viewlets import ViewletBase
 
 
 class BpmAttachmentsViewlet(ViewletBase):
-
     def update(self):
-        self.message = self.get_message()
-
-    def get_message(self):
-        return u'My message'
+        pass
 
     def index(self):
-        return super(BpmAttachmentsViewlet, self).render()
+        if self.view.attachments_enabled:
+            return super(BpmAttachmentsViewlet, self).render()
+        else:
+            return u""

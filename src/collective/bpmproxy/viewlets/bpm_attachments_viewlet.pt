@@ -1,0 +1,8 @@
+<div class="days_to_conf" i18n:domain="collective.bpmproxy"
+     tal:condition="view/view/attachments_enabled">
+  <form action="${view/view/task_id}/@@add-attachment">
+    <input type="submit" value="Add attachment"
+           class="btn btn-secondary"
+           i18n:attributes="value" />
+  </form>
+</div>

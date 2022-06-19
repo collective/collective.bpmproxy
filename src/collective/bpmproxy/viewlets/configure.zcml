@@ -9,11 +9,11 @@
   <browser:viewlet
      name="bpm-attachments-viewlet"
      for="*"
-     view="collective.bpmproxy.views.bpm_proxy_form_view.BpmProxyTaskFormView"
+     view="collective.bpmproxy.views.bpm_form_view.BpmProxyTaskFormView"
      manager="plone.app.layout.viewlets.interfaces.IBelowContentBody"
      layer="collective.bpmproxy.interfaces.ICollectiveBpmproxyLayer"
      class=".bpm_attachments_viewlet.BpmAttachmentsViewlet"
-     template="bpm-attachments-viewlet.pt"
+     template="bpm_attachments_viewlet.pt"
      permission="zope2.View"
      />
 

@@ -1,15 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dc-workflow workflow_id="bpm_attachments_workflow" title="BPM Attachments Workflow" description="- Essentially a workflow with no transitions, but has a BPMN controlled (private) state." state_variable="review_state" initial_state="private" manager_bypass="False">
+<dc-workflow workflow_id="bpm_attachments_workflow" title="BPM Attachments Workflow" description="- Essentially a workflow with no transitions, but has a BPMN controlled (mnanaged) state." state_variable="review_state" initial_state="managed" manager_bypass="False">
  <permission>Access contents information</permission>
  <permission>Modify portal content</permission>
  <permission>View</permission>
- <state state_id="private" title="BPMN">
+ <state state_id="managed" title="BPM">
   <description>Visible to active task audience.</description>
   <permission-map name="Access contents information" acquired="False">
     <permission-role>Manager</permission-role>
     <permission-role>Contributor</permission-role>
     <permission-role>Editor</permission-role>
     <permission-role>Reader</permission-role>
+    <permission-role>Reviewer</permission-role>
     <permission-role>Site Administrator</permission-role>
   </permission-map>
   <permission-map name="Modify portal content" acquired="False">
@@ -22,6 +23,7 @@
     <permission-role>Contributor</permission-role>
     <permission-role>Editor</permission-role>
     <permission-role>Reader</permission-role>
+    <permission-role>Reviewer</permission-role>
     <permission-role>Site Administrator</permission-role>
   </permission-map>
  </state>
