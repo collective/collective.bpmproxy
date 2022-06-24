@@ -6,33 +6,40 @@
       metal:use-macro="context/main_template/macros/master">
 <body>
   <metal:block fill-slot="content-core">
+    <div data-pat-autotoc="levels: h2; section: section; className: autotabs"
+         class="rowlike pat-autotoc"
+         tal:omit-tag="not:view/tasks|nothing">
     <tal:condition condition="view/tasks|nothing">
+    <section tal:omit-tag="not:view/tasks|nothing">
       <h2 i18n:translate="">Available tasks</h2>
       <table
-        class="pat-datatables table table-striped table-bordered dataTable no-footer">
+        class="pat-datatables table table-striped table-bordered dataTable no-footer"
+        summary="Available tasks" i18n:attributes="summary">
         <thead>
-        <th i18n:translate="">Task</th>
-        <th i18n:translate="">Description</th>
-        <th i18n:translate="">Assignee</th>
-        <th i18n:translate="">Created</th>
+        <th class="text-nowrap" i18n:translate="">Task</th>
+        <th class="text-nowrap" i18n:translate="">Description</th>
+        <th class="text-nowrap" i18n:translate="">Assignee</th>
+        <th class="text-nowrap" i18n:translate="">Created</th>
         </thead>
         <tbody>
         <tr tal:repeat="task view/tasks">
-          <td>
+          <td class="text-nowrap">
             <a href="@@task/1234"
                tal:attributes="href string:${context/absolute_url}/@@task/${task/id}"
                tal:content="task/name">Title</a>
           </td>
-          <td tal:content="task/description">Task</td>
-          <td tal:content="task/assignee">johndoe</td>
-          <td tal:attributes="data-order task/created/isoformat">
+          <td class="text-nowrap" tal:content="task/description">Task</td>
+          <td class="text-nowrap" tal:content="task/assignee">johndoe</td>
+          <td class="text-nowrap" tal:attributes="data-order task/created/isoformat">
             <time class="pat-display-time" data-pat-display-time="from-now: true"
                tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
           </td>
         </tr>
         </tbody>
       </table>
+    </section>
     </tal:condition>
+    <section tal:omit-tag="not:view/tasks|nothing">
     <div id="collective-bpmproxy-form"
          style="margin-left: -16px"
           tal:attributes="data-schema view/schema|string:{};
@@ -46,6 +53,8 @@
              name="collective-bpmproxy-form-data"
              value="{}" />
     </form>
+    </section>
+    </div>
   </metal:block>
 </body>
 </html>

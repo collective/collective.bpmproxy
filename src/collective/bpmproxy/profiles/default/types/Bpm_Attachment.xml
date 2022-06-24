@@ -2,12 +2,12 @@
 <object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     name="Bpm Attachment"
     meta_type="Dexterity FTI"
-    i18n:domain="plone">
+    i18n:domain="collective.bpmproxy">
 
   <!-- Basic properties -->
   <property
       i18n:translate=""
-      name="title">File</property>
+      name="title">Attachment</property>
   <property
       i18n:translate=""
       name="description">BPM Process File Attachment</property>
@@ -23,9 +23,9 @@
   <!-- Schema, class and security -->
   <property name="add_permission">plone.app.contenttypes.addFile</property>
   <property name="klass">plone.app.contenttypes.content.File</property>
-  <property name="model_file">plone.app.contenttypes.schema:file.xml</property>
+  <property name="model_file"></property>
   <property name="model_source"></property>
-  <property name="schema"></property>
+  <property name="schema">collective.bpmproxy.content.bpm_attachment.IBpmAttachment</property>
 
   <!-- Enabled behaviors -->
   <property name="behaviors" purge="false">

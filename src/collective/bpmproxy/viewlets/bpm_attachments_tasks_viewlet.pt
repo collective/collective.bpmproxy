@@ -1,0 +1,30 @@
+<tal:condition condition="view/tasks|nothing">
+  <h2 i18n:translate="">Related tasks</h2>
+  <div class="table-responsive">
+    <table class="table table-striped" summary="Related tasks" i18n:attributes="summary">
+      <thead>
+        <tr>
+          <th class="text-nowrap" i18n:translate="">Task</th>
+          <th class="text-nowrap" i18n:translate="">Description</th>
+          <th class="text-nowrap" i18n:translate="">Assignee</th>
+          <th class="text-nowrap" i18n:translate="">Created</th>
+        </tr>
+      </thead>
+      <tbody>
+    <tr tal:repeat="task view/tasks">
+      <td class="text-nowrap">
+        <a href="@@task/1234"
+           tal:attributes="href string:${view/base_url}/@@task/${task/id}"
+           tal:content="task/name">Title</a>
+      </td>
+      <td class="text-nowrap" tal:content="task/description">Task</td>
+      <td class="text-nowrap" tal:content="task/assignee">johndoe</td>
+      <td class="text-nowrap" tal:attributes="data-order task/created/isoformat">
+        <time class="pat-display-time" data-pat-display-time="from-now: true"
+           tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  </div>
+</tal:condition>

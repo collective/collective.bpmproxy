@@ -1,5 +1,13 @@
-<div class="days_to_conf" i18n:domain="collective.bpmproxy"
+<div i18n:domain="collective.bpmproxy"
      tal:condition="view/view/attachments_enabled">
+  <section tal:define="context nocall:view/attachments_context"
+           tal:condition="nocall:context">
+  <h2 i18n:translate="">Attachments</h2>
+  <div metal:use-macro="view/macros/listing"
+       tal:define="view nocall:context/@@tabular_view;
+                   portal_state nocall:context/@@plone_portal_state;
+                   icons nocall:context/@@iconresolver" />
+  </section>
   <form action="${view/view/task_id}/@@add-attachment">
     <input type="submit" value="Add attachment"
            class="btn btn-secondary"

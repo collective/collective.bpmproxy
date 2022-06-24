@@ -2,8 +2,6 @@ from AccessControl.interfaces import IOwned, IRoleManager
 from collective.bpmproxy import _
 from collective.bpmproxy.client import (
     camunda_client,
-    get_api_url,
-    get_authorization,
     get_available_tasks,
     get_task_variables,
 )
@@ -18,8 +16,6 @@ from plone.uuid.interfaces import IUUID
 from Products.Five import BrowserView
 from zope.i18n import translate
 from zope.publisher.interfaces import NotFound
-
-import generic_camunda_client
 
 
 class BpmProxyTaskAttachmentsView(BrowserView):
@@ -42,7 +38,9 @@ class BpmProxyTaskAttachmentsView(BrowserView):
                 key = get_task_variables(client, self.task_id).get(ATTACHMENTS_KEY_KEY)
                 if not key:
                     raise NotFound(self, self.task_id, self.request)
-                tasks = get_available_tasks(client, attachments_key=key)
+                tasks = get_available_tasks(
+                    client, context_key=IUUID(self.context), attachments_key=key
+                )
                 if not len([t for t in tasks if t.id == self.task_id]):
                     raise NotFound(self, self.task_id, self.request)
 

@@ -4,7 +4,27 @@
     xmlns:plone="http://namespaces.plone.org/plone"
     i18n_domain="collective.bpmproxy">
 
-  -*- extra stuff goes here -*-
+  <browser:viewlet
+    name="bpm-tasks-viewlet"
+    for="collective.bpmproxy.content.bpm_attachments.IBpmAttachments"
+    view="plone.app.layout.globals.interfaces.IViewView"
+    manager="plone.app.layout.viewlets.interfaces.IBelowContentBody"
+    layer="collective.bpmproxy.interfaces.ICollectiveBpmproxyLayer"
+    class=".bpm_attachments_tasks_viewlet.BpmAttachmentsTasksViewlet"
+    template="bpm_attachments_tasks_viewlet.pt"
+    permission="zope2.View"
+  />
+
+  <browser:viewlet
+    name="bpm-tasks-viewlet"
+    for="collective.bpmproxy.content.bpm_attachment.IBpmAttachment"
+    view="plone.app.layout.globals.interfaces.IViewView"
+    manager="plone.app.layout.viewlets.interfaces.IBelowContentBody"
+    layer="collective.bpmproxy.interfaces.ICollectiveBpmproxyLayer"
+    class=".bpm_attachments_tasks_viewlet.BpmAttachmentsTasksViewlet"
+    template="bpm_attachments_tasks_viewlet.pt"
+    permission="zope2.View"
+  />
 
   <browser:viewlet
      name="bpm-attachments-viewlet"
@@ -17,5 +37,12 @@
      permission="zope2.View"
      />
 
+  <browser:viewlet
+    name="plone.contentviews"
+    manager="plone.app.layout.viewlets.interfaces.IToolbar"
+    for="..content.bpm_attachments.IBpmAttachments"
+    class=".bpm_attachments_common.AttachmentsContentViewsViewlet"
+    permission="zope2.View"
+  />
 
 </configure>

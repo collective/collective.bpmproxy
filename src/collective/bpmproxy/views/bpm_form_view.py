@@ -22,6 +22,8 @@ from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
 from plone.stringinterp.interfaces import IStringInterpolator
 from plone.uuid.interfaces import IUUID
+from Products.CMFPlone.browser.interfaces import INavigationBreadcrumbs
+from Products.CMFPlone.browser.navigation import PhysicalNavigationBreadcrumbs
 from Products.Five.browser import BrowserView
 from uuid import UUID, uuid4
 from zope.interface import implementer
@@ -33,6 +35,32 @@ import plone.api
 
 
 logger = logging.getLogger(__name__)
+
+
+@implementer(INavigationBreadcrumbs)
+class BpmProxyNavigationBreadcrumbs(PhysicalNavigationBreadcrumbs):
+    def breadcrumbs(self):
+        base = super(BpmProxyNavigationBreadcrumbs, self).breadcrumbs()
+
+        task_view = getattr(self.request, "PUBLISHED", None)
+        task_id = getattr(task_view, "task_id", None)
+        task_title = getattr(task_view, "task_title", None)
+
+        if task_id and task_title:
+            return base + (
+                {
+                    "absolute_url": "/".join(
+                        [self.context.absolute_url(), "@@task", task_id]
+                    ),
+                    "Title": task_title,
+                },
+            )
+        else:
+            return base
+
+    def customize_entry(self, entry, context=None):
+        """a little helper to enlarge customizability."""
+        pass
 
 
 class BpmProxyStartFormView(BrowserView):
@@ -118,10 +146,13 @@ class BpmProxyTaskFormView(BrowserView):
         super(BpmProxyTaskFormView, self).__init__(context, request)
 
         self.attachments_enabled = False
+        self.attachments_key = None
 
         self.data = "{}"
         self.schema = "{}"
         self.task_id = None
+        self.task_title = None
+        self.task_description = None
 
     def publishTraverse(self, request, name):
         if self.task_id is None:  # ../task_id
@@ -134,18 +165,26 @@ class BpmProxyTaskFormView(BrowserView):
         with camunda_client() as client:
             try:
                 # Sanity check. Task belongs to this context.
-                tasks = get_available_tasks(client, context_key=IUUID(self.context))
-                if self.task_id not in [t.id for t in tasks]:
+                tasks = dict(
+                    (task.id, task)
+                    for task in get_available_tasks(
+                        client, context_key=IUUID(self.context)
+                    )
+                )
+                if self.task_id not in tasks:
                     raise NotFound(self, self.task_id, self.request)
 
                 # Get data.
+                self.task_title = tasks[self.task_id].name
+                self.task_description = tasks[self.task_id].description
                 current_values = get_task_variables(client, self.task_id)
 
                 # Enable attachments when possible.
                 try:
-                    self.attachments_enabled = bool(
+                    self.attachments_key = str(
                         UUID(current_values.get(ATTACHMENTS_KEY_KEY))
                     )
+                    self.attachments_enabled = bool(self.attachments_key)
                 except (TypeError, ValueError):
                     pass
 

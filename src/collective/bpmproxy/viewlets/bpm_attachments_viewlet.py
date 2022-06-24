@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from plone.app.layout.viewlets import ViewletBase
 
 
@@ -12,3 +11,8 @@ class BpmAttachmentsViewlet(ViewletBase):
             return super(BpmAttachmentsViewlet, self).render()
         else:
             return u""
+
+    @property
+    def attachments_context(self):
+        context = self.context.get(self.view.attachments_key)
+        return len(context) and context or None
