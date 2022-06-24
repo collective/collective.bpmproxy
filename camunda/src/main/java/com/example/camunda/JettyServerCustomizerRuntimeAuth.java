@@ -23,11 +23,11 @@ import static javax.servlet.DispatcherType.REQUEST;
 @Requires(property = "camunda.rest.enabled", value = "true")
 // Must replace to ensure extra filter right after REST servlet
 @Replaces(JettyServerCustomizerRuntimeRest.class)
-public class JettyServerCustomizer extends JettyServerCustomizerRuntimeRest {
+public class JettyServerCustomizerRuntimeAuth extends JettyServerCustomizerRuntimeRest {
 
-    private static final Logger log = LoggerFactory.getLogger(JettyServerCustomizer.class);
+    private static final Logger log = LoggerFactory.getLogger(JettyServerCustomizerRuntimeAuth.class);
 
-    public JettyServerCustomizer(Server server, Configuration configuration) {
+    public JettyServerCustomizerRuntimeAuth(Server server, Configuration configuration) {
         super(server, configuration);
     }
 
