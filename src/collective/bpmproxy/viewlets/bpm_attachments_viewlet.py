@@ -15,4 +15,4 @@ class BpmAttachmentsViewlet(ViewletBase):
     @property
     def attachments_context(self):
         context = self.context.get(self.view.attachments_key)
-        return len(context) and context or None
+        return (context and len(context)) and context or None

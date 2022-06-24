@@ -5,6 +5,13 @@
     i18n_domain="collective.bpmproxy">
 
   <browser:page
+    name="bpm-proxy-orphan-attachments"
+    for="Products.CMFCore.interfaces.ISiteRoot"
+    class=".bpm_attachments_orphans_view.BpmAttachmentsOrphansView"
+    permission="cmf.ManagePortal"
+  />
+
+  <browser:page
     name="view"
     for="..content.bpm_proxy.IBpmProxy"
     class=".bpm_form_view.BpmProxyStartFormView"
