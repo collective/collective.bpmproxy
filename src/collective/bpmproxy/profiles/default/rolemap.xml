@@ -3,6 +3,15 @@
   <permissions>
   <!-- -*- extra stuff goes here -*- -->
 
+
+    <permission name="collective.bpmproxy: Add BpmAttachments" acquire="True">
+      <role name="Manager"/>
+      <role name="Site Administrator"/>
+      <role name="Owner"/>
+      <role name="Contributor"/>
+    </permission>
+
+
     <permission name="collective.bpmproxy: Add BpmProxy" acquire="True">
       <role name="Manager"/>
       <role name="Site Administrator"/>

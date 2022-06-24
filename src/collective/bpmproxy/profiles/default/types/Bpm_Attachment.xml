@@ -1,0 +1,93 @@
+<?xml version="1.0"?>
+<object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    name="Bpm Attachment"
+    meta_type="Dexterity FTI"
+    i18n:domain="collective.bpmproxy">
+
+  <!-- Basic properties -->
+  <property
+      i18n:translate=""
+      name="title">Attachment</property>
+  <property
+      i18n:translate=""
+      name="description">BPM Process File Attachment</property>
+
+  <property name="allow_discussion">True</property>
+  <property name="factory">Bpm Attachment</property>
+  <property name="icon_expr">string:contenttype/file</property>
+  <property name="link_target"></property>
+
+  <!-- Hierarchy control -->
+  <property name="global_allow">False</property>
+
+  <!-- Schema, class and security -->
+  <property name="add_permission">plone.app.contenttypes.addFile</property>
+  <property name="klass">plone.app.contenttypes.content.File</property>
+  <property name="model_file"></property>
+  <property name="model_source"></property>
+  <property name="schema">collective.bpmproxy.content.bpm_attachment.IBpmAttachment</property>
+
+  <!-- Enabled behaviors -->
+  <property name="behaviors" purge="false">
+    <element value="plone.categorization" />
+    <element value="plone.publication" />
+    <element value="plone.ownership" />
+    <element value="plone.namefromfilename" />
+    <element value="plone.allowdiscussion" />
+    <element value="plone.shortname" />
+    <element value="plone.excludefromnavigation" />
+    <element value="plone.relateditems" />
+  </property>
+
+  <!-- View information -->
+  <property name="add_view_expr">string:${folder_url}/++add++Bpm Attachment</property>
+  <property name="default_view">file_view</property>
+  <property name="default_view_fallback">False</property>
+  <property name="immediate_view">view</property>
+  <property name="view_methods">
+    <element value="file_view"/>
+  </property>
+
+  <!-- Method aliases -->
+  <alias
+      from="(Default)"
+      to="@@display-file"
+  />
+  <alias
+      from="edit"
+      to="@@edit"
+  />
+  <alias
+      from="sharing"
+      to="@@sharing"
+  />
+  <alias
+      from="view"
+      to="(selected layout)"
+  />
+
+  <!-- Actions -->
+  <action
+      action_id="view"
+      category="object"
+      condition_expr=""
+      i18n:attributes="title"
+      i18n:domain="plone"
+      title="View"
+      url_expr="string:${object_url}"
+      visible="True">
+    <permission value="View"/>
+  </action>
+  <action
+      action_id="edit"
+      category="object(dynamic view)"
+      condition_expr=""
+      i18n:attributes="title"
+      i18n:domain="plone"
+      title="Edit"
+      url_expr="string:${object_url}/edit"
+      visible="True">
+    <permission value="Modify portal content"/>
+  </action>
+
+</object>

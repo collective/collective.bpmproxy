@@ -1,38 +1,34 @@
 <?xml version="1.0"?>
 <object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-    name="Bpm Proxy"
+    name="Bpm Attachments"
     meta_type="Dexterity FTI"
     i18n:domain="collective.bpmproxy">
 
   <!-- Basic properties -->
   <property
       i18n:translate=""
-      name="title">Bpm Proxy</property>
+      name="title">Attachments</property>
   <property
       i18n:translate=""
-      name="description">BPM Process Proxy</property>
+      name="description">BPM Process Attachments</property>
 
   <property name="allow_discussion">False</property>
-  <property name="factory">Bpm Proxy</property>
-  <property name="icon_expr"></property>
+  <property name="factory">Bpm Attachments</property>
+  <property name="icon_expr">string:contenttype/folder</property>
   <property name="link_target"></property>
 
   <!-- Hierarchy control -->
-  <property name="global_allow">True</property>
+  <property name="global_allow">False</property>
   <property name="filter_content_types">True</property>
   <property name="allowed_content_types">
-    <!--
-      <element value="Document" />
-      <element value="File" />
-    -->
+    <element value="Bpm Attachment" />
   </property>
-
   <!-- Schema, class and security -->
-  <property name="add_permission">collective.bpmproxy.AddBpmProxy</property>
-  <property name="klass">plone.dexterity.content.Container</property>
+  <property name="add_permission">plone.app.contenttypes.addFolder</property>
+  <property name="klass">plone.app.contenttypes.content.Folder</property>
   <property name="model_file"></property>
   <property name="model_source"></property>
-  <property name="schema">collective.bpmproxy.content.bpm_proxy.IBpmProxy</property>
+  <property name="schema">collective.bpmproxy.content.bpm_attachments.IBpmAttachments</property>
 
   <!-- Enabled behaviors -->
   <property name="behaviors" purge="false">
@@ -55,15 +51,22 @@
     <!--<element value="plone.tableofcontents"/>-->
     <!--<element value="plone.versioning" />-->
     <!--<element value="plone.translatable" />-->
+    <!--<element value="plone.nextprevioustoggle" />-->
+    <!--<element value="plone.nextpreviousenabled" />-->
+    <!--<element value="plone.navigationroot" />-->
+    <!--<element value="plone.selectablecontrainstypes" />-->
   </property>
 
   <!-- View information -->
-  <property name="add_view_expr">string:${folder_url}/++add++Bpm Proxy</property>
-  <property name="default_view">view</property>
+  <property name="add_view_expr">string:${folder_url}/++add++Bpm Attachments</property>
+  <property name="default_view">tabular_view</property>
   <property name="default_view_fallback">False</property>
   <property name="immediate_view">view</property>
   <property name="view_methods">
-    <element value="view"/>
+    <element value="full_view"/>
+    <element value="listing_view"/>
+    <element value="summary_view"/>
+    <element value="tabular_view"/>
   </property>
 
   <!-- Method aliases -->
