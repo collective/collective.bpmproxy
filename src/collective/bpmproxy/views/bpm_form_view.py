@@ -5,6 +5,7 @@ from collective.bpmproxy import _
 from collective.bpmproxy.client import (
     camunda_client,
     get_available_tasks,
+    get_diagram_xml,
     get_start_form,
     get_task_form,
     get_task_variables,
@@ -177,7 +178,14 @@ class BpmProxyTaskFormView(BrowserView):
                 # Get data.
                 self.task_title = tasks[self.task_id].name
                 self.task_description = tasks[self.task_id].description
+                self.task_definition_key = tasks[self.task_id].task_definition_key
                 current_values = get_task_variables(client, self.task_id)
+
+                # Get diagram
+                if self.context.diagram_enabled:
+                    self.diagram_xml = get_diagram_xml(
+                        client, tasks[self.task_id].process_definition_id
+                    )
 
                 # Enable attachments when possible.
                 try:

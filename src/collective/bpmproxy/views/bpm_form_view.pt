@@ -9,8 +9,10 @@
     <div data-pat-autotoc="levels: h2; section: section; className: autotabs"
          class="rowlike pat-autotoc"
          tal:omit-tag="not:view/tasks|nothing">
-    <tal:condition condition="view/tasks|nothing">
-    <section tal:omit-tag="not:view/tasks|nothing">
+    <div data-pat-autotoc="levels: h2; section: section; className: autotabs"
+         class="rowlike pat-autotoc"
+         tal:omit-tag="not:view/diagram_xml|nothing">
+    <section tal:condition="view/tasks|nothing">
       <h2 i18n:translate="">Available tasks</h2>
       <table
         class="pat-datatables table table-striped table-bordered dataTable no-footer"
@@ -38,8 +40,8 @@
         </tbody>
       </table>
     </section>
-    </tal:condition>
     <section tal:omit-tag="not:view/tasks|nothing">
+    <section tal:omit-tag="not:view/diagram_xml|nothing">
     <div id="collective-bpmproxy-form"
          style="margin-left: -16px"
           tal:attributes="data-schema view/schema|string:{};
@@ -54,6 +56,17 @@
              value="{}" />
     </form>
     </section>
+    </section>
+    <section tal:condition="view/diagram_xml|nothing">
+    <h2 i18n:translate="">Diagram</h2>
+    <div id="collective-bpmproxy-diagram"
+         style="height:50vh;min-height:400px;"
+         tal:attributes="data-bpmn20_xml view/diagram_xml;
+                         data-element view/task_definition_key;">
+      <!-- HERE BE DIAGRAM -->
+    </div>
+    </section>
+    </div>
     </div>
   </metal:block>
 </body>

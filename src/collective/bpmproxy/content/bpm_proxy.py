@@ -15,6 +15,12 @@ class IBpmProxy(model.Schema):
         vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
+    diagram_enabled = schema.Bool(
+        title=_(u"Show BPMN diagram"),
+        required=False,
+        default=False,
+    )
+
     attachments_enabled = schema.Bool(
         title=_(u"Accept attachments"),
         required=False,
