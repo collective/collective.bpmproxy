@@ -1,7 +1,7 @@
 {
   "components": [
     {
-      "text": "## Enter Reviewer",
+      "text": "## Enter reviewer",
       "type": "text",
       "id": "Field_0mj01ci"
     },
