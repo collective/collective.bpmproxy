@@ -42,14 +42,5 @@ public class Configuration implements ProcessEngineConfigurationCustomizer {
         JWTIdentityService identityService = new JWTIdentityService();
         identityService.setPublicKey(jwtPublicKey);
         processEngineConfiguration.setIdentityService(identityService);
-
-        // Allow to work around issue where server startup fails on empty db
-        // Map<String, String> env = System.getenv();
-        // if (env.get("NRestarts") == null || env.get("NRestarts").equals("0")) {
-        //     processEngineConfiguration.setHistoryCleanupBatchWindowStartTime("22:00");
-        //     log.info("History cleanup batch window start time set to 22:00.");
-        // } else {
-        //     log.info("History cleanup batch window start time NOT set.");
-        // }
     }
 }

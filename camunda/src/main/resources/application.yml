@@ -36,7 +36,7 @@ camunda:
       history-cleanup-strategy: removalTimeBased
       history-cleanup-enabled: true
       history-cleanup-batch-size: 100
-      # history-cleanup-batch-window-start-time: "22:00"
+      history-cleanup-batch-window-start-time: "22:00"
       history-cleanup-batch-window-end-time: "06:00"
       history-cleanup-degree-of-parallelism: 1
       history-time-to-live: P7D
