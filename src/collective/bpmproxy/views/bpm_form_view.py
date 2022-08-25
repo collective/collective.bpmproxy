@@ -6,6 +6,7 @@ from collective.bpmproxy.client import (
     camunda_client,
     get_available_tasks,
     get_diagram_xml,
+    get_next_tasks,
     get_start_form,
     get_task_form,
     get_task_variables,
@@ -102,7 +103,7 @@ class BpmProxyStartFormView(BrowserView):
                 process_variables = self.context.process_variables.copy()
                 if self.context.attachments_enabled:
                     process_variables[ATTACHMENTS_KEY_KEY] = business_key.split(":")[-1]
-                submit_start_form(
+                process = submit_start_form(
                     client,
                     self.context.process_definition_key,
                     business_key=business_key,
@@ -119,18 +120,34 @@ class BpmProxyStartFormView(BrowserView):
                     client, context_key=IUUID(self.context)
                 )
             except ApiException:
+                process = None
                 plone.api.portal.show_message(
                     message=_("Unexpected error on submit."),
                     request=self.request,
                     type=PloneNotificationLevel.ERROR,
                 )
             except AssertionError as e:
+                process = None
                 plone.api.portal.show_message(
                     message=_("Invalid or missing data."),
                     request=self.request,
                     type=PloneNotificationLevel.ERROR,
                 )
                 logger.error(e)
+            try:
+                next_tasks = get_next_tasks(client, process.id) if process else []
+                for task in next_tasks:
+                    url = "/".join([
+                        self.context.absolute_url(),
+                        "@@task",
+                        task.id
+                    ])
+                    if self.context.diagram_enabled:
+                        url += "#autotoc-item-autotoc-0"
+                    self.request.response.redirect(url)
+                    break
+            except ApiException:
+                pass  # process may have already ended
         return self.index()
 
     def __call__(self):
@@ -162,29 +179,19 @@ class BpmProxyTaskFormView(BrowserView):
             raise NotFound(self, name, request)
         return self
 
-    def _view(self):
+    def _view(self, task):
         with camunda_client() as client:
             try:
-                # Sanity check. Task belongs to this context.
-                tasks = dict(
-                    (task.id, task)
-                    for task in get_available_tasks(
-                        client, context_key=IUUID(self.context)
-                    )
-                )
-                if self.task_id not in tasks:
-                    raise NotFound(self, self.task_id, self.request)
-
                 # Get data.
-                self.task_title = tasks[self.task_id].name
-                self.task_description = tasks[self.task_id].description
-                self.task_definition_key = tasks[self.task_id].task_definition_key
+                self.task_title = task.name
+                self.task_description = task.description
+                self.task_definition_key = task.task_definition_key
                 current_values = get_task_variables(client, self.task_id)
 
                 # Get diagram
                 if self.context.diagram_enabled:
                     self.diagram_xml = get_diagram_xml(
-                        client, tasks[self.task_id].process_definition_id
+                        client, task.process_definition_id
                     )
 
                 # Enable attachments when possible.
@@ -209,7 +216,7 @@ class BpmProxyTaskFormView(BrowserView):
                 raise NotFound(self, self.task_id, self.request)
         return self.index()
 
-    def _submit(self):
+    def _submit(self, task):
         with camunda_client() as client:
             current_values = get_task_variables(client, self.task_id)
             current_values.update(
@@ -244,11 +251,50 @@ class BpmProxyTaskFormView(BrowserView):
                     type=PloneNotificationLevel.ERROR,
                 )
                 logger.error(e)
+            try:
+                next_tasks = get_next_tasks(client, task.process_instance_id)
+                for task in next_tasks:
+                    url = "/".join([
+                        self.context.absolute_url(),
+                        "@@task",
+                        task.id
+                    ])
+                    if self.context.diagram_enabled:
+                        url += "#autotoc-item-autotoc-0"
+                    self.request.response.redirect(url)
+                    break
+            except ApiException:
+                pass  # process may have already ended
         return self.index()
 
     def __call__(self):
+        with camunda_client() as client:
+            try:
+                # Sanity check. Task belongs to this context.
+                tasks = dict(
+                    (task.id, task)
+                    for task in get_available_tasks(
+                        client, context_key=IUUID(self.context)
+                    )
+                )
+                if self.task_id not in tasks:
+                    plone.api.portal.show_message(
+                        message=_("Task not found or no longer available."),
+                        request=self.request,
+                        type=PloneNotificationLevel.ERROR,
+                    )
+                    self.request.response.redirect(self.context.absolute_url())
+                    return ""
+            except ApiException as e:
+                plone.api.portal.show_message(
+                    message=_("Unexpected error."),
+                    request=self.request,
+                    type=PloneNotificationLevel.ERROR,
+                )
+                self.request.response.redirect(self.context.absolute_url())
+                return u""
         if self.request.method == HTTPMethod.POST:
             check(self.request)
-            return self._submit()
+            return self._submit(tasks[self.task_id])
         else:
-            return self._view()
+            return self._view(tasks[self.task_id])

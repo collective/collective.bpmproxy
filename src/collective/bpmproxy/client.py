@@ -42,7 +42,7 @@ def get_token(username, groups):
         },
         private_key,
         algorithm="ES256",
-    ).decode("utf-8")
+    )
 
 
 def get_authorization():
@@ -95,6 +95,13 @@ def get_available_tasks(client, context_key=None, attachments_key=None):
     )
 
 
+def get_next_tasks(client, process_id=None):
+    api = generic_camunda_client.TaskApi(client)
+    return api.query_tasks(
+        task_query_dto=dict(processInstanceId=process_id),
+    )
+
+
 def submit_start_form(
     client,
     definition_key,
@@ -113,7 +120,7 @@ def submit_start_form(
         "variables": infer_variables(variables),
     }
     try:
-        api.start_process_instance_by_key(
+        return api.start_process_instance_by_key(
             definition_key, start_process_instance_dto=payload
         )
     except ApiException as e:
@@ -136,7 +143,7 @@ def submit_task_form(
         "withVariablesInReturn": True,
     }
     try:
-        api.complete(task_id, complete_task_dto=payload)
+        return api.complete(task_id, complete_task_dto=payload)
     except ApiException as e:
         logger.error("Exception when calling TaskApi->complete: %s\n%s", e, payload)
         raise

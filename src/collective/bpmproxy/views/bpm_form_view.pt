@@ -6,10 +6,10 @@
       metal:use-macro="context/main_template/macros/master">
 <body>
   <metal:block fill-slot="content-core">
-    <div data-pat-autotoc="levels: h2; section: section; className: autotabs"
+    <div data-pat-autotoc="levels: h1,h2; section: section; className: autotabs"
          class="rowlike pat-autotoc"
          tal:omit-tag="not:view/tasks|nothing">
-    <div data-pat-autotoc="levels: h2; section: section; className: autotabs"
+    <div data-pat-autotoc="levels: h1,h2; section: section; className: autotabs"
          class="rowlike pat-autotoc"
          tal:omit-tag="not:view/diagram_xml|nothing">
     <section tal:condition="view/tasks|nothing">

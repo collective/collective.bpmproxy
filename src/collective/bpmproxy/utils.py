@@ -6,7 +6,9 @@ import six
 
 
 def infer_variable(value):
-    if isinstance(value, bool):
+    if isinstance(value, list):
+        return {"value": json.dumps(value), "type": "Json"}
+    elif isinstance(value, bool):
         return {"value": value, "type": "Boolean"}
     elif isinstance(value, int):
         return {"value": value, "type": "Integer"}

@@ -43,7 +43,6 @@ ready(async () => {
       const registry = viewer.get("elementRegistry");
       const element = registry.get(diagram.dataset.element);
       canvas.zoom("fit-viewport");
-      console.log(diagram.dataset.element);
       modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
     } catch (err) {
       console.log("error rendering", err);
