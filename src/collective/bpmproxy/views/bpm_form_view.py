@@ -137,11 +137,7 @@ class BpmProxyStartFormView(BrowserView):
             try:
                 next_tasks = get_next_tasks(client, process.id) if process else []
                 for task in next_tasks:
-                    url = "/".join([
-                        self.context.absolute_url(),
-                        "@@task",
-                        task.id
-                    ])
+                    url = "/".join([self.context.absolute_url(), "@@task", task.id])
                     if self.context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
@@ -254,11 +250,7 @@ class BpmProxyTaskFormView(BrowserView):
             try:
                 next_tasks = get_next_tasks(client, task.process_instance_id)
                 for task in next_tasks:
-                    url = "/".join([
-                        self.context.absolute_url(),
-                        "@@task",
-                        task.id
-                    ])
+                    url = "/".join([self.context.absolute_url(), "@@task", task.id])
                     if self.context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
