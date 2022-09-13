@@ -1,7 +1,6 @@
 import "@bpmn-io/form-js-viewer/dist/assets/form-js.css";
 
 import { Form } from "@bpmn-io/form-js-viewer";
-import BpmnJS from "bpmn-js";
 import ModelingModule from "bpmn-js/lib/features/modeling";
 import NavigatedViewer from "bpmn-js/lib/NavigatedViewer";
 
