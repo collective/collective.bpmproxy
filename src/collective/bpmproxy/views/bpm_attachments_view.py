@@ -26,7 +26,7 @@ class BpmProxyTaskAttachmentsView(BrowserView):
 
     def __call__(self):
         if not self.context.attachments_enabled:
-            return u""
+            return ""
 
         with camunda_client() as client:
             try:

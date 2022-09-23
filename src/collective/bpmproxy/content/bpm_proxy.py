@@ -10,28 +10,28 @@ class IBpmProxy(model.Schema):
     """Marker interface and Dexterity Python Schema for BpmProxy"""
 
     process_definition_key = schema.Choice(
-        title=_(u"Process Definition"),
+        title=_("Process Definition"),
         required=True,
         vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
     diagram_enabled = schema.Bool(
-        title=_(u"Show BPMN diagram"),
+        title=_("Show BPMN diagram"),
         required=False,
         default=False,
     )
 
     attachments_enabled = schema.Bool(
-        title=_(u"Accept attachments"),
+        title=_("Accept attachments"),
         required=False,
         default=False,
     )
 
     form.widget("process_variables", klass="pat-code-editor")
     process_variables = JSONField(
-        title=_(u"Initial process variables"),
+        title=_("Initial process variables"),
         description=_(
-            u"Must be valid JSON. Values may contain Plone string substitutions."
+            "Must be valid JSON. Values may contain Plone string substitutions."
         ),
         required=True,
         defaultFactory=lambda: {
@@ -41,9 +41,9 @@ class IBpmProxy(model.Schema):
 
     form.widget("default_values", klass="pat-code-editor")
     default_values = JSONField(
-        title=_(u"Default form values"),
+        title=_("Default form values"),
         description=_(
-            u"Must be valid JSON. Values may contain Plone string substitutions."
+            "Must be valid JSON. Values may contain Plone string substitutions."
         ),
         required=True,
         defaultFactory=lambda: {

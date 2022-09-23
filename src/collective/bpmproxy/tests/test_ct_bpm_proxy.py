@@ -51,6 +51,4 @@ class BpmProxyIntegrationTest(unittest.TestCase):
     def test_ct_bpm_proxy_globally_addable(self):
         setRoles(self.portal, TEST_USER_ID, ["Contributor"])
         fti = queryUtility(IDexterityFTI, name="Bpm Proxy")
-        self.assertTrue(
-            fti.global_allow, u"{0} is not globally addable!".format(fti.id)
-        )
+        self.assertTrue(fti.global_allow, "{0} is not globally addable!".format(fti.id))

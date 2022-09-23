@@ -284,7 +284,7 @@ class BpmProxyTaskFormView(BrowserView):
                     type=PloneNotificationLevel.ERROR,
                 )
                 self.request.response.redirect(self.context.absolute_url())
-                return u""
+                return ""
         if self.request.method == HTTPMethod.POST:
             check(self.request)
             return self._submit(tasks[self.task_id])

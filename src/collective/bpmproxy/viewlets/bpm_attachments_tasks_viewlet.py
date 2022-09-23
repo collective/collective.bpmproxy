@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from Acquisition import aq_parent
 from collective.bpmproxy.client import camunda_client, get_available_tasks
 from collective.bpmproxy.content.bpm_attachments import IBpmAttachments
 from collective.bpmproxy.content.bpm_proxy import IBpmProxy

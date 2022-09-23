@@ -10,7 +10,7 @@ class BpmAttachmentsViewlet(ViewletBase):
         if self.view.attachments_enabled:
             return super(BpmAttachmentsViewlet, self).render()
         else:
-            return u""
+            return ""
 
     @property
     def attachments_context(self):

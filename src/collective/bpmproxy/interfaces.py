@@ -7,6 +7,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 ATTACHMENTS_CONTAINER_TYPE = "Bpm Attachments"
 ATTACHMENTS_DEFAULT_TYPE = "Bpm Attachment"
 ATTACHMENTS_KEY_KEY = "attachmentsKey"
+CAMUNDA_ADMIN_USER = "admin"
 CAMUNDA_ADMIN_GROUP = "camunda-admin"
 CAMUNDA_API_PRIVATE_KEY_ENV = "CAMUNDA_API_PRIVATE_KEY"
 CAMUNDA_API_URL_DEFAULT = "http://localhost:8081/engine-rest"

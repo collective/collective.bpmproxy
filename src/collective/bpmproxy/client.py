@@ -1,4 +1,6 @@
 from collective.bpmproxy.interfaces import (
+    CAMUNDA_ADMIN_GROUP,
+    CAMUNDA_ADMIN_USER,
     CAMUNDA_API_PRIVATE_KEY_ENV,
     CAMUNDA_API_URL_DEFAULT,
     CAMUNDA_API_URL_ENV,
@@ -10,7 +12,6 @@ from collective.bpmproxy.utils import (
 )
 from contextlib import contextmanager
 from generic_camunda_client import ApiException
-from plone.uuid.interfaces import IUUID
 
 import datetime
 import generic_camunda_client
@@ -59,6 +60,20 @@ def get_authorization():
 def camunda_client():
     configuration = generic_camunda_client.Configuration(host=get_api_url())
     authorization = get_authorization() or None
+    with generic_camunda_client.ApiClient(
+        configuration,
+        header_name=authorization and "Authorization" or None,
+        header_value=authorization,
+    ) as client:
+        yield client
+
+
+@contextmanager
+def camunda_admin_client():
+    configuration = generic_camunda_client.Configuration(host=get_api_url())
+    authorization = "Bearer " + get_token(
+        username=CAMUNDA_ADMIN_USER, groups=[CAMUNDA_ADMIN_GROUP]
+    )
     with generic_camunda_client.ApiClient(
         configuration,
         header_name=authorization and "Authorization" or None,

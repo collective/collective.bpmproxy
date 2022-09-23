@@ -59,7 +59,7 @@ class BpmAttachmentsIntegrationTest(unittest.TestCase):
     def test_ct_bpm_attachments_globally_not_addable(self):
         setRoles(self.portal, TEST_USER_ID, ["Contributor"])
         fti = queryUtility(IDexterityFTI, name="Bpm Attachments")
-        self.assertFalse(fti.global_allow, u"{0} is globally addable!".format(fti.id))
+        self.assertFalse(fti.global_allow, "{0} is globally addable!".format(fti.id))
 
     def test_ct_bpm_attachments_filter_content_type_true(self):
         setRoles(self.portal, TEST_USER_ID, ["Contributor"])
