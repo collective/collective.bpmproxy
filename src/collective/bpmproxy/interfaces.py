@@ -4,6 +4,7 @@
 from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 
+ANONYMOUS_USER_ANNOTATION_KEY = "collective.bpmproxy.anonymous"
 ATTACHMENTS_CONTAINER_TYPE = "Bpm Attachments"
 ATTACHMENTS_DEFAULT_TYPE = "Bpm Attachment"
 ATTACHMENTS_KEY_KEY = "attachmentsKey"

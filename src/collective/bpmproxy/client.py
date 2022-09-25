@@ -1,4 +1,5 @@
 from collective.bpmproxy.interfaces import (
+    ANONYMOUS_USER_ANNOTATION_KEY,
     CAMUNDA_ADMIN_GROUP,
     CAMUNDA_ADMIN_USER,
     CAMUNDA_API_PRIVATE_KEY_ENV,
@@ -12,6 +13,9 @@ from collective.bpmproxy.utils import (
 )
 from contextlib import contextmanager
 from generic_camunda_client import ApiException
+from uuid import UUID
+from zope.annotation import IAnnotations
+from zope.globalrequest import getRequest
 
 import datetime
 import generic_camunda_client
@@ -19,6 +23,7 @@ import jwt
 import logging
 import os
 import plone.api
+import uuid
 
 
 logger = logging.getLogger(__name__)
@@ -46,13 +51,34 @@ def get_token(username, groups):
     )
 
 
+def is_valid_uuid(uuid_to_test, version=4):
+    try:
+        uuid_obj = UUID(uuid_to_test, version=version)
+    except ValueError:
+        return False
+    return str(uuid_obj) == uuid_to_test
+
+
 def get_authorization():
-    user = plone.api.user.get_current()
-    token = get_token(
-        username=user and user.getUserName() or None,
-        groups=user
-        and [g.getId() for g in plone.api.group.get_groups(user=user) or []],
-    )
+    if plone.api.user.is_anonymous():
+        request = getRequest()
+        token = IAnnotations(request).get(
+            ANONYMOUS_USER_ANNOTATION_KEY
+        ) or request.form.get("token")
+        if not (token and is_valid_uuid(token)):
+            token = str(uuid.uuid4())
+            IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = token
+        token = get_token(
+            username="anonymous-" + token,
+            groups=[],
+        )
+    else:
+        user = plone.api.user.get_current()
+        token = get_token(
+            username=user and user.getUserName() or None,
+            groups=user
+            and [g.getId() for g in plone.api.group.get_groups(user=user) or []],
+        )
     return token and "Bearer " + token or None
 
 

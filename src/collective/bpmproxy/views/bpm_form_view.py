@@ -14,6 +14,7 @@ from collective.bpmproxy.client import (
     submit_task_form,
 )
 from collective.bpmproxy.interfaces import (
+    ANONYMOUS_USER_ANNOTATION_KEY,
     ATTACHMENTS_KEY_KEY,
     FORM_DATA_KEY,
     HTTPMethod,
@@ -28,6 +29,7 @@ from Products.CMFPlone.browser.interfaces import INavigationBreadcrumbs
 from Products.CMFPlone.browser.navigation import PhysicalNavigationBreadcrumbs
 from Products.Five.browser import BrowserView
 from uuid import UUID, uuid4
+from zope.annotation import IAnnotations
 from zope.interface import implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 
@@ -149,6 +151,11 @@ class BpmProxyStartFormView(BrowserView):
                 next_tasks = get_next_tasks(client, process.id) if process else []
                 for task in next_tasks:
                     url = "/".join([self.context.absolute_url(), "@@task", task.id])
+                    token = IAnnotations(self.request).get(
+                        ANONYMOUS_USER_ANNOTATION_KEY
+                    )
+                    if token:
+                        url += "?token=" + token
                     if self.context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
@@ -269,6 +276,11 @@ class BpmProxyTaskFormView(BrowserView):
                 next_tasks = get_next_tasks(client, task.process_instance_id)
                 for task in next_tasks:
                     url = "/".join([self.context.absolute_url(), "@@task", task.id])
+                    token = IAnnotations(self.request).get(
+                        ANONYMOUS_USER_ANNOTATION_KEY
+                    )
+                    if token:
+                        url += "?token=" + token
                     if self.context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
