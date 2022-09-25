@@ -6,7 +6,9 @@ import NavigatedViewer from "bpmn-js/lib/NavigatedViewer";
 
 const ready = async (fn) => {
   if (document.readyState != "loading") {
-    await fn();
+    setTimeout(async () => {
+      await fn();
+    }, 0);
   } else {
     document.addEventListener("DOMContentLoaded", fn);
   }
@@ -30,7 +32,7 @@ ready(async () => {
   }
 
   const diagram = document.getElementById("collective-bpmproxy-diagram");
-  if (diagram && diagram.dataset.bpmn20_xml && diagram.dataset.element) {
+  if (diagram && diagram.dataset.bpmn20_xml) {
     const viewer = new NavigatedViewer({
       additionalModules: [ModelingModule],
       container: "#collective-bpmproxy-diagram",
@@ -40,9 +42,11 @@ ready(async () => {
       const canvas = viewer.get("canvas");
       const modeling = viewer.get("modeling");
       const registry = viewer.get("elementRegistry");
-      const element = registry.get(diagram.dataset.element);
       canvas.zoom("fit-viewport");
-      modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
+      if (!!diagram.dataset.element) {
+          const element = registry.get(diagram.dataset.element);
+          modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
+      }
     } catch (err) {
       console.log("error rendering", err);
     }

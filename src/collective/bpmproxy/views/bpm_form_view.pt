@@ -5,13 +5,45 @@
       i18n:domain="collective.bpmproxy"
       metal:use-macro="context/main_template/macros/master">
 <body>
-  <metal:block fill-slot="content-core">
-    <div data-pat-autotoc="levels: .tab; section: section; className: autotabs"
-         class="rowlike pat-autotoc"
-         tal:omit-tag="not:view/tasks|nothing">
-    <div data-pat-autotoc="levels: .tab; section: section; className: autotabs"
-         class="rowlike pat-autotoc"
-         tal:omit-tag="not:view/diagram_xml|nothing">
+  <metal:block fill-slot="main">
+  <div id="viewlet-above-content-body" tal:content="structure provider:plone.abovecontentbody" />
+  <div id="content-core">
+  <metal:content-core define-slot="content-core">
+  <metal:content-core metal:define-macro="content-core">
+
+  <div data-pat-autotoc="levels: .tab; section: section; className: autotabs"
+       class="rowlike pat-autotoc" tal:omit-tag="not:view/tabs|nothing">
+    <section tal:omit-tag="not:view/tasks|nothing">
+      <section tal:omit-tag="not:view/diagram_xml|nothing">
+        <tal:condition condition="view/tabs|nothing">
+        <h2 class="tab" style="display: none;" i18n:translate="" tal:condition="not:view/task_title|nothing">Submission form</h2>
+        <h2 class="tab" style="display: none;" i18n:translate="" tal:condition="view/task_title|nothing">Task form</h2>
+        </tal:condition>
+        <div id="collective-bpmproxy-form"
+             style="margin-left: -16px"
+           tal:attributes="data-schema view/schema|string:{};
+          data-data view/data|string:{}">
+          <!-- MODELER FORM PLACEHOLDER -->
+        </div>
+        <form id="collective-bpmproxy-form-submit"
+              action="" method="POST">
+          <span tal:replace="structure context/@@authenticator/authenticator"/>
+          <input type="hidden"
+                 id="collective-bpmproxy-form-data"
+                 name="collective-bpmproxy-form-data"
+                 value="{}"/>
+        </form>
+      </section>
+    </section>
+    <section tal:condition="view/diagram_xml|nothing">
+      <h2 class="tab" style="display: none;" i18n:translate="">Process diagram</h2>
+      <div id="collective-bpmproxy-diagram"
+           style="height:50vh;min-height:400px;"
+       tal:attributes="data-bpmn20_xml view/diagram_xml;
+                       data-element view/task_definition_key|nothing;">
+        <!-- HERE BE DIAGRAM -->
+      </div>
+    </section>
     <section tal:condition="view/tasks|nothing">
       <h2 class="tab" style="display: none;" i18n:translate="">Pending tasks</h2>
       <table
@@ -34,43 +66,19 @@
           <td class="text-nowrap" tal:content="task/assignee">johndoe</td>
           <td class="text-nowrap" tal:attributes="data-order task/created/isoformat">
             <time class="pat-display-time" data-pat-display-time="from-now: true"
-               tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
+               tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00
+            </time>
           </td>
         </tr>
         </tbody>
       </table>
     </section>
-    <section tal:omit-tag="not:view/tasks|nothing">
-    <section tal:omit-tag="not:view/diagram_xml|nothing">
-      <h2 class="tab" style="display: none;" i18n:translate="" tal:condition="view/tasks|nothing">New submission</h2>
-      <h2 class="tab" style="display: none;" i18n:translate="" tal:condition="not:view/tasks|nothing">Current task</h2>
-      <div id="collective-bpmproxy-form"
-         style="margin-left: -16px"
-          tal:attributes="data-schema view/schema|string:{};
-                          data-data view/data|string:{}">
-      <!-- MODELER FORM PLACEHOLDER -->
-    </div>
-    <form id="collective-bpmproxy-form-submit"
-          action="" method="POST">
-      <span tal:replace="structure context/@@authenticator/authenticator"/>
-      <input type="hidden"
-             id="collective-bpmproxy-form-data"
-             name="collective-bpmproxy-form-data"
-             value="{}" />
-    </form>
-    </section>
-    </section>
-    <section tal:condition="view/diagram_xml|nothing">
-    <h2 class="tab" style="display: none;" i18n:translate="">Process diagram</h2>
-    <div id="collective-bpmproxy-diagram"
-         style="height:50vh;min-height:400px;"
-         tal:attributes="data-bpmn20_xml view/diagram_xml;
-                         data-element view/task_definition_key;">
-      <!-- HERE BE DIAGRAM -->
-    </div>
-    </section>
-    </div>
-    </div>
+  </div>
+
+  </metal:content-core>
+  </metal:content-core>
+  </div>
+  <div id="viewlet-below-content-body" tal:content="structure provider:plone.belowcontentbody" />
   </metal:block>
 </body>
 </html>

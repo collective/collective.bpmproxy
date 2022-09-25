@@ -46179,18 +46179,22 @@ NavigatedViewer.prototype._modules = [].concat(
 
 var ready = function (fn) { return __awaiter(void 0, void 0, void 0, function () {
     return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                if (!(document.readyState != "loading")) return [3 /*break*/, 2];
-                return [4 /*yield*/, fn()];
-            case 1:
-                _a.sent();
-                return [3 /*break*/, 3];
-            case 2:
-                document.addEventListener("DOMContentLoaded", fn);
-                _a.label = 3;
-            case 3: return [2 /*return*/];
+        if (document.readyState != "loading") {
+            setTimeout(function () { return __awaiter(void 0, void 0, void 0, function () {
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0: return [4 /*yield*/, fn()];
+                        case 1:
+                            _a.sent();
+                            return [2 /*return*/];
+                    }
+                });
+            }); }, 100);
         }
+        else {
+            document.addEventListener("DOMContentLoaded", fn);
+        }
+        return [2 /*return*/];
     });
 }); };
 ready(function () { return __awaiter(void 0, void 0, void 0, function () {
@@ -46217,7 +46221,7 @@ ready(function () { return __awaiter(void 0, void 0, void 0, function () {
                 _a.label = 2;
             case 2:
                 diagram = document.getElementById("collective-bpmproxy-diagram");
-                if (!(diagram && diagram.dataset.bpmn20_xml && diagram.dataset.element)) return [3 /*break*/, 6];
+                if (!(diagram && diagram.dataset.bpmn20_xml)) return [3 /*break*/, 6];
                 viewer = new NavigatedViewer({
                     additionalModules: [ModelingModule],
                     container: "#collective-bpmproxy-diagram"
@@ -46231,9 +46235,11 @@ ready(function () { return __awaiter(void 0, void 0, void 0, function () {
                 canvas = viewer.get("canvas");
                 modeling = viewer.get("modeling");
                 registry = viewer.get("elementRegistry");
-                element = registry.get(diagram.dataset.element);
                 canvas.zoom("fit-viewport");
-                modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
+                if (!!diagram.dataset.element) {
+                    element = registry.get(diagram.dataset.element);
+                    modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
+                }
                 return [3 /*break*/, 6];
             case 5:
                 err_1 = _a.sent();

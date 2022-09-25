@@ -73,8 +73,16 @@ class BpmProxyStartFormView(BrowserView):
         self.schema = "{}"
         self.tasks = []
 
+        self.tabs = False
+
     def _view(self):
         with camunda_client() as client:
+            # Get diagram
+            if self.context.diagram_enabled:
+                self.diagram_xml = get_diagram_xml(
+                    client, definition_key=self.context.process_definition_key
+                )
+
             self.data, self.schema = get_start_form(
                 client,
                 self.context.process_definition_key,
@@ -82,6 +90,9 @@ class BpmProxyStartFormView(BrowserView):
                 interpolator=IStringInterpolator(self.context),
             )
             self.tasks = get_available_tasks(client, context_key=IUUID(self.context))
+
+        if self.context.diagram_enabled or self.tasks:
+            self.tabs = True
         return self.index()
 
     def _submit(self):
@@ -144,6 +155,9 @@ class BpmProxyStartFormView(BrowserView):
                     break
             except ApiException:
                 pass  # process may have already ended
+
+        if self.context.diagram_enabled or self.tasks:
+            self.tabs = True
         return self.index()
 
     def __call__(self):
@@ -164,6 +178,7 @@ class BpmProxyTaskFormView(BrowserView):
 
         self.data = "{}"
         self.schema = "{}"
+        self.tabs = False
         self.task_id = None
         self.task_title = None
         self.task_description = None
@@ -210,6 +225,9 @@ class BpmProxyTaskFormView(BrowserView):
                 logger.error("Exception when fetching task for rendering: %s\n", e)
                 logger.warning(e)
                 raise NotFound(self, self.task_id, self.request)
+
+        if self.context.diagram_enabled:
+            self.tabs = True
         return self.index()
 
     def _submit(self, task):
@@ -257,6 +275,9 @@ class BpmProxyTaskFormView(BrowserView):
                     break
             except ApiException:
                 pass  # process may have already ended
+
+        if self.context.diagram_enabled:
+            self.tabs = True
         return self.index()
 
     def __call__(self):

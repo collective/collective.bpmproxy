@@ -170,7 +170,11 @@ def get_task_variables(client, task_id):
     return flatten_variables(variables)
 
 
-def get_diagram_xml(client, definition_id):
+def get_diagram_xml(client, definition_id=None, definition_key=None):
     api = generic_camunda_client.ProcessDefinitionApi(client)
-    dto = api.get_process_definition_bpmn20_xml(definition_id)
+    dto = (
+        api.get_process_definition_bpmn20_xml(definition_id)
+        if definition_id
+        else api.get_process_definition_bpmn20_xml_by_key(definition_key)
+    )
     return dto.bpmn20_xml
