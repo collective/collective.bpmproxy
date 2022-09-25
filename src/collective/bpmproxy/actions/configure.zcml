@@ -1,0 +1,42 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:plone="http://namespaces.plone.org/plone"
+  i18n_domain="collective.bpmproxy">
+
+  <!-- BpmSignal action definition -->
+
+  <include package="plone.app.contentrules" />
+
+  <adapter factory=".signal.BpmSignalActionExecutor"/>
+  <!--
+  <adapter factory=".signal.PayloadValidator"/>
+  -->
+
+  <browser:page
+    for="plone.app.contentrules.browser.interfaces.IRuleActionAdding"
+    name="plone.actions.BpmSignal"
+    class=".signal.BpmSignalAddFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <browser:page
+    for="collective.bpmproxy.actions.signal.IBpmSignalAction"
+    name="edit"
+    class=".signal.BpmSignalEditFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <plone:ruleAction
+    name="plone.actions.BpmSignal"
+    title="Broadcast BPM Signal"
+    description="Call an signal related to the triggering object"
+    for="*"
+    event="*"
+    addview="plone.actions.BpmSignal"
+    editview="edit"
+    schema=".signal.IBpmSignalAction"
+    factory=".signal.BpmSignalAction"
+  />
+
+</configure>

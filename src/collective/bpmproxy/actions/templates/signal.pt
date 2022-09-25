@@ -1,0 +1,29 @@
+<metal:block use-macro="context/@@ploneform-macros/titlelessform" />
+<tal:i18n i18n:domain="collective.bpmproxy">
+  <h1 i18n:translate="title_contentrules_mailsub">Substitutions</h1>
+
+  <p i18n:translate="description-contentrules-signalsub">
+    Content in the name and process vaiables payload
+    may be replaced with "$&#123;&#125;" variables from the table below.
+  </p>
+
+  <table class="listing">
+    <thead>
+    <tr>
+      <th i18n:translate="category-contentrules-mailsub">Category</th>
+      <th i18n:translate="variable-contentrules-mailsub">Variable</th>
+      <th i18n:translate="substitution-contentrules-mailsub">Substitution</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tal:block tal:define="sublist here/@@stringinterp_info/substitutionList"
+       tal:repeat="category sublist">
+      <tr tal:repeat="item python:category['items']">
+        <td tal:content="category/category">All Content</td>
+        <td>${<span tal:replace="item/id">url</span>}</td>
+        <td tal:content="item/description">URL</td>
+      </tr>
+    </tal:block>
+    </tbody>
+  </table>
+</tal:i18n>

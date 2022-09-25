@@ -8,6 +8,19 @@
     provides="Products.CMFPlone.interfaces.IPatternsSettings"
     name="collective_bpmproxy" />
 
+  <adapter
+    for="..actions.signal.IBpmSignalAction * *"
+    factory=".patterns.PatternsSettings"
+    provides="Products.CMFPlone.interfaces.IPatternsSettings"
+    name="collective_bpmproxy" />
+
+  <adapter
+    for="plone.uuid.interfaces.IUUIDAware"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.UUIDSubstitution"
+    name="uuid"
+  />
+
   <adapter factory=".security.AttachmentsLocalRoleProvider" />
 
 </configure>

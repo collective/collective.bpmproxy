@@ -44,6 +44,6 @@
 
   <include package=".adapters" />
 
-  <include package=".subscribers" />
+  <include package=".actions" />
 
 </configure>
