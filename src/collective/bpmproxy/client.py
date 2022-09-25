@@ -109,22 +109,40 @@ def camunda_admin_client():
 
 
 def get_start_form(
-    client, definition_key, current_values=None, default_values=None, interpolator=None
+    client,
+    definition_key,
+    current_values=None,
+    default_values=None,
+    interpolator=None,
+    context=None,
 ):
     api = generic_camunda_client.ProcessDefinitionApi(client)
     with open(api.get_deployed_start_form_by_key(definition_key)) as fp:
         return prepare_camunda_form(
-            fp.read(), current_values or {}, default_values or {}, interpolator
+            fp.read(),
+            current_values or {},
+            default_values or {},
+            interpolator,
+            context,
         )
 
 
 def get_task_form(
-    client, task_id, current_values=None, default_values=None, interpolator=None
+    client,
+    task_id,
+    current_values=None,
+    default_values=None,
+    interpolator=None,
+    context=None,
 ):
     api = generic_camunda_client.TaskApi(client)
     with open(api.get_deployed_form(task_id)) as fp:
         return prepare_camunda_form(
-            fp.read(), current_values or {}, default_values or {}, interpolator
+            fp.read(),
+            current_values or {},
+            default_values or {},
+            interpolator,
+            context,
         )
 
 

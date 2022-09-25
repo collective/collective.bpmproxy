@@ -85,11 +85,13 @@ class BpmProxyStartFormView(BrowserView):
                     client, definition_key=self.context.process_definition_key
                 )
 
+            # TODO: get_start_form should return data with and without values keys
             self.data, self.schema = get_start_form(
                 client,
                 self.context.process_definition_key,
                 default_values=self.context.default_values,
                 interpolator=IStringInterpolator(self.context),
+                context=self.context,
             )
             self.tasks = get_available_tasks(client, context_key=IUUID(self.context))
 
@@ -101,16 +103,18 @@ class BpmProxyStartFormView(BrowserView):
         with camunda_client() as client:
             current_values = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             interpolator = IStringInterpolator(self.context)
+            # TODO: get_start_form should return data with and without values keys
             self.data, self.schema = get_start_form(
                 client,
                 self.context.process_definition_key,
                 current_values=current_values,
                 default_values=self.context.default_values,
                 interpolator=interpolator,
+                context=None,
             )
             try:
                 # Validate
-                validate_camunda_form(self.data, self.schema)
+                validate_camunda_form(self.data, self.schema, self.context)
                 # Submit
                 business_key = IUUID(self.context) + ":" + str(uuid4())
                 process_variables = self.context.process_variables.copy()
@@ -221,12 +225,14 @@ class BpmProxyTaskFormView(BrowserView):
                 except (TypeError, ValueError):
                     pass
 
+                # TODO: get_task_form should return data with and without values keys
                 self.data, self.schema = get_task_form(
                     client,
                     self.task_id,
                     current_values=current_values,
                     default_values=self.context.default_values,
                     interpolator=IStringInterpolator(self.context),
+                    context=self.context,
                 )
             except ApiException as e:
                 logger.error("Exception when fetching task for rendering: %s\n", e)
@@ -243,15 +249,17 @@ class BpmProxyTaskFormView(BrowserView):
             current_values.update(
                 json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             )
+            # TODO: get_task_form should return data with and without values keys
             self.data, self.schema = get_task_form(
                 client,
                 self.task_id,
                 current_values=current_values,
                 default_values=self.context.default_values,
                 interpolator=IStringInterpolator(self.context),
+                context=None,
             )
             try:
-                validate_camunda_form(self.data, self.schema)
+                validate_camunda_form(self.data, self.schema, self.context)
                 submit_task_form(client, self.task_id, json.loads(self.data))
                 plone.api.portal.show_message(
                     message=_("Submit successful."),

@@ -1,7 +1,10 @@
 from Acquisition import aq_inner, aq_parent
 from concurrent.futures import ThreadPoolExecutor
 from transaction.interfaces import IDataManager
+from zope.component import getUtility
 from zope.interface import implementer
+from zope.interface.interfaces import ComponentLookupError
+from zope.schema.interfaces import IVocabularyFactory
 
 import json
 import logging
@@ -55,7 +58,9 @@ def interpolate(value, interpolator):
     return value
 
 
-def prepare_camunda_form(schema_json, default_data, default_values, interpolator):
+def prepare_camunda_form(
+    schema_json, default_data, default_values, interpolator, context
+):
     schema = json.loads(schema_json)
     data = {}
     for component in schema.get("components") or []:
@@ -68,13 +73,27 @@ def prepare_camunda_form(schema_json, default_data, default_values, interpolator
                 data[key] = value
         elif key in default_values:
             data[key] = interpolate(default_values[key], interpolator)
+        if (
+            context is not None
+            and "valuesKey" in component
+            and "vocabulary" in component.get("properties")
+        ):
+            try:
+                name = component["properties"]["vocabulary"]
+                factory = getUtility(IVocabularyFactory, name)
+                vocabulary = factory(context)
+                data[component["valuesKey"]] = [
+                    {"label": term.title, "value": term.token} for term in vocabulary
+                ]
+            except ComponentLookupError:
+                pass
     return (
         json.dumps(data),
         json.dumps(schema),
     )
 
 
-def validate_camunda_form(data_json, schema_json):
+def validate_camunda_form(data_json, schema_json, context=None):
     data = json.loads(data_json)
     schema = json.loads(schema_json)
 
@@ -85,6 +104,21 @@ def validate_camunda_form(data_json, schema_json):
 
         key = component.get("key")
         validation = component.get("validate") or {}
+
+        if "valuesKey" in component and "vocabulary" in component.get("properties"):
+            try:
+                name = component["properties"]["vocabulary"]
+                factory = getUtility(IVocabularyFactory, name)
+                vocabulary = factory(context)
+                assert vocabulary.getTermByToken(data.get(key)), (
+                    "Field " + key + " must be selected from given options."
+                )
+            except ComponentLookupError:
+                raise AssertionError("Field " + key + " must define vocabulary.")
+            except LookupError:
+                raise AssertionError(
+                    "Field " + key + " must be selected from given options."
+                )
 
         pattern = validation.get("pattern")
         assert not pattern or re.match(pattern, data.get(key) or ""), (
