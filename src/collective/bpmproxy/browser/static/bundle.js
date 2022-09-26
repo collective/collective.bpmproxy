@@ -46189,7 +46189,7 @@ var ready = function (fn) { return __awaiter(void 0, void 0, void 0, function ()
                             return [2 /*return*/];
                     }
                 });
-            }); }, 0);
+            }); }, 100);
         }
         else {
             document.addEventListener("DOMContentLoaded", fn);
@@ -46198,7 +46198,7 @@ var ready = function (fn) { return __awaiter(void 0, void 0, void 0, function ()
     });
 }); };
 ready(function () { return __awaiter(void 0, void 0, void 0, function () {
-    var inputForm, submitForm, submitInput, form, schema, data;
+    var inputForm, submitForm, submitInput, form, schema, data, diagram, viewer, canvas, modeling, registry, element, err_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -46220,45 +46220,32 @@ ready(function () { return __awaiter(void 0, void 0, void 0, function () {
                 });
                 _a.label = 2;
             case 2:
-                setTimeout(function () { return __awaiter(void 0, void 0, void 0, function () {
-                    var diagram, viewer_1, err_1;
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0:
-                                diagram = document.getElementById("collective-bpmproxy-diagram");
-                                if (!(diagram && diagram.dataset.bpmn20_xml)) return [3 /*break*/, 4];
-                                viewer_1 = new NavigatedViewer({
-                                    additionalModules: [ModelingModule],
-                                    container: "#collective-bpmproxy-diagram"
-                                });
-                                _a.label = 1;
-                            case 1:
-                                _a.trys.push([1, 3, , 4]);
-                                return [4 /*yield*/, viewer_1.importXML(diagram.dataset.bpmn20_xml)];
-                            case 2:
-                                (_a.sent()).warnings;
-                                setTimeout(function () {
-                                    var canvas = viewer_1.get("canvas");
-                                    canvas.zoom("fit-viewport");
-                                }, 100);
-                                if (!!diagram.dataset.element) {
-                                    setTimeout(function () {
-                                        var registry = viewer_1.get("elementRegistry");
-                                        var element = registry.get(diagram.dataset.element);
-                                        var modeling = viewer_1.get("modeling");
-                                        modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
-                                    }, 100);
-                                }
-                                return [3 /*break*/, 4];
-                            case 3:
-                                err_1 = _a.sent();
-                                console.log("error rendering", err_1);
-                                return [3 /*break*/, 4];
-                            case 4: return [2 /*return*/];
-                        }
-                    });
-                }); }, 100);
-                return [2 /*return*/];
+                diagram = document.getElementById("collective-bpmproxy-diagram");
+                if (!(diagram && diagram.dataset.bpmn20_xml)) return [3 /*break*/, 6];
+                viewer = new NavigatedViewer({
+                    additionalModules: [ModelingModule],
+                    container: "#collective-bpmproxy-diagram"
+                });
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 5, , 6]);
+                return [4 /*yield*/, viewer.importXML(diagram.dataset.bpmn20_xml)];
+            case 4:
+                (_a.sent()).warnings;
+                canvas = viewer.get("canvas");
+                modeling = viewer.get("modeling");
+                registry = viewer.get("elementRegistry");
+                canvas.zoom("fit-viewport");
+                if (!!diagram.dataset.element) {
+                    element = registry.get(diagram.dataset.element);
+                    modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
+                }
+                return [3 /*break*/, 6];
+            case 5:
+                err_1 = _a.sent();
+                console.log("error rendering", err_1);
+                return [3 /*break*/, 6];
+            case 6: return [2 /*return*/];
         }
     });
 }); });

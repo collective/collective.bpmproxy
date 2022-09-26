@@ -31,31 +31,24 @@ ready(async () => {
     });
   }
 
-  setTimeout(async () => {
-      const diagram = document.getElementById("collective-bpmproxy-diagram");
-      if (diagram && diagram.dataset.bpmn20_xml) {
-          const viewer = new NavigatedViewer({
-              additionalModules: [ModelingModule],
-              container: "#collective-bpmproxy-diagram",
-          });
-          try {
-              const { warnings } = await viewer.importXML(diagram.dataset.bpmn20_xml);
-              setTimeout(() => {
-                  const canvas = viewer.get("canvas");
-                  canvas.zoom("fit-viewport");
-              }, 100);
-              if (!!diagram.dataset.element) {
-                  setTimeout(() => {
-                      const registry = viewer.get("elementRegistry");
-                      const element = registry.get(diagram.dataset.element);
-                      const modeling = viewer.get("modeling");
-                      modeling.setColor(element, {stroke: "#000000", fill: "#FFFF00"});
-                  }, 100);
-              }
-          } catch (err) {
-              console.log("error rendering", err);
-          }
+  const diagram = document.getElementById("collective-bpmproxy-diagram");
+  if (diagram && diagram.dataset.bpmn20_xml) {
+    const viewer = new NavigatedViewer({
+      additionalModules: [ModelingModule],
+      container: "#collective-bpmproxy-diagram",
+    });
+    try {
+      const { warnings } = await viewer.importXML(diagram.dataset.bpmn20_xml);
+      const canvas = viewer.get("canvas");
+      const modeling = viewer.get("modeling");
+      const registry = viewer.get("elementRegistry");
+      canvas.zoom("fit-viewport");
+      if (!!diagram.dataset.element) {
+          const element = registry.get(diagram.dataset.element);
+          modeling.setColor(element, { stroke: "#000000", fill: "#FFFF00" });
       }
-  }, 100);
-
+    } catch (err) {
+      console.log("error rendering", err);
+    }
+  }
 });
