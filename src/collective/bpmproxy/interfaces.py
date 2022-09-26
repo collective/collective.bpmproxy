@@ -7,7 +7,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 ANONYMOUS_USER_ANNOTATION_KEY = "collective.bpmproxy.anonymous"
 ATTACHMENTS_CONTAINER_TYPE = "Bpm Attachments"
 ATTACHMENTS_DEFAULT_TYPE = "Bpm Attachment"
-ATTACHMENTS_KEY_KEY = "attachmentsKey"
+BUSINESS_KEY_VARIABLE_NAME = "businessKey"  # injected by EngineTaskBusinessKeyListener
 CAMUNDA_ADMIN_USER = "admin"
 CAMUNDA_ADMIN_GROUP = "camunda-admin"
 CAMUNDA_API_PRIVATE_KEY_ENV = "CAMUNDA_API_PRIVATE_KEY"

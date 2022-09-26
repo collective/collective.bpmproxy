@@ -8,12 +8,13 @@ from collective.bpmproxy.client import (
 from collective.bpmproxy.interfaces import (
     ATTACHMENTS_CONTAINER_TYPE,
     ATTACHMENTS_DEFAULT_TYPE,
-    ATTACHMENTS_KEY_KEY,
+    BUSINESS_KEY_VARIABLE_NAME,
 )
 from generic_camunda_client import ApiException
 from plone.dexterity.utils import createContentInContainer
 from plone.uuid.interfaces import IUUID
 from Products.Five import BrowserView
+from uuid import UUID
 from zope.i18n import translate
 from zope.publisher.interfaces import NotFound
 
@@ -35,9 +36,16 @@ class BpmProxyTaskAttachmentsView(BrowserView):
                 if not len([t for t in tasks if t.id == self.task_id]):
                     raise NotFound(self, self.task_id, self.request)
 
-                key = get_task_variables(client, self.task_id).get(ATTACHMENTS_KEY_KEY)
-                if not key:
+                # Parse attachments container UUID from injected business key variable
+                try:
+                    key = get_task_variables(client, self.task_id)[
+                        BUSINESS_KEY_VARIABLE_NAME
+                    ]
+                    if ":" in key:
+                        key = str(UUID(key.split(":")[-1]))
+                except (KeyError, TypeError, ValueError):
                     raise NotFound(self, self.task_id, self.request)
+
                 tasks = get_available_tasks(
                     client, context_key=IUUID(self.context), attachments_key=key
                 )

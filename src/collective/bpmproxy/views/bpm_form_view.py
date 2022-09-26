@@ -15,7 +15,7 @@ from collective.bpmproxy.client import (
 )
 from collective.bpmproxy.interfaces import (
     ANONYMOUS_USER_ANNOTATION_KEY,
-    ATTACHMENTS_KEY_KEY,
+    BUSINESS_KEY_VARIABLE_NAME,
     FORM_DATA_KEY,
     HTTPMethod,
     PloneNotificationLevel,
@@ -118,8 +118,6 @@ class BpmProxyStartFormView(BrowserView):
                 # Submit
                 business_key = IUUID(self.context) + ":" + str(uuid4())
                 process_variables = self.context.process_variables.copy()
-                if self.context.attachments_enabled:
-                    process_variables[ATTACHMENTS_KEY_KEY] = business_key.split(":")[-1]
                 process = submit_start_form(
                     client,
                     self.context.process_definition_key,
@@ -218,11 +216,11 @@ class BpmProxyTaskFormView(BrowserView):
 
                 # Enable attachments when possible.
                 try:
-                    self.attachments_key = str(
-                        UUID(current_values.get(ATTACHMENTS_KEY_KEY))
-                    )
-                    self.attachments_enabled = bool(self.attachments_key)
-                except (TypeError, ValueError):
+                    business_key = current_values[BUSINESS_KEY_VARIABLE_NAME]
+                    if ":" in business_key and self.context.attachments_enabled:
+                        self.attachments_key = str(UUID(business_key.split(":")[-1]))
+                        self.attachments_enabled = bool(self.attachments_key)
+                except (KeyError, TypeError, ValueError):
                     pass
 
                 # TODO: get_task_form should return data with and without values keys
