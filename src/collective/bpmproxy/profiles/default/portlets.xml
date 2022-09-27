@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<portlets
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    i18n:domain="plone">
+  <!-- Extra portlets here  -->
+
+  <portlet
+    addview="collective.bpmproxy.portlets.Tasks"
+    title="Tasks"
+    description="A portlet which can render weather of the given place."
+    i18n:attributes="title title_tasks;
+                     description description_tasks">
+
+    <!-- This will enable the portlet for right column,
+    left column and the footer too.
+    -->
+    <for interface="plone.app.portlets.interfaces.IColumn" />
+
+    <!--
+    This will enable the portlet in the dashboard.
+    -->
+    <!--<for interface="plone.app.portlets.interfaces.IDashboard" />-->
+
+  </portlet>
+  
+  
+</portlets>

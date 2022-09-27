@@ -1,0 +1,18 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:plone="http://namespaces.plone.org/plone">
+
+  <include package="plone.app.portlets" />
+
+  <!-- '-*- extra stuff goes here -*-' -->
+
+  <plone:portlet
+    name="collective.bpmproxy.portlets.Tasks"
+    interface=".tasks.ITasksPortlet"
+    assignment=".tasks.Assignment"
+    renderer=".tasks.Renderer"
+    addview=".tasks.AddForm"
+    editview=".tasks.EditForm" />
+    
+</configure>

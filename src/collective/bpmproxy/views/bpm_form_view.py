@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
-
 from collective.bpmproxy import _
 from collective.bpmproxy.client import (
     camunda_client,
