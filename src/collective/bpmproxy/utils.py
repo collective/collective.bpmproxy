@@ -1,6 +1,8 @@
 from Acquisition import aq_inner, aq_parent
 from concurrent.futures import ThreadPoolExecutor
+from plone.stringinterp.interfaces import IStringInterpolator
 from transaction.interfaces import IDataManager
+from uuid import UUID
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.interface.interfaces import ComponentLookupError
@@ -58,42 +60,57 @@ def interpolate(value, interpolator):
     return value
 
 
-def prepare_camunda_form(
-    schema_json, default_data, default_values, interpolator, context
-):
+def prepare_camunda_form(schema_json, default_data, default_values, context):
     schema = json.loads(schema_json)
     data = {}
+    options = {}
+    interpolator = IStringInterpolator(context)
+
     for component in schema.get("components") or []:
         key = component.get("key")
+        default_value = component.get("defaultValue")
+
+        if default_value:
+            component["defaultValue"] = interpolate(
+                component["defaultValue"], interpolator
+            )
+            # Allow saving of default value for disabled fields
+            if component.get("disabled"):
+                data[key] = component["defaultValue"]
+
         if default_data.get(key) is not None:
             value = default_data[key]
             if isinstance(value, six.text_type):
                 data[key] = value.strip()
             else:
                 data[key] = value
+
         elif key in default_values:
             data[key] = interpolate(default_values[key], interpolator)
-        if (
-            context is not None
-            and "valuesKey" in component
-            and "vocabulary" in component.get("properties")
-        ):
+
+        # Populate dynamic data for fields with property vocabulary
+        # See: https://github.com/bpmn-io/form-js/pull/270
+        if context and (component.get("properties") or {}).get("vocabulary"):
+            name = component["properties"]["vocabulary"]
             try:
-                name = component["properties"]["vocabulary"]
                 factory = getUtility(IVocabularyFactory, name)
                 vocabulary = factory(context)
-                data[component["valuesKey"]] = [
+                component["valuesKey"] = name + ".values"
+                options[component["valuesKey"]] = [
                     {"label": term.title, "value": term.token} for term in vocabulary
                 ]
             except ComponentLookupError:
                 pass
+
+    options.update(data)
     return (
         json.dumps(data),
+        json.dumps(options),
         json.dumps(schema),
     )
 
 
-def validate_camunda_form(data_json, schema_json, context=None):
+def validate_camunda_form(data_json, schema_json, context):
     data = json.loads(data_json)
     schema = json.loads(schema_json)
 
@@ -230,3 +247,11 @@ class SideEffectDataManager(object):
 
     def savepoint(self):
         return transaction._transaction.NoRollbackSavepoint(self)
+
+
+def is_valid_uuid(uuid_to_test, version=4):
+    try:
+        uuid_obj = UUID(uuid_to_test, version=version)
+    except ValueError:
+        return False
+    return str(uuid_obj) == uuid_to_test or uuid_obj.hex == uuid_to_test

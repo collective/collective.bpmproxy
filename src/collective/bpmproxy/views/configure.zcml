@@ -20,7 +20,7 @@
     />
 
   <browser:page
-    name="task"
+    name="bpm-task"
     for="..content.bpm_proxy.IBpmProxy"
     class=".bpm_form_view.BpmProxyTaskFormView"
     template="bpm_form_view.pt"

@@ -14,5 +14,12 @@
     renderer=".tasks.Renderer"
     addview=".tasks.AddForm"
     editview=".tasks.EditForm" />
-    
+
+  <browser:page
+    name="redirect-to-bpm-task"
+    for="*"
+    class=".tasks.RedirectView"
+    permission="zope.Public"
+    />
+
 </configure>

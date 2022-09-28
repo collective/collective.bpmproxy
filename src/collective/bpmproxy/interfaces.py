@@ -5,6 +5,7 @@ from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 
 
 ANONYMOUS_USER_ANNOTATION_KEY = "collective.bpmproxy.anonymous"
+ANONYMOUS_USER_PREFIX = "anonymous-"
 ATTACHMENTS_CONTAINER_TYPE = "Bpm Attachments"
 ATTACHMENTS_DEFAULT_TYPE = "Bpm Attachment"
 BUSINESS_KEY_VARIABLE_NAME = "businessKey"  # injected by EngineTaskBusinessKeyListener
@@ -15,6 +16,8 @@ CAMUNDA_API_URL_DEFAULT = "http://localhost:8081/engine-rest"
 CAMUNDA_API_URL_ENV = "CAMUNDA_API_URL"
 FORM_DATA_KEY = "collective-bpmproxy-form-data"
 PLONE_ADMIN_GROUP = "Administrators"
+PLONE_TASK_VIEW = "@@bpm-task"
+PENDING_TASKS_MAX_RESULTS = 25
 
 
 class HTTPMethod:

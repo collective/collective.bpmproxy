@@ -1,11 +1,60 @@
-<div class="weather">
-    <h3>Weather Report</h3>
-    <span tal:content="view/weather_report"></span>
-    <br>
-    Pressure: 
-    <span tal:content="view/get_pressure"></span>
-    <br>
-    Humidity: 
-    <span tal:content="view/get_humidity"></span>
-    <br>
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+   tal:omit-tag="">
+
+<div class="card portlet portletWorkflowReview"
+   i18n:domain="collective.bpmproxy">
+
+  <div class="card-header" i18n:translate="">
+      <span tal:omit-tag="python:True" i18n:translate="">
+        Pending tasks
+      </span>
+    <tal:comment replace="nothing">
+      <a href="#"
+         class="tile"
+         tal:define="full_review_link view/full_review_link"
+         tal:omit-tag="not:full_review_link"
+         tal:attributes="href full_review_link"
+         i18n:translate=""
+         tal:content="view/title" />
+    </tal:comment>
+  </div>
+
+  <div class="card-body">
+    <ul>
+      <tal:items tal:repeat="task view/tasks">
+        <li class="portletItem"
+           tal:define="oddrow repeat/task/odd;"
+           tal:attributes="class python:oddrow and 'portletItem even' or 'portletItem odd'">
+
+          <a href="#"
+             tal:attributes="href string:${view/base_url}/${task/id};
+                             title task/description;">
+            <span tal:replace="task/name">Title</span>
+          </a>
+          <span class="portletItemDetails">
+              <span tal:replace="task/assignee">Jim Smith</span> &mdash;
+              <time class="pat-display-time" data-pat-display-time="from-now: true"
+                    tal:attributes="datetime task/created/isoformat">2022-06-04T15:58:45+03:00</time>
+          </span>
+
+        </li>
+      </tal:items>
+    </ul>
+  </div>
+
+  <tal:comment replace="nothing">
+    <div class="card-footer"
+       tal:define="full_review_link view/full_review_link"
+       tal:condition="full_review_link">
+      <a href="#"
+         class="tile"
+         tal:attributes="href full_review_link"
+         i18n:translate="box_full_review_list">Full review list&hellip;</a>
+    </div>
+  </tal:comment>
+
 </div>
+
+</html>

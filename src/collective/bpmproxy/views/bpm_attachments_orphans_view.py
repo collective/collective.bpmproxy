@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
 from collective.bpmproxy.client import camunda_client, get_available_tasks
 from collective.bpmproxy.content.bpm_attachments import IBpmAttachments
 from collective.bpmproxy.content.bpm_proxy import IBpmProxy

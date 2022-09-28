@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
+
 from collective.bpmproxy import _
 from collective.bpmproxy.client import (
     camunda_client,
@@ -17,12 +18,12 @@ from collective.bpmproxy.interfaces import (
     BUSINESS_KEY_VARIABLE_NAME,
     FORM_DATA_KEY,
     HTTPMethod,
+    PLONE_TASK_VIEW,
     PloneNotificationLevel,
 )
 from collective.bpmproxy.utils import validate_camunda_form
 from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
-from plone.stringinterp.interfaces import IStringInterpolator
 from plone.uuid.interfaces import IUUID
 from Products.CMFPlone.browser.interfaces import INavigationBreadcrumbs
 from Products.CMFPlone.browser.navigation import PhysicalNavigationBreadcrumbs
@@ -53,7 +54,7 @@ class BpmProxyNavigationBreadcrumbs(PhysicalNavigationBreadcrumbs):
             return base + (
                 {
                     "absolute_url": "/".join(
-                        [self.context.absolute_url(), "@@task", task_id]
+                        [self.context.absolute_url(), PLONE_TASK_VIEW, task_id]
                     ),
                     "Title": task_title,
                 },
@@ -67,6 +68,8 @@ class BpmProxyNavigationBreadcrumbs(PhysicalNavigationBreadcrumbs):
 
 
 class BpmProxyStartFormView(BrowserView):
+    task_view = PLONE_TASK_VIEW
+
     def __init__(self, context, request):
         super(BpmProxyStartFormView, self).__init__(context, request)
 
@@ -83,16 +86,17 @@ class BpmProxyStartFormView(BrowserView):
                 self.diagram_xml = get_diagram_xml(
                     client, definition_key=self.context.process_definition_key
                 )
-
-            # TODO: get_start_form should return data with and without values keys
-            self.data, self.schema = get_start_form(
+            # Get form and data
+            __, self.data, self.schema = get_start_form(
                 client,
                 self.context.process_definition_key,
+                current_values={},
                 default_values=self.context.default_values,
-                interpolator=IStringInterpolator(self.context),
                 context=self.context,
             )
-            self.tasks = get_available_tasks(client, context_key=IUUID(self.context))
+            self.tasks = get_available_tasks(
+                client, context_key=IUUID(self.context), for_display=True
+            )
 
         if self.context.diagram_enabled or self.tasks:
             self.tabs = True
@@ -101,15 +105,12 @@ class BpmProxyStartFormView(BrowserView):
     def _submit(self):
         with camunda_client() as client:
             current_values = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
-            interpolator = IStringInterpolator(self.context)
-            # TODO: get_start_form should return data with and without values keys
-            self.data, self.schema = get_start_form(
+            self.data, __, self.schema = get_start_form(
                 client,
                 self.context.process_definition_key,
                 current_values=current_values,
                 default_values=self.context.default_values,
-                interpolator=interpolator,
-                context=None,
+                context=self.context,
             )
             try:
                 # Validate
@@ -123,7 +124,7 @@ class BpmProxyStartFormView(BrowserView):
                     business_key=business_key,
                     form_variables=json.loads(self.data),
                     process_variables=process_variables,
-                    interpolator=interpolator,
+                    context=self.context,
                 )
                 plone.api.portal.show_message(
                     message=_("Submit successful."),
@@ -131,7 +132,7 @@ class BpmProxyStartFormView(BrowserView):
                     type=PloneNotificationLevel.INFO,
                 )
                 self.tasks = get_available_tasks(
-                    client, context_key=IUUID(self.context)
+                    client, context_key=IUUID(self.context), for_display=True
                 )
             except ApiException:
                 process = None
@@ -151,7 +152,9 @@ class BpmProxyStartFormView(BrowserView):
             try:
                 next_tasks = get_next_tasks(client, process.id) if process else []
                 for task in next_tasks:
-                    url = "/".join([self.context.absolute_url(), "@@task", task.id])
+                    url = "/".join(
+                        [self.context.absolute_url(), PLONE_TASK_VIEW, task.id]
+                    )
                     token = IAnnotations(self.request).get(
                         ANONYMOUS_USER_ANNOTATION_KEY
                     )
@@ -178,6 +181,8 @@ class BpmProxyStartFormView(BrowserView):
 
 @implementer(IPublishTraverse)
 class BpmProxyTaskFormView(BrowserView):
+    task_view = PLONE_TASK_VIEW
+
     def __init__(self, context, request):
         super(BpmProxyTaskFormView, self).__init__(context, request)
 
@@ -222,13 +227,11 @@ class BpmProxyTaskFormView(BrowserView):
                 except (KeyError, TypeError, ValueError):
                     pass
 
-                # TODO: get_task_form should return data with and without values keys
-                self.data, self.schema = get_task_form(
+                __, self.data, self.schema = get_task_form(
                     client,
                     self.task_id,
                     current_values=current_values,
                     default_values=self.context.default_values,
-                    interpolator=IStringInterpolator(self.context),
                     context=self.context,
                 )
             except ApiException as e:
@@ -246,14 +249,12 @@ class BpmProxyTaskFormView(BrowserView):
             current_values.update(
                 json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             )
-            # TODO: get_task_form should return data with and without values keys
-            self.data, self.schema = get_task_form(
+            self.data, __, self.schema = get_task_form(
                 client,
                 self.task_id,
                 current_values=current_values,
                 default_values=self.context.default_values,
-                interpolator=IStringInterpolator(self.context),
-                context=None,
+                context=self.context,
             )
             try:
                 validate_camunda_form(self.data, self.schema, self.context)
@@ -280,7 +281,9 @@ class BpmProxyTaskFormView(BrowserView):
             try:
                 next_tasks = get_next_tasks(client, task.process_instance_id)
                 for task in next_tasks:
-                    url = "/".join([self.context.absolute_url(), "@@task", task.id])
+                    url = "/".join(
+                        [self.context.absolute_url(), PLONE_TASK_VIEW, task.id]
+                    )
                     token = IAnnotations(self.request).get(
                         ANONYMOUS_USER_ANNOTATION_KEY
                     )

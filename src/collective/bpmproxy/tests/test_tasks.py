@@ -15,17 +15,17 @@ class PortletIntegrationTest(unittest.TestCase):
     layer = COLLECTIVE_BPMPROXY_INTEGRATION_TESTING
 
     def setUp(self):
-        self.portal = self.layer['portal']
-        self.app = self.layer['app']
+        self.portal = self.layer["portal"]
+        self.app = self.layer["app"]
         self.request = self.app.REQUEST
-        setRoles(self.portal, TEST_USER_ID, ['Manager'])
+        setRoles(self.portal, TEST_USER_ID, ["Manager"])
 
     def test_tasks_is_registered(self):
         portlet = getUtility(
             IPortletType,
-            name='collective.bpmproxy.portlets.Tasks',
+            name="collective.bpmproxy.portlets.Tasks",
         )
-        self.assertEqual(portlet.addview, 'collective.bpmproxy.portlets.Tasks')
+        self.assertEqual(portlet.addview, "collective.bpmproxy.portlets.Tasks")
 
 
 class PortletFunctionalTest(unittest.TestCase):
@@ -33,5 +33,5 @@ class PortletFunctionalTest(unittest.TestCase):
     layer = COLLECTIVE_BPMPROXY_FUNCTIONAL_TESTING
 
     def setUp(self):
-        self.portal = self.layer['portal']
-        setRoles(self.portal, TEST_USER_ID, ['Manager'])
+        self.portal = self.layer["portal"]
+        setRoles(self.portal, TEST_USER_ID, ["Manager"])

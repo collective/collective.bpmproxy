@@ -21,6 +21,13 @@
     name="uuid"
   />
 
+  <adapter
+    for="plone.uuid.interfaces.IUUIDAware"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.HTTPRefererSubstitution"
+    name="http_referer"
+  />
+
   <adapter factory=".security.AttachmentsLocalRoleProvider" />
 
 </configure>

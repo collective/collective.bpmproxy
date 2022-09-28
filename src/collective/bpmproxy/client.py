@@ -1,21 +1,30 @@
+from collective.bpmproxy import _
 from collective.bpmproxy.interfaces import (
     ANONYMOUS_USER_ANNOTATION_KEY,
+    ANONYMOUS_USER_PREFIX,
     CAMUNDA_ADMIN_GROUP,
     CAMUNDA_ADMIN_USER,
     CAMUNDA_API_PRIVATE_KEY_ENV,
     CAMUNDA_API_URL_DEFAULT,
     CAMUNDA_API_URL_ENV,
+    PENDING_TASKS_MAX_RESULTS,
 )
 from collective.bpmproxy.utils import (
     flatten_variables,
     infer_variables,
+    is_valid_uuid,
     prepare_camunda_form,
 )
 from contextlib import contextmanager
-from generic_camunda_client import ApiException
-from uuid import UUID
+from generic_camunda_client import (
+    ApiException,
+    CompleteTaskDto,
+    StartProcessInstanceDto,
+    TaskQueryDto,
+    TaskQueryDtoSorting,
+)
+from plone.stringinterp.interfaces import IStringInterpolator
 from zope.annotation import IAnnotations
-from zope.globalrequest import getRequest
 
 import datetime
 import generic_camunda_client
@@ -51,17 +60,9 @@ def get_token(username, groups):
     )
 
 
-def is_valid_uuid(uuid_to_test, version=4):
-    try:
-        uuid_obj = UUID(uuid_to_test, version=version)
-    except ValueError:
-        return False
-    return str(uuid_obj) == uuid_to_test
-
-
 def get_authorization():
     if plone.api.user.is_anonymous():
-        request = getRequest()
+        request = plone.api.portal.getRequest()
         token = IAnnotations(request).get(
             ANONYMOUS_USER_ANNOTATION_KEY
         ) or request.form.get("token")
@@ -69,7 +70,7 @@ def get_authorization():
             token = str(uuid.uuid4())
             IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = token
         token = get_token(
-            username="anonymous-" + token,
+            username=ANONYMOUS_USER_PREFIX + token,
             groups=[],
         )
     else:
@@ -111,18 +112,16 @@ def camunda_admin_client():
 def get_start_form(
     client,
     definition_key,
-    current_values=None,
-    default_values=None,
-    interpolator=None,
-    context=None,
+    current_values,
+    default_values,
+    context,
 ):
     api = generic_camunda_client.ProcessDefinitionApi(client)
     with open(api.get_deployed_start_form_by_key(definition_key)) as fp:
         return prepare_camunda_form(
             fp.read(),
-            current_values or {},
-            default_values or {},
-            interpolator,
+            current_values,
+            default_values,
             context,
         )
 
@@ -130,34 +129,65 @@ def get_start_form(
 def get_task_form(
     client,
     task_id,
-    current_values=None,
-    default_values=None,
-    interpolator=None,
-    context=None,
+    current_values,
+    default_values,
+    context,
 ):
     api = generic_camunda_client.TaskApi(client)
     with open(api.get_deployed_form(task_id)) as fp:
         return prepare_camunda_form(
             fp.read(),
-            current_values or {},
-            default_values or {},
-            interpolator,
+            current_values,
+            default_values,
             context,
         )
 
 
-def get_available_tasks(client, context_key=None, attachments_key=None):
-    api = generic_camunda_client.TaskApi(client)
+def get_available_tasks(
+    client, context_key=None, attachments_key=None, for_display=False
+):
+    task_api = generic_camunda_client.TaskApi(client)
     needle = (context_key or "%") + ":" + (attachments_key or "%")
-    return api.query_tasks(
-        task_query_dto=dict(processInstanceBusinessKeyLike=needle),
+    tasks = (
+        task_api.query_tasks(
+            task_query_dto=TaskQueryDto(
+                process_instance_business_key_like=needle,
+                sorting=[
+                    TaskQueryDtoSorting(sort_by="dueDate", sort_order="asc"),
+                    TaskQueryDtoSorting(sort_by="created", sort_order="desc"),
+                ],
+            ),
+        )
+        if context_key or attachments_key
+        else task_api.query_tasks(
+            max_results=PENDING_TASKS_MAX_RESULTS,
+            task_query_dto=TaskQueryDto(
+                sorting=[
+                    TaskQueryDtoSorting(sort_by="dueDate", sort_order="asc"),
+                    TaskQueryDtoSorting(sort_by="created", sort_order="desc"),
+                ]
+            ),
+        )
     )
+
+    # Resolve users
+    if for_display:
+        get_member = plone.api.portal.get_tool("portal_membership").getMemberById
+        for task in tasks:
+            assignee_name = task.assignee or ""
+            if assignee_name.startswith(ANONYMOUS_USER_PREFIX):
+                task.assignee = _("Anonymous User")
+            elif task.assignee:
+                assignee = get_member(task.assignee)
+                if assignee:
+                    task.assignee = assignee.getProperty("fullname", "") or assignee
+    return tasks
 
 
 def get_next_tasks(client, process_id=None):
     api = generic_camunda_client.TaskApi(client)
     return api.query_tasks(
-        task_query_dto=dict(processInstanceId=process_id),
+        task_query_dto=TaskQueryDto(process_instance_id=process_id),
     )
 
 
@@ -167,26 +197,33 @@ def submit_start_form(
     business_key,
     form_variables,
     process_variables=None,
-    interpolator=None,
+    context=None,
 ):
     api = generic_camunda_client.ProcessDefinitionApi(client)
     variables = form_variables.copy()
-    variables.update(
-        dict([(k, interpolator(v)) for k, v in (process_variables or {}).items()])
+
+    if process_variables and context:
+        interpolator = IStringInterpolator(context)
+        variables.update(
+            dict(
+                [(k, interpolator(v)) for k, v in (process_variables or {}).items()]
+            )  # noqa
+        )
+
+    dto = StartProcessInstanceDto(
+        business_key=business_key,
+        variables=infer_variables(variables),
     )
-    payload = {
-        "businessKey": business_key,
-        "variables": infer_variables(variables),
-    }
+
     try:
         return api.start_process_instance_by_key(
-            definition_key, start_process_instance_dto=payload
+            definition_key, start_process_instance_dto=dto
         )
     except ApiException as e:
         logger.error(
             "Exception when calling ProcessDefinitionApi->start_process_instance_by_key: %s\n%s",
             e,
-            payload,
+            dto,
         )
         raise
 
@@ -197,14 +234,13 @@ def submit_task_form(
     form_variables,
 ):
     api = generic_camunda_client.TaskApi(client)
-    payload = {
-        "variables": infer_variables(form_variables),
-        "withVariablesInReturn": True,
-    }
+    dto = CompleteTaskDto(
+        variables=infer_variables(form_variables), with_variables_in_return=True
+    )
     try:
-        return api.complete(task_id, complete_task_dto=payload)
+        return api.complete(task_id, complete_task_dto=dto)
     except ApiException as e:
-        logger.error("Exception when calling TaskApi->complete: %s\n%s", e, payload)
+        logger.error("Exception when calling TaskApi->complete: %s\n%s", e, dto)
         raise
 
 
