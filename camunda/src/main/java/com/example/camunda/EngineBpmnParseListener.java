@@ -28,6 +28,7 @@ public class EngineBpmnParseListener extends AbstractBpmnParseListener {
 
     @Override
     public void parseUserTask(Element taskElement, ScopeImpl scope, ActivityImpl activity) {
+        activity.setScope(true);
         activity.addListener(ExecutionListener.EVENTNAME_START, engineTaskBusinessKeyListener);
     }
 }
