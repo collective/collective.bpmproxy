@@ -9,5 +9,10 @@
         name="collective.bpmproxy.AvailableProcessDefinitions"
     />
 
+    <utility
+        component=".task_attachments.TaskAttachmentsFactory"
+        name="collective.bpmproxy.Attachments"
+    />
+
 
 </configure>

@@ -21,7 +21,7 @@
 
   <browser:page
     name="bpm-task"
-    for="..content.bpm_proxy.IBpmProxy"
+    for="plone.uuid.interfaces.IUUIDAware"
     class=".bpm_form_view.BpmProxyTaskFormView"
     template="bpm_form_view.pt"
     permission="zope2.View"

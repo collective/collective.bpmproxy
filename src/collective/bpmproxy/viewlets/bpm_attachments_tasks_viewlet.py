@@ -18,9 +18,10 @@ class BpmAttachmentsTasksViewlet(ViewletBase):
         for context in parents(self.context, iface=IBpmAttachments):
             for proxy in parents(context, iface=IBpmProxy):
                 with camunda_client() as client:
-                    return get_available_tasks(
+                    self.tasks = get_available_tasks(
                         client,
                         context_key=IUUID(proxy),
                         attachments_key=context.id,
                         for_display=True,
                     )
+                    break

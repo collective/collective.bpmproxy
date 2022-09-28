@@ -22,10 +22,10 @@
   />
 
   <adapter
-    for="plone.uuid.interfaces.IUUIDAware"
+    for="*"
     provides="plone.stringinterp.interfaces.IStringSubstitution"
-    factory=".substitutions.HTTPRefererSubstitution"
-    name="http_referer"
+    factory=".substitutions.CameFromSubstitution"
+    name="came_from"
   />
 
   <adapter factory=".security.AttachmentsLocalRoleProvider" />

@@ -19,6 +19,7 @@ import functools
 import generic_camunda_client
 import logging
 import os
+import plone.api.user
 import transaction
 
 
@@ -53,10 +54,7 @@ class BpmSignalAction(SimpleItem):
 
     @property
     def summary(self):
-        return _(
-            "${name}",
-            mapping=dict(method=self.name),
-        )
+        return self.name
 
 
 def interpolate(value, interpolator):
@@ -70,8 +68,8 @@ def interpolate(value, interpolator):
     return value
 
 
-def _throwSignal(signal, payload):
-    with camunda_admin_client() as client:
+def _throwSignal(signal, payload, username=None):
+    with camunda_admin_client(username) as client:
         api = generic_camunda_client.SignalApi(client)
         dto = SignalDto(name=signal, variables=infer_variables(payload))
         api.throw_signal(signal_dto=dto)
@@ -91,8 +89,14 @@ class BpmSignalActionExecutor(object):
         interpolator = IStringInterpolator(self.event.object)
         name = interpolate(self.element.name, interpolator)
         payload = interpolate(self.element.payload, interpolator)
+        if not plone.api.user.is_anonymous():
+            username = plone.api.user.get_current().getUserName()
+        else:
+            username = None
         transaction.get().join(
-            SideEffectDataManager(functools.partial(_throwSignal, name, payload))
+            SideEffectDataManager(
+                functools.partial(_throwSignal, name, payload, username)
+            )
         )
         return True
 

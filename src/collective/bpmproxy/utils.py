@@ -122,21 +122,6 @@ def validate_camunda_form(data_json, schema_json, context):
         key = component.get("key")
         validation = component.get("validate") or {}
 
-        if "valuesKey" in component and "vocabulary" in component.get("properties"):
-            try:
-                name = component["properties"]["vocabulary"]
-                factory = getUtility(IVocabularyFactory, name)
-                vocabulary = factory(context)
-                assert vocabulary.getTermByToken(data.get(key)), (
-                    "Field " + key + " must be selected from given options."
-                )
-            except ComponentLookupError:
-                raise AssertionError("Field " + key + " must define vocabulary.")
-            except LookupError:
-                raise AssertionError(
-                    "Field " + key + " must be selected from given options."
-                )
-
         pattern = validation.get("pattern")
         assert not pattern or re.match(pattern, data.get(key) or ""), (
             "Field " + key + " must match pattern /" + pattern + "/."
@@ -166,6 +151,21 @@ def validate_camunda_form(data_json, schema_json, context):
         assert max_length is None or len(data.get(key) or "") <= max_length, (
             "Field " + key + " must have maximum length of " + max_length + "."
         )
+
+        if (component.get("properties") or {}).get("vocabulary") and data.get(key):
+            try:
+                name = component["properties"]["vocabulary"]
+                factory = getUtility(IVocabularyFactory, name)
+                vocabulary = factory(context)
+                assert vocabulary.getTermByToken(data.get(key)), (
+                    "Field " + key + " must be selected from given options."
+                )
+            except ComponentLookupError:
+                raise AssertionError("Field " + key + " must define vocabulary.")
+            except LookupError:
+                raise AssertionError(
+                    "Field " + key + " must be selected from given options."
+                )
 
 
 # noinspection PyUnresolvedReferences

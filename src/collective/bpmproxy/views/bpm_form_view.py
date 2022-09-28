@@ -13,6 +13,7 @@ from collective.bpmproxy.client import (
     submit_start_form,
     submit_task_form,
 )
+from collective.bpmproxy.content.bpm_proxy import IBpmProxy
 from collective.bpmproxy.interfaces import (
     ANONYMOUS_USER_ANNOTATION_KEY,
     BUSINESS_KEY_VARIABLE_NAME,
@@ -31,6 +32,7 @@ from Products.Five.browser import BrowserView
 from uuid import UUID, uuid4
 from zope.annotation import IAnnotations
 from zope.interface import implementer
+from zope.proxy import ProxyBase
 from zope.publisher.interfaces import IPublishTraverse, NotFound
 
 import json
@@ -116,7 +118,7 @@ class BpmProxyStartFormView(BrowserView):
                 # Validate
                 validate_camunda_form(self.data, self.schema, self.context)
                 # Submit
-                business_key = IUUID(self.context) + ":" + str(uuid4())
+                business_key = IUUID(self.context) + ":" + uuid4().hex
                 process_variables = self.context.process_variables.copy()
                 process = submit_start_form(
                     client,
@@ -141,6 +143,7 @@ class BpmProxyStartFormView(BrowserView):
                     request=self.request,
                     type=PloneNotificationLevel.ERROR,
                 )
+                self.data = __
             except AssertionError as e:
                 process = None
                 plone.api.portal.show_message(
@@ -149,6 +152,7 @@ class BpmProxyStartFormView(BrowserView):
                     type=PloneNotificationLevel.ERROR,
                 )
                 logger.error(e)
+                self.data = __
             try:
                 next_tasks = get_next_tasks(client, process.id) if process else []
                 for task in next_tasks:
@@ -179,12 +183,23 @@ class BpmProxyStartFormView(BrowserView):
             return self._view()
 
 
+class BpmProxy(ProxyBase):
+    diagram_enabled = False
+    attachments_enabled = False
+    default_values = {}
+    default_data = {}
+
+
 @implementer(IPublishTraverse)
 class BpmProxyTaskFormView(BrowserView):
     task_view = PLONE_TASK_VIEW
 
     def __init__(self, context, request):
         super(BpmProxyTaskFormView, self).__init__(context, request)
+
+        # TODO: Need adapter to allow BpmProxy configuration on non-BpmProxy content
+        if not IBpmProxy.providedBy(self.context):
+            self.context = BpmProxy(self.context)
 
         self.attachments_enabled = False
         self.attachments_key = None
@@ -249,6 +264,16 @@ class BpmProxyTaskFormView(BrowserView):
             current_values.update(
                 json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             )
+
+            # Enable attachments when possible.
+            try:
+                business_key = current_values[BUSINESS_KEY_VARIABLE_NAME]
+                if ":" in business_key and self.context.attachments_enabled:
+                    self.attachments_key = str(UUID(business_key.split(":")[-1]))
+                    self.attachments_enabled = bool(self.attachments_key)
+            except (KeyError, TypeError, ValueError):
+                pass
+
             self.data, __, self.schema = get_task_form(
                 client,
                 self.task_id,
@@ -271,6 +296,7 @@ class BpmProxyTaskFormView(BrowserView):
                     request=self.request,
                     type=PloneNotificationLevel.ERROR,
                 )
+                self.data = __
             except AssertionError as e:
                 plone.api.portal.show_message(
                     message=_("Invalid or missing data."),
@@ -278,6 +304,7 @@ class BpmProxyTaskFormView(BrowserView):
                     type=PloneNotificationLevel.ERROR,
                 )
                 logger.error(e)
+                self.data = __
             try:
                 next_tasks = get_next_tasks(client, task.process_instance_id)
                 for task in next_tasks:

@@ -8,7 +8,9 @@
     <value key="csscompilation">++plone++collective.bpmproxy/bundle.css</value>
     <value key="load_async">True</value>
     <value key="load_defer">False</value>
-    <value key="expression">python:path("context/portal_type|nothing") == "Bpm Proxy"</value>
+    <value key="expression">python:True</value>
+    <!-- TODO: Include this for specific views instead of specific content types? -->
+    <!-- <value key="expression">python:path("context/portal_type|nothing") == "Bpm Proxy"</value> -->
   </records>
 
 </registry>

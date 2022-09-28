@@ -96,10 +96,11 @@ def camunda_client():
 
 
 @contextmanager
-def camunda_admin_client():
+def camunda_admin_client(username=None):
     configuration = generic_camunda_client.Configuration(host=get_api_url())
     authorization = "Bearer " + get_token(
-        username=CAMUNDA_ADMIN_USER, groups=[CAMUNDA_ADMIN_GROUP]
+        username=username or CAMUNDA_ADMIN_USER,
+        groups=[CAMUNDA_ADMIN_GROUP],
     )
     with generic_camunda_client.ApiClient(
         configuration,
@@ -147,7 +148,7 @@ def get_available_tasks(
     client, context_key=None, attachments_key=None, for_display=False
 ):
     task_api = generic_camunda_client.TaskApi(client)
-    needle = (context_key or "%") + ":" + (attachments_key or "%")
+    needle = (context_key or "%") + (attachments_key or "%")
     tasks = (
         task_api.query_tasks(
             task_query_dto=TaskQueryDto(

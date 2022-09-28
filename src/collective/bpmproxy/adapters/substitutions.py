@@ -19,20 +19,13 @@ class UUIDSubstitution(BaseSubstitution):
 
 
 @adapter(Interface)
-class HTTPRefererSubstitution(BaseSubstitution):
+class CameFromSubstitution(BaseSubstitution):
 
     category = _("Request")
-    description = _("HTTP referer (or came_from-parameter)")
+    description = _("URL in portal from came_from-parameter")
 
     def safe_call(self):
         request = plone.api.portal.getRequest()
         portal_url = plone.api.portal.get().absolute_url()
         came_from = request.form.get("came_from")
-        referer = request.get_header("referer")
-        return (
-            came_from
-            if came_from and came_from.startswith(portal_url)
-            else referer
-            if referer
-            else self.context.absolute_url()
-        )
+        return came_from if came_from and came_from.startswith(portal_url) else ""
