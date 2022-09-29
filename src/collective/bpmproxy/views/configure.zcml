@@ -19,6 +19,7 @@
     permission="zope2.View"
     />
 
+  <!-- TODO: BPM tasks for content types should maybe be made into a behavior -->
   <browser:page
     name="bpm-task"
     for="plone.uuid.interfaces.IUUIDAware"
@@ -28,7 +29,7 @@
     />
 
   <browser:page
-    for="..content.bpm_proxy.IBpmProxy"
+    for="plone.uuid.interfaces.IUUIDAware"
     name="breadcrumbs_view"
     class=".bpm_form_view.BpmProxyNavigationBreadcrumbs"
     permission="zope.Public"
