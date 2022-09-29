@@ -12,6 +12,7 @@ import json
 import logging
 import re
 import six
+import string
 import transaction
 
 
@@ -101,6 +102,14 @@ def prepare_camunda_form(schema_json, default_data, default_values, context):
                 ]
             except ComponentLookupError:
                 pass
+
+        if component.get("type") == "text":
+            component["text"] = string.Template(component["text"]).safe_substitute(
+                default_data
+            )
+            component["text"] = string.Template(component["text"]).safe_substitute(
+                default_values
+            )
 
     options.update(data)
     return (
