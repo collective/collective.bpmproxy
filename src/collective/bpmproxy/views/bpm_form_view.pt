@@ -45,7 +45,7 @@
       </div>
     </section>
     <section tal:condition="view/tasks|nothing">
-      <h2 class="tab" style="display: none;" i18n:translate="">Pending tasks</h2>
+      <h2 class="tab" style="display: none;" i18n:translate="">Tasklist</h2>
       <table
         class="pat-datatables table table-striped table-bordered dataTable no-footer"
         summary="Available tasks" i18n:attributes="summary">

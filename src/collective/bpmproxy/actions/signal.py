@@ -29,15 +29,15 @@ logger = logging.getLogger(__name__)
 class IBpmSignalAction(Interface):
     """Definition of the configuration available for a signal action"""
 
-    name = schema.TextLine(
-        title=_("BPM Signal name"),
-        required=True,
-    )
+    name = schema.TextLine(title=_("BPM Signal name"), required=True, default="${uuid}")
     form.widget("payload", klass="pat-code-editor")
     payload = JSONField(
         title=_("JSON Payload"),
         description=_("The process variables you want to dispatch in JSON"),
         required=False,
+        defaultFactory=lambda: {
+            "uuid": "${uuid}",
+        },
     )
 
 
