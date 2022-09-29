@@ -3624,9 +3624,10 @@
           id: prefixId(id, formId),
           label: label,
           required: required
-        }), o$2("input", {
+        }), o$2(!!(field && field.key && field.key.match(/text|comment|feedback|body/)) ? "textarea" : "input", {
           class: "fjs-input",
           disabled: disabled,
+          rows: !!(field && field.key && field.key.match(/text|comment|feedback|body/)) ? 10 : null,
           id: prefixId(id, formId),
           onInput: onChange,
           type: "text",
@@ -44513,13 +44514,13 @@
      *
      * Returns {Promise<ImportXMLResult, ImportXMLError>}
      */
-    BaseViewer.prototype.importXML = wrapForCompatibility(function importXML(xml, bpmnDiagram) {
+    BaseViewer.prototype.importXML = wrapForCompatibility(async function importXML(xml, bpmnDiagram) {
 
-      var self = this;
+      const self = this;
 
       function ParseCompleteEvent(data) {
 
-        var event = self.get('eventBus').createEvent(data);
+        const event = self.get('eventBus').createEvent(data);
 
         // TODO(nikku): remove with future bpmn-js version
         Object.defineProperty(event, 'context', {
@@ -44542,54 +44543,59 @@
         return event;
       }
 
-      return new Promise(function(resolve, reject) {
+      let aggregatedWarnings = [];
+      try {
 
         // hook in pre-parse listeners +
         // allow xml manipulation
-        xml = self._emit('import.parse.start', { xml: xml }) || xml;
+        xml = this._emit('import.parse.start', { xml: xml }) || xml;
 
-        self._moddle.fromXML(xml, 'bpmn:Definitions').then(function(result) {
-          var definitions = result.rootElement;
-          var references = result.references;
-          var parseWarnings = result.warnings;
-          var elementsById = result.elementsById;
-
-          // hook in post parse listeners +
-          // allow definitions manipulation
-          definitions = self._emit('import.parse.complete', ParseCompleteEvent({
-            error: null,
-            definitions: definitions,
-            elementsById: elementsById,
-            references: references,
-            warnings: parseWarnings
-          })) || definitions;
-
-          self.importDefinitions(definitions, bpmnDiagram).then(function(result) {
-            var allWarnings = [].concat(parseWarnings, result.warnings || []);
-
-            self._emit('import.done', { error: null, warnings: allWarnings });
-
-            return resolve({ warnings: allWarnings });
-          }).catch(function(err) {
-            var allWarnings = [].concat(parseWarnings, err.warnings || []);
-
-            self._emit('import.done', { error: err, warnings: allWarnings });
-
-            return reject(addWarningsToError(err, allWarnings));
-          });
-        }).catch(function(err) {
-
-          self._emit('import.parse.complete', {
-            error: err
+        let parseResult;
+        try {
+          parseResult = await this._moddle.fromXML(xml, 'bpmn:Definitions');
+        } catch (error) {
+          this._emit('import.parse.complete', {
+            error
           });
 
-          err = checkValidationError(err);
+          throw error;
+        }
 
-          self._emit('import.done', { error: err, warnings: err.warnings });
+        let definitions = parseResult.rootElement;
+        const references = parseResult.references;
+        const parseWarnings = parseResult.warnings;
+        const elementsById = parseResult.elementsById;
 
-          return reject(err);
-        });
-      });
+        aggregatedWarnings = aggregatedWarnings.concat(parseWarnings);
+
+        // hook in post parse listeners +
+        // allow definitions manipulation
+        definitions = this._emit('import.parse.complete', ParseCompleteEvent({
+          error: null,
+          definitions: definitions,
+          elementsById: elementsById,
+          references: references,
+          warnings: aggregatedWarnings
+        })) || definitions;
+
+        const importResult = await this.importDefinitions(definitions, bpmnDiagram);
+
+        aggregatedWarnings = aggregatedWarnings.concat(importResult.warnings);
+
+        this._emit('import.done', { error: null, warnings: aggregatedWarnings });
+
+        return { warnings: aggregatedWarnings };
+      } catch (err) {
+        let error = err;
+        aggregatedWarnings = aggregatedWarnings.concat(error.warnings || []);
+        addWarningsToError(error, aggregatedWarnings);
+
+        error = checkValidationError(error);
+
+        this._emit('import.done', { error, warnings: error.warnings });
+
+        throw error;
+      }
     });
 
     /**
@@ -44628,24 +44634,11 @@
      *
      * Returns {Promise<ImportDefinitionsResult, ImportDefinitionsError>}
      */
-    BaseViewer.prototype.importDefinitions = wrapForCompatibility(function importDefinitions(definitions, bpmnDiagram) {
+    BaseViewer.prototype.importDefinitions = wrapForCompatibility(async function importDefinitions(definitions, bpmnDiagram) {
+      this._setDefinitions(definitions);
+      const result = await this.open(bpmnDiagram);
 
-      var self = this;
-
-      return new Promise(function(resolve, reject) {
-
-        self._setDefinitions(definitions);
-
-        self.open(bpmnDiagram).then(function(result) {
-
-          var warnings = result.warnings;
-
-          return resolve({ warnings: warnings });
-        }).catch(function(err) {
-
-          return reject(err);
-        });
-      });
+      return { warnings: result.warnings };
     });
 
     /**
@@ -44683,50 +44676,43 @@
      *
      * Returns {Promise<OpenResult, OpenError>}
      */
-    BaseViewer.prototype.open = wrapForCompatibility(function open(bpmnDiagramOrId) {
+    BaseViewer.prototype.open = wrapForCompatibility(async function open(bpmnDiagramOrId) {
 
-      var definitions = this._definitions;
-      var bpmnDiagram = bpmnDiagramOrId;
+      const definitions = this._definitions;
+      let bpmnDiagram = bpmnDiagramOrId;
 
-      var self = this;
+      if (!definitions) {
+        const error = new Error('no XML imported');
+        addWarningsToError(error, []);
 
-      return new Promise(function(resolve, reject) {
-        if (!definitions) {
-          var err1 = new Error('no XML imported');
+        throw error;
+      }
 
-          return reject(addWarningsToError(err1, []));
+      if (typeof bpmnDiagramOrId === 'string') {
+        bpmnDiagram = findBPMNDiagram(definitions, bpmnDiagramOrId);
+
+        if (!bpmnDiagram) {
+          const error = new Error('BPMNDiagram <' + bpmnDiagramOrId + '> not found');
+          addWarningsToError(error, []);
+
+          throw error;
         }
+      }
 
-        if (typeof bpmnDiagramOrId === 'string') {
-          bpmnDiagram = findBPMNDiagram(definitions, bpmnDiagramOrId);
+      // clear existing rendered diagram
+      // catch synchronous exceptions during #clear()
+      try {
+        this.clear();
+      } catch (error) {
+        addWarningsToError(error, []);
 
-          if (!bpmnDiagram) {
-            var err2 = new Error('BPMNDiagram <' + bpmnDiagramOrId + '> not found');
+        throw error;
+      }
 
-            return reject(addWarningsToError(err2, []));
-          }
-        }
+      // perform graphical import
+      const { warnings } = await importBpmnDiagram(this, definitions, bpmnDiagram);
 
-        // clear existing rendered diagram
-        // catch synchronous exceptions during #clear()
-        try {
-          self.clear();
-        } catch (error) {
-
-          return reject(addWarningsToError(error, []));
-        }
-
-        // perform graphical import
-        importBpmnDiagram(self, definitions, bpmnDiagram).then(function(result) {
-
-          var warnings = result.warnings;
-
-          return resolve({ warnings: warnings });
-        }).catch(function(err) {
-
-          return reject(err);
-        });
-      });
+      return { warnings };
     });
 
     /**
@@ -44757,53 +44743,42 @@
      *
      * Returns {Promise<SaveXMLResult, Error>}
      */
-    BaseViewer.prototype.saveXML = wrapForCompatibility(function saveXML(options) {
+    BaseViewer.prototype.saveXML = wrapForCompatibility(async function saveXML(options) {
 
       options = options || {};
 
-      var self = this;
+      let definitions = this._definitions,
+          error, xml;
 
-      var definitions = this._definitions;
-
-      return new Promise(function(resolve) {
-
+      try {
         if (!definitions) {
-          return resolve({
-            error: new Error('no definitions loaded')
-          });
+          throw new Error('no definitions loaded');
         }
 
         // allow to fiddle around with definitions
-        definitions = self._emit('saveXML.start', {
-          definitions: definitions
+        definitions = this._emit('saveXML.start', {
+          definitions
         }) || definitions;
 
-        self._moddle.toXML(definitions, options).then(function(result) {
+        const result = await this._moddle.toXML(definitions, options);
+        xml = result.xml;
 
-          var xml = result.xml;
+        xml = this._emit('saveXML.serialized', {
+          xml
+        }) || xml;
+      } catch (err) {
+        error = err;
+      }
 
-          xml = self._emit('saveXML.serialized', {
-            xml: xml
-          }) || xml;
+      const result = error ? { error } : { xml };
 
-          return resolve({
-            xml: xml
-          });
-        });
-      }).catch(function(error) {
-        return { error: error };
-      }).then(function(result) {
+      this._emit('saveXML.done', result);
 
-        self._emit('saveXML.done', result);
+      if (error) {
+        throw error;
+      }
 
-        var error = result.error;
-
-        if (error) {
-          return Promise.reject(error);
-        }
-
-        return result;
-      });
+      return result;
     });
 
     /**
@@ -44831,51 +44806,45 @@
      *
      * Returns {Promise<SaveSVGResult, Error>}
      */
-    BaseViewer.prototype.saveSVG = wrapForCompatibility(function saveSVG(options) {
+    BaseViewer.prototype.saveSVG = wrapForCompatibility(async function saveSVG(options = {}) {
+      this._emit('saveSVG.start');
 
-      var self = this;
+      let svg, err;
 
-      return new Promise(function(resolve, reject) {
+      try {
+        const canvas = this.get('canvas');
 
-        self._emit('saveSVG.start');
-
-        var svg, err;
-
-        try {
-          var canvas = self.get('canvas');
-
-          var contentNode = canvas.getActiveLayer(),
+        const contentNode = canvas.getActiveLayer(),
               defsNode = query('defs', canvas._svg);
 
-          var contents = innerSVG(contentNode),
+        const contents = innerSVG(contentNode),
               defs = defsNode ? '<defs>' + innerSVG(defsNode) + '</defs>' : '';
 
-          var bbox = contentNode.getBBox();
+        const bbox = contentNode.getBBox();
 
-          svg =
-            '<?xml version="1.0" encoding="utf-8"?>\n' +
-            '<!-- created with bpmn-js / http://bpmn.io -->\n' +
-            '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
-            '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' +
-                 'width="' + bbox.width + '" height="' + bbox.height + '" ' +
-                 'viewBox="' + bbox.x + ' ' + bbox.y + ' ' + bbox.width + ' ' + bbox.height + '" version="1.1">' +
-              defs + contents +
-            '</svg>';
-        } catch (e) {
-          err = e;
-        }
+        svg =
+          '<?xml version="1.0" encoding="utf-8"?>\n' +
+          '<!-- created with bpmn-js / http://bpmn.io -->\n' +
+          '<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">\n' +
+          '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" ' +
+          'width="' + bbox.width + '" height="' + bbox.height + '" ' +
+          'viewBox="' + bbox.x + ' ' + bbox.y + ' ' + bbox.width + ' ' + bbox.height + '" version="1.1">' +
+          defs + contents +
+          '</svg>';
+      } catch (e) {
+        err = e;
+      }
 
-        self._emit('saveSVG.done', {
-          error: err,
-          svg: svg
-        });
-
-        if (!err) {
-          return resolve({ svg: svg });
-        }
-
-        return reject(err);
+      this._emit('saveSVG.done', {
+        error: err,
+        svg: svg
       });
+
+      if (err) {
+        throw err;
+      }
+
+      return { svg };
     });
 
     /**
@@ -44883,8 +44852,8 @@
      *
      * @example
      *
-     * var elementRegistry = viewer.get('elementRegistry');
-     * var startEventShape = elementRegistry.get('StartEvent_1');
+     * const elementRegistry = viewer.get('elementRegistry');
+     * const startEventShape = elementRegistry.get('StartEvent_1');
      *
      * @param {string} name
      *
@@ -44899,7 +44868,7 @@
      * @example
      *
      * viewer.invoke(function(elementRegistry) {
-     *   var startEventShape = elementRegistry.get('StartEvent_1');
+     *   const startEventShape = elementRegistry.get('StartEvent_1');
      * });
      *
      * @param {Function} fn to be invoked
@@ -45006,8 +44975,8 @@
 
     BaseViewer.prototype.detach = function() {
 
-      var container = this._container,
-          parentNode = container.parentNode;
+      const container = this._container,
+            parentNode = container.parentNode;
 
       if (!parentNode) {
         return;
@@ -45020,18 +44989,18 @@
 
     BaseViewer.prototype._init = function(container, moddle, options) {
 
-      var baseModules = options.modules || this.getModules(),
-          additionalModules = options.additionalModules || [],
-          staticModules = [
-            {
-              bpmnjs: [ 'value', this ],
-              moddle: [ 'value', moddle ]
-            }
-          ];
+      const baseModules = options.modules || this.getModules(),
+            additionalModules = options.additionalModules || [],
+            staticModules = [
+              {
+                bpmnjs: [ 'value', this ],
+                moddle: [ 'value', moddle ]
+              }
+            ];
 
-      var diagramModules = [].concat(staticModules, baseModules, additionalModules);
+      const diagramModules = [].concat(staticModules, baseModules, additionalModules);
 
-      var diagramOptions = assign(omit(options, [ 'additionalModules' ]), {
+      const diagramOptions = assign(omit(options, [ 'additionalModules' ]), {
         canvas: assign({}, options.canvas, { container: container }),
         modules: diagramModules
       });
@@ -45058,7 +45027,7 @@
 
     BaseViewer.prototype._createContainer = function(options) {
 
-      var container = domify('<div class="bjs-container"></div>');
+      const container = domify('<div class="bjs-container"></div>');
 
       assign$1(container, {
         width: ensureUnit(options.width),
@@ -45070,7 +45039,7 @@
     };
 
     BaseViewer.prototype._createModdle = function(options) {
-      var moddleOptions = assign({}, this._moddleExtensions, options.moddleExtensions);
+      const moddleOptions = assign({}, this._moddleExtensions, options.moddleExtensions);
 
       return new dist(moddleOptions);
     };
@@ -45089,8 +45058,8 @@
       // check if we can help the user by indicating wrong BPMN 2.0 xml
       // (in case he or the exporting tool did not get that right)
 
-      var pattern = /unparsable content <([^>]+)> detected([\s\S]*)$/;
-      var match = pattern.exec(err.message);
+      const pattern = /unparsable content <([^>]+)> detected([\s\S]*)$/;
+      const match = pattern.exec(err.message);
 
       if (match) {
         err.message =
@@ -45101,7 +45070,7 @@
       return err;
     }
 
-    var DEFAULT_OPTIONS = {
+    const DEFAULT_OPTIONS = {
       width: '100%',
       height: '100%',
       position: 'relative'
@@ -45143,18 +45112,18 @@
      * @param {Element} container
      */
     function addProjectLogo(container) {
-      var img = BPMNIO_IMG;
+      const img = BPMNIO_IMG;
 
-      var linkMarkup =
+      const linkMarkup =
         '<a href="http://bpmn.io" ' +
-           'target="_blank" ' +
-           'class="bjs-powered-by" ' +
-           'title="Powered by bpmn.io" ' +
-          '>' +
-          img +
+        'target="_blank" ' +
+        'class="bjs-powered-by" ' +
+        'title="Powered by bpmn.io" ' +
+        '>' +
+        img +
         '</a>';
 
-      var linkElement = domify(linkMarkup);
+      const linkElement = domify(linkMarkup);
 
       assign$1(query('svg', linkElement), LOGO_STYLES);
       assign$1(linkElement, LINK_STYLES, {
