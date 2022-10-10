@@ -23,6 +23,7 @@ from collective.bpmproxy.interfaces import (
     PloneNotificationLevel,
 )
 from collective.bpmproxy.utils import validate_camunda_form
+from collective.bpmproxy.utils import prepare_camunda_form
 from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
 from plone.uuid.interfaces import IUUID
@@ -136,6 +137,13 @@ class BpmProxyStartFormView(BrowserView):
                 self.tasks = get_available_tasks(
                     client, context_key=IUUID(self.context), for_display=True
                 )
+                __, self.data, ___ = prepare_camunda_form(
+                    self.schema,
+                    default_data={},
+                    default_values=self.context.default_values,
+                    context=self.context,
+                )
+
             except ApiException:
                 process = None
                 plone.api.portal.show_message(
