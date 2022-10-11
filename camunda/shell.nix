@@ -6,5 +6,6 @@ pkgs.mkShell {
     jdk17_headless
     (maven.override { jdk = jdk17_headless; })
     mvn2nix
+    zip
   ];
 }
