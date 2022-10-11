@@ -1,0 +1,12 @@
+<registry>
+  <record name="plone.displayed_types" interface="plone.base.interfaces.controlpanel.INavigationSchema" field="displayed_types">
+    <value purge="false">
+      <element>Bpm Proxy</element>
+    </value>
+  </record>
+  <record name="plone.types_use_view_action_in_listings" interface="plone.base.interfaces.controlpanel.ITypesSchema" field="types_use_view_action_in_listings">
+    <value purge="false">
+      <element>Bpm Attachment</element>
+    </value>
+  </record>
+</registry>

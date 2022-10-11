@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contentrules>
+ <rule name="collective-bpmproxy-published-any" title="BPMN signal: published any" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>publish</element>
+     <element>publish_externally</element>
+     <element>publish_internally</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-published</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="collective-bpmproxy-retracted-one" title="BPMN signal: retracted one" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>retract</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-retracted:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="collective-bpmproxy-rejected-one" title="BPMN signal: rejected one" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>reject</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-rejected:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="collective-bpmproxy-deleted-one" title="BPMN signal: deleted one" cascading="False"
+    description="" enabled="True"
+    event="zope.lifecycleevent.interfaces.IObjectRemovedEvent"
+    stop-after="False">
+  <conditions/>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-deleted:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="collective-bpmproxy-modified-one" title="BPMN signal: modified one" cascading="False"
+    description="" enabled="True"
+    event="zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+    stop-after="False">
+  <conditions/>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-modified:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+</contentrules>
