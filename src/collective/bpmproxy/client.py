@@ -28,6 +28,7 @@ from zope.annotation import IAnnotations
 
 import datetime
 import generic_camunda_client
+import json
 import jwt
 import logging
 import os
@@ -248,6 +249,14 @@ def submit_task_form(
 def get_task_variables(client, task_id):
     api = generic_camunda_client.TaskVariableApi(client)
     variables = api.get_task_variables(task_id)
+
+    # Json values require separate call with deserialized=False
+    if any([v.type == "Json" for v in variables.values()]):
+        serialized = api.get_task_variables(task_id, deserialize_values=False)
+        for k, v in serialized.items():
+            if v.type == "Json":
+                variables[k].value = json.loads(v.value)
+
     return flatten_variables(variables)
 
 
