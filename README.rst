@@ -30,23 +30,25 @@ collective.bpmproxy
 
 Publish BPMN 2.0 processes from Camunda Platform 7, and interact with the processes with Camunda Forms or BPMN signals.
 
+The add-on requires Camunda Platform 7 with a special authentication plugin authorizing requests from Plone as their initiating Plone users. See the project repository for details.
+
 
 Features
 --------
 
 * A custom content-type, "BPM Proxy" to publish an existing process with forms from a configured Camunda Platform 7 (later just "C7") instance as a CMS page with "sub pages" for currently open tasks in running instances of that process.
 
-* A porlet to list all tasks available in every running process on the configured C7 instance.
+* A portlet to list all tasks available in every running process on the configured C7 instance. (Or just the tasks related to the current Plone page.)
 
 * A content-rule action to broadcast BPMN signals events at the configured C7 instance from configured events at Plone.
 
-* Support to show related available users task forms also for pages of other types than BPM Proxy.
+* Support to show related available user task forms also for pages of other types than BPM Proxy.
 
 
-Examples
---------
+.. Examples
+.. --------
 
-TODO
+.. TODO
 
 Documentation
 -------------
