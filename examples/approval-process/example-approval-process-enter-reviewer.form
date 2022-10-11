@@ -25,7 +25,8 @@
       "validate": {
         "required": true
       },
-      "description": "Enter reviewer user name"
+      "description": "Enter reviewer user name",
+      "defaultValue": "${user_id}"
     },
     {
       "label": "Reviewer full name",
@@ -36,7 +37,8 @@
       "validate": {
         "required": true
       },
-      "description": "Enter reviewer full name"
+      "description": "Enter reviewer full name",
+      "defaultValue": "${user_fullname}"
     },
     {
       "label": "Reviewer email",
@@ -46,7 +48,8 @@
       "validate": {
         "required": true
       },
-      "description": "Enter reviewer email address"
+      "description": "Enter reviewer email address",
+      "defaultValue": "${user_email}"
     },
     {
       "action": "submit",
@@ -60,7 +63,7 @@
   "id": "example-approval-enter-reviewer",
   "exporter": {
     "name": "Camunda Modeler",
-    "version": "5.0.0"
+    "version": "5.3.0"
   },
   "executionPlatform": "Camunda Platform",
   "executionPlatformVersion": "7.17.0",
