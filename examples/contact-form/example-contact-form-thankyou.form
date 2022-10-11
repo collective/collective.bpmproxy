@@ -1,0 +1,18 @@
+{
+  "components": [
+    {
+      "text": "# Thank you!\n\nWe appreciate your feedback.",
+      "type": "text",
+      "id": "Field_1nskmmj"
+    }
+  ],
+  "type": "default",
+  "id": "example-contact-form-thankyou",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

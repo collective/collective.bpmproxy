@@ -1,0 +1,43 @@
+{
+  "components": [
+    {
+      "text": "# Choose where to share the page",
+      "type": "text",
+      "id": "Field_0vn6du3"
+    },
+    {
+      "label": "Social media",
+      "type": "checkbox",
+      "id": "Field_0tnmikh",
+      "key": "shareToSocialMedia"
+    },
+    {
+      "label": "Staff mailing lists",
+      "type": "checkbox",
+      "id": "Field_1lb6ta1",
+      "key": "shareToStaffMailingLists"
+    },
+    {
+      "label": "News agencies",
+      "type": "checkbox",
+      "id": "Field_1654qr7",
+      "key": "shareToNewsAgencies"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_135auld",
+      "key": "field_1p9vszr"
+    }
+  ],
+  "type": "default",
+  "id": "example-published-lifecycle-share",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

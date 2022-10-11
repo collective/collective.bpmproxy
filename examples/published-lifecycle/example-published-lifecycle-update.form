@@ -1,0 +1,25 @@
+{
+  "components": [
+    {
+      "text": "# Update check needed\n\n[The page](${portalUrl}/@@resolveuid/${uuid}) has been published unmodified for the maximum allowed time.\n\nPlease, check [the page](${portalUrl}/@@resolveuid/${uuid}) , update it if necessary, and acknowledge this form, if the page should remain published.",
+      "type": "text",
+      "id": "Field_1o47xs2"
+    },
+    {
+      "action": "submit",
+      "label": "Acknowledged",
+      "type": "button",
+      "id": "Field_03gf011",
+      "key": "field_0bu726j"
+    }
+  ],
+  "type": "default",
+  "id": "example-published-lifecycle-update",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

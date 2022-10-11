@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="Definitions_0o07mnh" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.2.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.17.0">
+  <decision id="example-contact-form-team" name="Responsible team for topic">
+    <decisionTable id="DecisionTable_1pp1fd4" hitPolicy="FIRST" biodi:annotationsWidth="400">
+      <input id="Input_1" label="Topic">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>topic</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Email" name="email" typeRef="string" biodi:width="229" />
+      <output id="OutputClause_066z70w" label="Group" name="group" typeRef="string" biodi:width="158" />
+      <rule id="DecisionRule_07lq4t4">
+        <inputEntry id="UnaryTests_0hawetz">
+          <text>"communications"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1q31fl8">
+          <text>"communications@example.com"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1xnt8z1">
+          <text>"Site Administrators"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0toyh7w">
+        <inputEntry id="UnaryTests_09oqgsz">
+          <text>"sales"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_11g5k8l">
+          <text>"sales@example.com"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1cr62tt">
+          <text>"Site Administrators"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_097rtal">
+        <inputEntry id="UnaryTests_09zzwt9">
+          <text>"it"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_14b0exs">
+          <text>"webmaster@example.com"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0z55h4x">
+          <text>"Site Administrators"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1nbe0ww">
+        <inputEntry id="UnaryTests_0tzfxfm">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1goep97">
+          <text>"communications@example.com"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0p24y62">
+          <text>"Site Administrators"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="example-contact-form-team">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

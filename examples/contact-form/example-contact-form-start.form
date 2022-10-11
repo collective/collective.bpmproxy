@@ -1,0 +1,34 @@
+{
+  "components": [
+    {
+      "text": "# Contact Us\n\nPlease, submit this form to send us any feedback! Remember to leave your contact information, if you wish us to reply.",
+      "type": "text",
+      "id": "Field_0jawv8y"
+    },
+    {
+      "label": "Message",
+      "type": "textfield",
+      "id": "Field_18p8hql",
+      "key": "text",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_0ft4e5g",
+      "key": "field_15r8qef"
+    }
+  ],
+  "type": "default",
+  "id": "example-contact-form-start",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

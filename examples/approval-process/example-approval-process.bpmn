@@ -19,7 +19,7 @@
           <camunda:inputOutput>
             <camunda:inputParameter name="text">New submission: ${topic}
 
-Review submission at: ${portalUrl}/@@resolveuid/${execution.getBusinessKey().split(":")[0]}/@@task/${approvalTaskId}</camunda:inputParameter>
+Review submission at: ${portalUrl}/@@resolveuid/${execution.getBusinessKey().split(":")[0]}/@@bpm-task/${approvalTaskId}</camunda:inputParameter>
             <camunda:inputParameter name="subject">New submission: ${topic}</camunda:inputParameter>
             <camunda:inputParameter name="to">"${reviewerFullName}" &lt;${reviewerEmail}&gt;</camunda:inputParameter>
           </camunda:inputOutput>
@@ -142,7 +142,7 @@ ${comment}</camunda:inputParameter>
 
 ${comment}
 
-Update submission within the next few days at: ${portalUrl}/@@resolveuid/${execution.getBusinessKey().split(":")[0]}/@@task/${updateTaskId}</camunda:inputParameter>
+Update submission within the next few days at: ${portalUrl}/@@resolveuid/${execution.getBusinessKey().split(":")[0]}/@@bpm-task/${updateTaskId}</camunda:inputParameter>
             <camunda:inputParameter name="subject">Changes required: ${topic}</camunda:inputParameter>
             <camunda:inputParameter name="to">"${authorFullName}" &lt;${authorEmail}&gt;</camunda:inputParameter>
           </camunda:inputOutput>

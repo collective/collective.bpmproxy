@@ -1,0 +1,102 @@
+{
+  "components": [
+    {
+      "text": "# Return feedback for sorting\n\nPlease, submit this form to send this feedback back for sorting, and let us redirect the feedback to whom it belongs to.",
+      "type": "text",
+      "id": "Field_0uswk9j"
+    },
+    {
+      "label": "Message",
+      "type": "textfield",
+      "id": "Field_0elzyk3",
+      "key": "text",
+      "disabled": true,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Communications",
+          "value": "communications"
+        },
+        {
+          "label": "IT",
+          "value": "it"
+        },
+        {
+          "label": "Other",
+          "value": "other"
+        }
+      ],
+      "label": "Topic",
+      "type": "select",
+      "id": "Field_0hjc29x",
+      "key": "topic",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "Positive",
+          "value": "positive"
+        },
+        {
+          "label": "Neutral",
+          "value": "neutral"
+        },
+        {
+          "label": "Negative",
+          "value": "negative"
+        }
+      ],
+      "label": "Mood",
+      "type": "radio",
+      "id": "Field_19jpc5o",
+      "key": "mood",
+      "disabled": false,
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "values": [
+        {
+          "label": "No",
+          "value": "ham"
+        },
+        {
+          "value": "spam",
+          "label": "Yes, this is definitely spam"
+        }
+      ],
+      "label": "Is this message spam?",
+      "type": "radio",
+      "id": "Field_0ealyx5",
+      "key": "spamOrHam",
+      "defaultValue": "spam",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_1qp7r7w",
+      "key": "field_10jrwtk"
+    }
+  ],
+  "type": "default",
+  "id": "example-contact-form-invalid",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}
