@@ -13,9 +13,11 @@ from collective.bpmproxy.utils import is_valid_uuid
 from plone.app.portlets.portlets import base
 from plone.memoize.instance import memoize
 from plone.portlets.interfaces import IPortletDataProvider
+from plone.uuid.interfaces import IUUID
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from z3c.form import field
+from zope import schema
 from zope.component import getMultiAdapter
 from zope.interface import implementer
 from zope.publisher.interfaces import IPublishTraverse, NotFound
@@ -24,15 +26,21 @@ import plone.api
 
 
 class ITasksPortlet(IPortletDataProvider):
-    pass
+
+    use_context = schema.Bool(
+        title=_("Show only tasks for the current context"),
+        required=False,
+        default=False,
+    )
 
 
 @implementer(ITasksPortlet)
 class Assignment(base.Assignment):
     schema = ITasksPortlet
+    use_context = False
 
-    def __init__(self):
-        pass
+    def __init__(self, use_context=False):
+        self.use_context = use_context
 
     @property
     def title(self):
@@ -46,7 +54,7 @@ class AddForm(base.AddForm):
     description = _("This portlet displays available pending BPM tasks.")
 
     def create(self, data):
-        return Assignment()
+        return Assignment(use_context=data["use_context"])
 
 
 class EditForm(base.EditForm):
@@ -85,7 +93,10 @@ class Renderer(base.Renderer):
     @memoize
     def _data(self):
         with camunda_client() as client:
-            return get_available_tasks(client, for_display=True)
+            context_key = IUUID(self.context) if self.data.use_context else None
+            return get_available_tasks(
+                client, context_key=context_key, for_display=True
+            )
 
 
 @implementer(IPublishTraverse)

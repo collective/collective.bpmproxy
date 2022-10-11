@@ -22,8 +22,7 @@ from collective.bpmproxy.interfaces import (
     PLONE_TASK_VIEW,
     PloneNotificationLevel,
 )
-from collective.bpmproxy.utils import validate_camunda_form
-from collective.bpmproxy.utils import prepare_camunda_form
+from collective.bpmproxy.utils import prepare_camunda_form, validate_camunda_form
 from generic_camunda_client.rest import ApiException
 from plone.protect.authenticator import check
 from plone.uuid.interfaces import IUUID

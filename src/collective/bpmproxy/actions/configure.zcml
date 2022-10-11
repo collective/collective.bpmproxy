@@ -29,7 +29,7 @@
 
   <plone:ruleAction
     name="plone.actions.BpmSignal"
-    title="Broadcast BPM Signal"
+    title="Broadcast BPMN Signal"
     description="Call an signal related to the triggering object"
     for="*"
     event="*"

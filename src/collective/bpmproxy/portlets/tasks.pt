@@ -3,7 +3,7 @@
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
    tal:omit-tag="">
 
-<div class="card portlet portletWorkflowReview"
+<div class="card portlet portletNews"
    i18n:domain="collective.bpmproxy">
 
   <div class="card-header" i18n:translate="">
