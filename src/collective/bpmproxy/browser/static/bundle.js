@@ -3102,9 +3102,10 @@
           id: prefixId(id, formId),
           label: label,
           required: required
-        }), o$2("input", {
+        }), o$2(!!(field && field.key && field.key.match(/text|comment|feedback|body/)) ? "textarea" : "input", {
           class: "fjs-input",
           disabled: disabled,
+          rows: !!(field && field.key && field.key.match(/text|comment|feedback|body/)) ? 10 : null,
           id: prefixId(id, formId),
           onInput: onChange,
           type: "text",
