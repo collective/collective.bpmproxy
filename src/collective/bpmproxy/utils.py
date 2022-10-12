@@ -89,6 +89,10 @@ def prepare_camunda_form(schema_json, default_data, default_values, context):
         elif key in default_values:
             data[key] = interpolate(default_values[key], interpolator)
 
+        # Set options from task variables
+        if component.get("valuesKey") and component["valuesKey"] in default_data:
+            options[component["valuesKey"]] = default_data[component["valuesKey"]]
+
         # Populate dynamic data for fields with property vocabulary
         # See: https://github.com/bpmn-io/form-js/pull/270
         if context and (component.get("properties") or {}).get("vocabulary"):
