@@ -11,7 +11,7 @@
       "id": "Field_0mth290",
       "key": "optionsChosen",
       "valuesKey": "options",
-      "description": "Please, choose the features, you wish to include"
+      "description": "Please, choose the options, you wish to include"
     },
     {
       "label": "Contact information",

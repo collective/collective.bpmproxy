@@ -17,7 +17,7 @@
           <text>"Option 1"</text>
         </outputEntry>
         <outputEntry id="LiteralExpression_1qtyt5g">
-          <text>"1"</text>
+          <text>"Option 1"</text>
         </outputEntry>
       </rule>
       <rule id="DecisionRule_17mxh1l">
@@ -28,7 +28,7 @@
           <text>"Option 2"</text>
         </outputEntry>
         <outputEntry id="LiteralExpression_1i5g662">
-          <text>"2"</text>
+          <text>"Option 2"</text>
         </outputEntry>
       </rule>
       <rule id="DecisionRule_0vuprje">
@@ -39,7 +39,7 @@
           <text>"Option 3"</text>
         </outputEntry>
         <outputEntry id="LiteralExpression_1tq17kj">
-          <text>"3"</text>
+          <text>"Option 3"</text>
         </outputEntry>
       </rule>
     </decisionTable>

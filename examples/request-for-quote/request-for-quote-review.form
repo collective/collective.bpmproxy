@@ -19,7 +19,7 @@
       "key": "text"
     },
     {
-      "label": "Allow request to pass forward",
+      "label": "Allow request to go forward",
       "type": "checkbox",
       "id": "Field_00biwoo",
       "key": "accept",
