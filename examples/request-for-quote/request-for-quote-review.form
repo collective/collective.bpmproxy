@@ -1,7 +1,7 @@
 {
   "components": [
     {
-      "text": "# Review request for a quote",
+      "text": "# Review request for quote",
       "type": "text",
       "id": "Field_1l9lw7j"
     },
@@ -13,7 +13,7 @@
       "valuesKey": "options"
     },
     {
-      "label": "Contect information",
+      "label": "Contact information",
       "type": "textfield",
       "id": "Field_0i44c70",
       "key": "text"

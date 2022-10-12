@@ -1,7 +1,7 @@
 {
   "components": [
     {
-      "text": "# Request for a quote",
+      "text": "# Request for quote",
       "type": "text",
       "id": "Field_1l9lw7j"
     },
@@ -14,7 +14,7 @@
       "description": "Please, choose the features, you wish to include"
     },
     {
-      "label": "Contect information",
+      "label": "Contact information",
       "type": "textfield",
       "id": "Field_0i44c70",
       "key": "text",

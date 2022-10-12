@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1scxun7" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.4.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.17.0">
   <bpmn:process id="example-request-for-quote" name="Example: Request for quote" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_1" name="Product category chosen" camunda:formRef="request-for-quote-start" camunda:formRefBinding="latest" camunda:initiator="${author}">
+    <bpmn:startEvent id="StartEvent_1" name="Product category chosen" camunda:formRef="request-for-quote-start" camunda:formRefBinding="latest" camunda:initiator="author">
       <bpmn:outgoing>Flow_0jqzqk5</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="Flow_0jqzqk5" sourceRef="StartEvent_1" targetRef="Activity_194l477" />
     <bpmn:sequenceFlow id="Flow_1c82h2w" sourceRef="Activity_194l477" targetRef="Activity_0f4gvi9" />
-    <bpmn:userTask id="Activity_0f4gvi9" name="Chose options" camunda:formRef="request-for-quote-options" camunda:formRefBinding="latest">
+    <bpmn:userTask id="Activity_0f4gvi9" name="Choose options" camunda:formRef="request-for-quote-options" camunda:formRefBinding="latest" camunda:assignee="${author}">
       <bpmn:incoming>Flow_1c82h2w</bpmn:incoming>
       <bpmn:outgoing>Flow_0q6olay</bpmn:outgoing>
     </bpmn:userTask>
@@ -37,11 +37,11 @@
       <bpmn:incoming>Flow_1spxoq3</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_1spxoq3" sourceRef="Event_0i6uv2r" targetRef="Event_0jyj264" />
-    <bpmn:userTask id="Activity_111nkrv" name="View thank you page" camunda:formRef="request-for-quote-thanks" camunda:formRefBinding="latest">
+    <bpmn:userTask id="Activity_111nkrv" name="View thank you page" camunda:formRef="request-for-quote-thanks" camunda:formRefBinding="latest" camunda:assignee="${author}">
       <bpmn:incoming>Flow_0jx66w8</bpmn:incoming>
       <bpmn:outgoing>Flow_1ilrro1</bpmn:outgoing>
     </bpmn:userTask>
-    <bpmn:userTask id="Activity_04aa5i7" name="Review request" camunda:formRef="request-for-quote-review" camunda:formRefBinding="latest">
+    <bpmn:userTask id="Activity_04aa5i7" name="Review request" camunda:formRef="request-for-quote-review" camunda:formRefBinding="latest" camunda:candidateGroups="Site Administrators">
       <bpmn:incoming>Flow_0lnxngw</bpmn:incoming>
       <bpmn:outgoing>Flow_15p81a4</bpmn:outgoing>
     </bpmn:userTask>
@@ -85,7 +85,7 @@ ${optionsChosen}</camunda:inputParameter>
       <bpmn:outgoing>Flow_1gduf4o</bpmn:outgoing>
       <bpmn:outgoing>Flow_0vs7cul</bpmn:outgoing>
       <bpmn:timerEventDefinition id="TimerEventDefinition_1ezjzbw">
-        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT30S</bpmn:timeDuration>
+        <bpmn:timeDuration xsi:type="bpmn:tFormalExpression">PT60S</bpmn:timeDuration>
       </bpmn:timerEventDefinition>
     </bpmn:intermediateCatchEvent>
   </bpmn:process>

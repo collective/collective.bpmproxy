@@ -69,7 +69,7 @@ def get_authorization():
         ) or request.form.get("token")
         if not (token and is_valid_uuid(token)):
             token = str(uuid.uuid4())
-            IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = token
+        IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = token
         token = get_token(
             username=ANONYMOUS_USER_PREFIX + token,
             groups=[],
