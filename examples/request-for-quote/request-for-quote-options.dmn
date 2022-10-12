@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0he18fg" name="DRD" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="5.4.1" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.18.0">
+  <decision id="request-for-quote-options" name="Available options for category">
+    <decisionTable id="DecisionTable_1h6vrt1" hitPolicy="COLLECT">
+      <input id="Input_1" label="Category">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>category</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Label" name="label" typeRef="string" />
+      <output id="OutputClause_0czp6cs" label="Value" name="value" typeRef="string" />
+      <rule id="DecisionRule_1i0o2g6">
+        <inputEntry id="UnaryTests_1fbndws">
+          <text>"a"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1sek2zj">
+          <text>"Option 1"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1qtyt5g">
+          <text>"1"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_17mxh1l">
+        <inputEntry id="UnaryTests_04s8gff">
+          <text>"b"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0d4rj5j">
+          <text>"Option 2"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1i5g662">
+          <text>"2"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0vuprje">
+        <inputEntry id="UnaryTests_175shek">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_15it0e5">
+          <text>"Option 3"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_1tq17kj">
+          <text>"3"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="request-for-quote-options">
+        <dc:Bounds height="80" width="180" x="160" y="100" />
+      </dmndi:DMNShape>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>

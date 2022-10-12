@@ -1,0 +1,40 @@
+{
+  "components": [
+    {
+      "text": "# Request for a quote",
+      "type": "text",
+      "id": "Field_1l9lw7j"
+    },
+    {
+      "label": "Options for the request",
+      "type": "checklist",
+      "id": "Field_0mth290",
+      "key": "optionsChosen",
+      "valuesKey": "options",
+      "description": "Please, choose the features, you wish to include"
+    },
+    {
+      "label": "Contect information",
+      "type": "textfield",
+      "id": "Field_0i44c70",
+      "key": "text",
+      "description": "Please, type your contact information"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_1l6s5vw",
+      "key": "field_100twzy"
+    }
+  ],
+  "type": "default",
+  "id": "request-for-quote-options",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.4.1"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.18.0",
+  "schemaVersion": 5
+}

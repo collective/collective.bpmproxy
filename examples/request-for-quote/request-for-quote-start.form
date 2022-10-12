@@ -1,0 +1,45 @@
+{
+  "components": [
+    {
+      "text": "# Request for quote\n\nPlease, choose a category for your request.",
+      "type": "text",
+      "id": "Field_0jafl86"
+    },
+    {
+      "values": [
+        {
+          "label": "Category A",
+          "value": "a"
+        },
+        {
+          "label": "Category C",
+          "value": "c"
+        },
+        {
+          "label": "Category B",
+          "value": "b"
+        }
+      ],
+      "label": "Request category",
+      "type": "radio",
+      "id": "Field_1kcn2di",
+      "key": "category"
+    },
+    {
+      "action": "submit",
+      "label": "Continue",
+      "type": "button",
+      "id": "Field_1prb62l",
+      "key": "field_1dph6rr"
+    }
+  ],
+  "type": "default",
+  "id": "request-for-quote-start",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.4.1"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.18.0",
+  "schemaVersion": 5
+}

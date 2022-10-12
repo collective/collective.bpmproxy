@@ -1,0 +1,45 @@
+{
+  "components": [
+    {
+      "text": "# Review request for a quote",
+      "type": "text",
+      "id": "Field_1l9lw7j"
+    },
+    {
+      "label": "Options for the request",
+      "type": "checklist",
+      "id": "Field_0mth290",
+      "key": "optionsChosen",
+      "valuesKey": "options"
+    },
+    {
+      "label": "Contect information",
+      "type": "textfield",
+      "id": "Field_0i44c70",
+      "key": "text"
+    },
+    {
+      "label": "Allow request to pass forward",
+      "type": "checkbox",
+      "id": "Field_00biwoo",
+      "key": "accept",
+      "defaultValue": true
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_1l6s5vw",
+      "key": "field_100twzy"
+    }
+  ],
+  "type": "default",
+  "id": "request-for-quote-review",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.4.1"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.18.0",
+  "schemaVersion": 5
+}
