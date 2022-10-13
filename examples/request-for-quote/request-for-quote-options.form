@@ -18,7 +18,10 @@
       "type": "textfield",
       "id": "Field_0i44c70",
       "key": "text",
-      "description": "Please, type your contact information"
+      "description": "Please, type your contact information",
+      "validate": {
+        "required": true
+      }
     },
     {
       "action": "submit",

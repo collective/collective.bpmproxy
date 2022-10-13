@@ -23,7 +23,10 @@
       "label": "Request category",
       "type": "radio",
       "id": "Field_1kcn2di",
-      "key": "category"
+      "key": "category",
+      "validate": {
+        "required": true
+      }
     },
     {
       "action": "submit",
