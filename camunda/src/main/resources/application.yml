@@ -10,7 +10,8 @@ camunda:
   rest:
     enabled: true
     context-path: /engine-rest
-    basic-auth-enabled: false
+    basic-auth-enabled: true
+    authentication-provider: com.example.camunda.JWTAuthenticationProvider
 
   webapps:
     enabled: true
