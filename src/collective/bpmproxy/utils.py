@@ -3,20 +3,35 @@ from concurrent.futures import ThreadPoolExecutor
 from plone.stringinterp.interfaces import IStringInterpolator
 from transaction.interfaces import IDataManager
 from uuid import UUID
+from dateutil.parser import isoparse
 from zope.component import getUtility
 from zope.interface import implementer
 from zope.interface.interfaces import ComponentLookupError
 from zope.schema.interfaces import IVocabularyFactory
 
+import datetime
 import json
 import logging
+import pytz
 import re
 import six
 import string
 import transaction
 
+MAYBE_ISODT = re.compile(r"[0-9:\-\+T]+")
+
 
 logger = logging.getLogger(__name__)
+
+
+def datetime_to_c7(dt):
+    iso = dt.isoformat()
+    if len(iso) < 25:
+        # 0001-01-01T11:30:00
+        return iso + ".0+0000"
+    else:
+        # 0001-01-01T11:30:00+00:00
+        return iso[:-6] + ".0" + iso[-6:].replace(":", "")
 
 
 def infer_variable(value):
@@ -27,6 +42,19 @@ def infer_variable(value):
     elif isinstance(value, int):
         return {"value": value, "type": "Integer"}
     else:
+        if MAYBE_ISODT.match(value):
+            dt = None
+            try:
+                dt = isoparse(value)
+            except ValueError:
+                try:
+                    dt = isoparse(datetime.date.today().isoformat() + "T" + value)
+                    dt = dt.combine(datetime.date.min, dt.time(), tzinfo=dt.tzinfo)
+                except ValueError:
+                    pass
+            if dt:
+                # print(value, datetime_to_c7(dt))
+                return {"value": datetime_to_c7(dt), "type": "Date"}
         return {"value": str(value), "type": "String"}
 
 
@@ -41,9 +69,33 @@ def infer_variables(data):
 
 
 def flatten_variables(variables):
+    def parse_date(iso):
+        try:
+            dt = isoparse(iso)
+            dt_utc = dt.astimezone(pytz.utc)
+            if dt_utc.time().isoformat() == "00:00:00":
+                # date
+                # print(iso, str(dt_utc.date()))
+                return str(dt_utc.date())
+            if dt.date() == datetime.date.min:
+                # time
+                # print(iso, dt.isoformat().split("T")[-1])
+                return dt.isoformat().split("T")[-1]
+            # datetime
+            # print(iso, iso)
+            return iso
+        except ValueError:
+            return None
+        return value
+
     return dict(
         [
-            (name, variable.value)
+            (
+                name,
+                variable.value and parse_date(variable.value)
+                if variable.type == "Date"
+                else variable.value,
+            )
             for name, variable in variables.items()
             if variable.value is not None
         ]

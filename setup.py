@@ -49,11 +49,13 @@ setup(
     install_requires=[
         'setuptools',
         # -*- Extra requirements: -*-
+        'dateutil',
         'generic-camunda-client',
         'plone.api>=1.8.4',
         'plone.app.dexterity',
         'plone.restapi',
         'pyjwt',
+        'pytz'
         'z3c.jbot',
     ],
     extras_require={
