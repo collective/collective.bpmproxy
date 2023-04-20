@@ -27,7 +27,7 @@ class AvailableProcessDefinitions(object):
             definitions = definition_api.get_process_definitions(
                 latest_version="true",
                 tenant_id_in=",".join(tenant_ids) or None,
-                without_tenant_id=not tenant_ids and "true" or None,
+                include_process_definitions_without_tenant_id="true",
             )
             items = [
                 VocabItem(

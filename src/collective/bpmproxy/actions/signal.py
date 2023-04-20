@@ -76,19 +76,17 @@ def _throwSignal(signal, payload, username=None):
     with camunda_admin_client(username) as client:
         api = generic_camunda_client.SignalApi(client)
         tenant_ids = get_tenant_ids()
-        if not tenant_ids:
+        for tenant_id in tenant_ids:
             dto = SignalDto(
-                name=signal,
-                variables=infer_variables(payload),
-                without_tenant_id="true",
+                name=signal, variables=infer_variables(payload), tenant_id=tenant_id
             )
             api.throw_signal(signal_dto=dto)
-        else:
-            for tenant_id in tenant_ids:
-                dto = SignalDto(
-                    name=signal, variables=infer_variables(payload), tenant_id=tenant_id
-                )
-                api.throw_signal(signal_dto=dto)
+        dto = SignalDto(
+            name=signal,
+            variables=infer_variables(payload),
+            without_tenant_id="true",
+        )
+        api.throw_signal(signal_dto=dto)
 
 
 @implementer(IExecutable)
