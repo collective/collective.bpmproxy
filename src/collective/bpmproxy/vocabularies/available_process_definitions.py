@@ -7,6 +7,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 import generic_camunda_client
 
+from collective.bpmproxy.utils import get_tenant_ids
+
 
 class VocabItem(object):
     def __init__(self, token, value):
@@ -21,9 +23,20 @@ class AvailableProcessDefinitions(object):
     def __call__(self, context):
         with camunda_client() as client:
             definition_api = generic_camunda_client.ProcessDefinitionApi(client)
-            definitions = definition_api.get_process_definitions(latest_version="true")
+            tenant_ids = get_tenant_ids()
+            definitions = definition_api.get_process_definitions(
+                latest_version="true",
+                tenant_id_in=",".join(tenant_ids) or None,
+                without_tenant_id=not tenant_ids and "true" or None,
+            )
             items = [
-                VocabItem(definition.key, definition.name) for definition in definitions
+                VocabItem(
+                    ":".join(filter(bool, [definition.key, definition.tenant_id])),
+                    definition.tenant_id
+                    and definition.name + " [" + definition.tenant_id + "]"
+                    or definition.name,
+                )
+                for definition in definitions
             ]
 
         # create a list of SimpleTerm items:

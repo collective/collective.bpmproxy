@@ -3,6 +3,14 @@
     xmlns:i18n="http://xml.zope.org/namespaces/i18n"
     i18n:domain="collective.bpmproxy">
 
-<!-- -*- extra stuff goes here -*- -->
+  <record name="collective.bpmproxy.tenant_ids">
+    <field type="plone.registry.field.List">
+      <title>Camunda Tenant Ids</title>
+      <description>Camundan Tenant Ids for this Plone site</description>
+      <value_type type="plone.registry.field.TextLine" />
+      <required>false</required>
+    </field>
+    <value/>
+  </record>
 
 </registry>

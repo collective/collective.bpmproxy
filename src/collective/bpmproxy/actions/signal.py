@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from collective.bpmproxy.client import camunda_admin_client
-from collective.bpmproxy.utils import infer_variables, SideEffectDataManager
+from collective.bpmproxy.utils import (
+    infer_variables,
+    SideEffectDataManager,
+    get_tenant_ids,
+)
 from generic_camunda_client import SignalDto
 from OFS.SimpleItem import SimpleItem
 from plone.app.contentrules import PloneMessageFactory as _
@@ -71,8 +75,20 @@ def interpolate(value, interpolator):
 def _throwSignal(signal, payload, username=None):
     with camunda_admin_client(username) as client:
         api = generic_camunda_client.SignalApi(client)
-        dto = SignalDto(name=signal, variables=infer_variables(payload))
-        api.throw_signal(signal_dto=dto)
+        tenant_ids = get_tenant_ids()
+        if not tenant_ids:
+            dto = SignalDto(
+                name=signal,
+                variables=infer_variables(payload),
+                without_tenant_id="true",
+            )
+            api.throw_signal(signal_dto=dto)
+        else:
+            for tenant_id in tenant_ids:
+                dto = SignalDto(
+                    name=signal, variables=infer_variables(payload), tenant_id=tenant_id
+                )
+                api.throw_signal(signal_dto=dto)
 
 
 @implementer(IExecutable)

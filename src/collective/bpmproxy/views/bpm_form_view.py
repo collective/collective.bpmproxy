@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import print_function
 
+from plone.app.caching.operations.utils import doNotCache
+
 from collective.bpmproxy import _
 from collective.bpmproxy.client import (
     camunda_client,
@@ -183,6 +185,7 @@ class BpmProxyStartFormView(BrowserView):
         return self.index()
 
     def __call__(self):
+        doNotCache(self, self.request, self.request.response)
         if self.request.method == HTTPMethod.POST:
             check(self.request)
             return self._submit()
@@ -335,6 +338,7 @@ class BpmProxyTaskFormView(BrowserView):
         return self.index()
 
     def __call__(self):
+        doNotCache(self, self.request, self.request.response)
         with camunda_client() as client:
             try:
                 # Sanity check. Task belongs to this context.

@@ -17,12 +17,18 @@ import re
 import six
 import string
 import transaction
+import plone.api
 
 MAYBE_ISODT = re.compile(r"[0-9:\-\+T]+")
 
 
 logger = logging.getLogger(__name__)
 
+
+def get_tenant_ids():
+    return plone.api.portal.get_registry_record(
+        name="collective.bpmproxy.tenant_ids", default=[],
+    ) or []
 
 def datetime_to_c7(dt):
     iso = dt.isoformat()

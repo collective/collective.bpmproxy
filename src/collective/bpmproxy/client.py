@@ -14,6 +14,7 @@ from collective.bpmproxy.utils import (
     infer_variables,
     is_valid_uuid,
     prepare_camunda_form,
+    get_tenant_ids,
 )
 from contextlib import contextmanager
 from generic_camunda_client import (
@@ -55,6 +56,7 @@ def get_token(username, groups):
             "sub": username,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
             "groups": groups,
+            "tenant_ids": get_tenant_ids(),
         },
         private_key,
         algorithm="ES256",
@@ -119,13 +121,25 @@ def get_start_form(
     context,
 ):
     api = generic_camunda_client.ProcessDefinitionApi(client)
-    with open(api.get_deployed_start_form_by_key(definition_key)) as fp:
-        return prepare_camunda_form(
-            fp.read(),
-            current_values,
-            default_values,
-            context,
-        )
+    if ":" in definition_key:
+        definition_key, tenant_id = definition_key.rsplit(":", 1)
+        with open(
+            api.get_deployed_start_form_by_key_and_tenant_id(definition_key, tenant_id)
+        ) as fp:
+            return prepare_camunda_form(
+                fp.read(),
+                current_values,
+                default_values,
+                context,
+            )
+    else:
+        with open(api.get_deployed_start_form_by_key(definition_key)) as fp:
+            return prepare_camunda_form(
+                fp.read(),
+                current_values,
+                default_values,
+                context,
+            )
 
 
 def get_task_form(
@@ -148,6 +162,7 @@ def get_task_form(
 def get_available_tasks(
     client, context_key=None, attachments_key=None, for_display=False
 ):
+    # we assume that authentication is enough to filter tasks by tenants
     task_api = generic_camunda_client.TaskApi(client)
     needle = (context_key or "%") + (attachments_key or "%")
     tasks = (
@@ -167,7 +182,7 @@ def get_available_tasks(
                 sorting=[
                     TaskQueryDtoSorting(sort_by="dueDate", sort_order="asc"),
                     TaskQueryDtoSorting(sort_by="created", sort_order="desc"),
-                ]
+                ],
             ),
         )
     )
@@ -203,6 +218,10 @@ def submit_start_form(
 ):
     api = generic_camunda_client.ProcessDefinitionApi(client)
     variables = form_variables.copy()
+    if ":" in definition_key:
+        definition_key, tenant_id = definition_key.rsplit(":", 1)
+    else:
+        tenant_id = None
 
     if process_variables and context:
         interpolator = IStringInterpolator(context)
@@ -218,8 +237,14 @@ def submit_start_form(
     )
 
     try:
-        return api.start_process_instance_by_key(
-            definition_key, start_process_instance_dto=dto
+        return (
+            api.start_process_instance_by_key_and_tenant_id(
+                definition_key, tenant_id, start_process_instance_dto=dto
+            )
+            if tenant_id
+            else api.start_process_instance_by_key(
+                definition_key, start_process_instance_dto=dto
+            )
         )
     except ApiException as e:
         logger.error(
@@ -261,10 +286,18 @@ def get_task_variables(client, task_id):
 
 
 def get_diagram_xml(client, definition_id=None, definition_key=None):
+    if ":" in definition_key:
+        definition_key, tenant_id = definition_key.rsplit(":", 1)
+    else:
+        tenant_id = None
     api = generic_camunda_client.ProcessDefinitionApi(client)
     dto = (
         api.get_process_definition_bpmn20_xml(definition_id)
         if definition_id
+        else api.get_process_definition_bpmn20_xml_by_key_and_tenant_id(
+            definition_key, tenant_id
+        )
+        if tenant_id
         else api.get_process_definition_bpmn20_xml_by_key(definition_key)
     )
     return dto.bpmn20_xml

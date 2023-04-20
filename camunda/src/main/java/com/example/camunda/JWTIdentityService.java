@@ -47,6 +47,7 @@ public class JWTIdentityService extends IdentityServiceImpl {
             JWTClaimsSet claims = jwt.getJWTClaimsSet();
             userId = claims.getStringClaim("sub");
             groups = claims.getStringListClaim("groups");
+            tenantIds = claims.getStringListClaim("tenant_ids");
             super.setAuthentication(userId, groups, tenantIds);
         } catch (ParseException e) {
             // Persistent Basic Auth
