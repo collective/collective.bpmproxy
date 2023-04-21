@@ -55,7 +55,7 @@ setup(
         'plone.app.dexterity',
         'plone.restapi',
         'pyjwt',
-        'pytz'
+        'pytz',
         'z3c.jbot',
     ],
     extras_require={
