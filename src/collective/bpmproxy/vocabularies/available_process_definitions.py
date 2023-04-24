@@ -33,8 +33,8 @@ class AvailableProcessDefinitions(object):
                 VocabItem(
                     ":".join(filter(bool, [definition.key, definition.tenant_id])),
                     definition.tenant_id
-                    and definition.name + " [" + definition.tenant_id + "]"
-                    or definition.name,
+                    and (definition.name or "n/a") + " [" + definition.tenant_id + "]"
+                    or (definition.name or "n/a"),
                 )
                 for definition in definitions
             ]
