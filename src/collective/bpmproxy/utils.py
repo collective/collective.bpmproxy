@@ -26,13 +26,16 @@ logger = logging.getLogger(__name__)
 
 
 def get_tenant_ids():
-    return list(filter(bool,
-        plone.api.portal.get_registry_record(
-            name="collective.bpmproxy.tenant_ids",
-            default=[],
+    return list(
+        filter(
+            bool,
+            plone.api.portal.get_registry_record(
+                name="collective.bpmproxy.tenant_ids",
+                default=[],
+            )
+            or [],
         )
-        or []
-    ))
+    )
 
 
 def datetime_to_c7(dt):
