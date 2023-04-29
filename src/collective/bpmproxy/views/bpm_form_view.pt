@@ -12,7 +12,7 @@
   <metal:content-core metal:define-macro="content-core">
 
   <div data-pat-autotoc="levels: .tab; section: section; className: autotabs"
-       class="rowlike pat-autotoc" tal:omit-tag="not:view/tabs|nothing">
+       class="bpmproxy rowlike pat-autotoc" tal:omit-tag="not:view/tabs|nothing">
     <section tal:omit-tag="not:view/tasks|nothing">
       <section tal:omit-tag="not:view/diagram_xml|nothing">
         <tal:condition condition="view/tabs|nothing">

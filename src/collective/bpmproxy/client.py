@@ -285,11 +285,9 @@ def get_task_variables(client, task_id):
     return flatten_variables(variables)
 
 
-def get_diagram_xml(client, definition_id=None, definition_key=None):
-    if ":" in definition_key:
+def get_diagram_xml(client, definition_id=None, definition_key=None, tenant_id=None):
+    if ":" in definition_key and tenant_id is None:
         definition_key, tenant_id = definition_key.rsplit(":", 1)
-    else:
-        tenant_id = None
     api = generic_camunda_client.ProcessDefinitionApi(client)
     dto = (
         api.get_process_definition_bpmn20_xml(definition_id)

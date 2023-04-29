@@ -3344,3 +3344,5 @@ span.flatpickr-weekday {
 span.flatpickr-day.selected {
   font-weight: bold;
 }
+
+.bpmproxy.autotabs section { display: none; }

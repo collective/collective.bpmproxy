@@ -240,10 +240,7 @@ class BpmProxyTaskFormView(BrowserView):
                 # Get diagram
                 if self.context.diagram_enabled:
                     self.diagram_xml = get_diagram_xml(
-                        client,
-                        task.process_definition_id + ":" + task.tenant_id
-                        if task.tenant_id
-                        else task.process_definition_id,
+                        client, task.process_definition_id, task.tenant_id
                     )
 
                 # Enable attachments when possible.
