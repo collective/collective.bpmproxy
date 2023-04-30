@@ -49,7 +49,7 @@ public class JWTIdentityService extends IdentityServiceImpl {
             groups = claims.getStringListClaim("groups");
             tenantIds = claims.getStringListClaim("tenant_ids");
             super.setAuthentication(userId, groups, tenantIds);
-        } catch (ParseException e) {
+        } catch (NullPointerException | ParseException e) {
             // Persistent Basic Auth
             super.setAuthentication(userId, groups, tenantIds);
         }
