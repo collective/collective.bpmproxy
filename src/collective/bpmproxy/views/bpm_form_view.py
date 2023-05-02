@@ -262,7 +262,7 @@ class BpmProxyTaskFormView(BrowserView):
             except ApiException as e:
                 logger.error("Exception when fetching task for rendering: %s\n", e)
                 logger.warning(e)
-                raise NotFound(self, self.task_id, self.request)
+                raise NotFound(self, self.task_id, self.request) from e
 
         if self.context.diagram_enabled:
             self.tabs = True

@@ -21,6 +21,46 @@
    </action>
   </actions>
  </rule>
+ <rule name="collective-bpmproxy-submitted-any" title="BPMN signal: submitted any" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>submit</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-submitted</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="collective-bpmproxy-published-one" title="BPMN signal: published one" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>publish</element>
+     <element>publish_externally</element>
+     <element>publish_internally</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-published:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
  <rule name="collective-bpmproxy-retracted-one" title="BPMN signal: retracted one" cascading="False"
     description="" enabled="True"
     event="Products.CMFCore.interfaces.IActionSucceededEvent"
