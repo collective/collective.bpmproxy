@@ -289,7 +289,7 @@ def get_task_variables(client, task_id):
 
 
 def get_diagram_xml(client, definition_id=None, definition_key=None, tenant_id=None):
-    if ":" in definition_key and tenant_id is None:
+    if definition_key and ":" in definition_key and tenant_id is None:
         definition_key, tenant_id = definition_key.rsplit(":", 1)
     api = generic_camunda_client.ProcessDefinitionApi(client)
     dto = (
