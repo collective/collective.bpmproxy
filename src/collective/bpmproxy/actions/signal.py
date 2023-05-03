@@ -72,11 +72,10 @@ def interpolate(value, interpolator):
     return value
 
 
-def _throwSignal(signal, payload, username=None):
-    with camunda_admin_client(username) as client:
+def _throwSignal(signal, payload, username=None, tenant_ids=None):
+    with camunda_admin_client(username, tenant_ids) as client:
         api = generic_camunda_client.SignalApi(client)
-        tenant_ids = get_tenant_ids()
-        for tenant_id in tenant_ids:
+        for tenant_id in tenant_ids or []:
             dto = SignalDto(
                 name=signal, variables=infer_variables(payload), tenant_id=tenant_id
             )
@@ -107,9 +106,10 @@ class BpmSignalActionExecutor(object):
             username = plone.api.user.get_current().getUserName()
         else:
             username = None
+        tenant_ids = get_tenant_ids()
         transaction.get().join(
             SideEffectDataManager(
-                functools.partial(_throwSignal, name, payload, username)
+                functools.partial(_throwSignal, name, payload, username, tenant_ids)
             )
         )
         return True

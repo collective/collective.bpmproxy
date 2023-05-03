@@ -44,19 +44,21 @@ def get_api_url():
     return os.environ.get(CAMUNDA_API_URL_ENV) or CAMUNDA_API_URL_DEFAULT
 
 
-def get_token(username, groups):
+def get_token(username, groups, tenant_ids=None):
     private_key = os.environ.get(CAMUNDA_API_PRIVATE_KEY_ENV)
     if private_key and os.path.exists(private_key):
         with open(private_key, "r", encoding="utf-8") as fp:
             private_key = fp.read()
     if not private_key:
         return None
+    if tenant_ids is None:
+        tenant_ids = get_tenant_ids()
     return jwt.encode(
         {
             "sub": username,
             "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
             "groups": groups,
-            "tenant_ids": get_tenant_ids(),
+            "tenant_ids": tenant_ids,
         },
         private_key,
         algorithm="ES256",
@@ -99,11 +101,12 @@ def camunda_client():
 
 
 @contextmanager
-def camunda_admin_client(username=None):
+def camunda_admin_client(username=None, tenant_ids=None):
     configuration = generic_camunda_client.Configuration(host=get_api_url())
     authorization = "Bearer " + get_token(
         username=username or CAMUNDA_ADMIN_USER,
         groups=[CAMUNDA_ADMIN_GROUP],
+        tenant_ids=tenant_ids,
     )
     with generic_camunda_client.ApiClient(
         configuration,
