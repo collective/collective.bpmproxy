@@ -6,7 +6,7 @@
 
   <portlet
     addview="collective.bpmproxy.portlets.Tasks"
-    title="Tasklist"
+    title="Task list"
     description="A portlet which lists available pending BPM tasks."
     i18n:attributes="title title_tasks;
                      description description_tasks">

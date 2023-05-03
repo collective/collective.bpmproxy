@@ -44,13 +44,13 @@ class Assignment(base.Assignment):
 
     @property
     def title(self):
-        return _("Tasklist")
+        return _("Task list")
 
 
 class AddForm(base.AddForm):
     schema = ITasksPortlet
     form_fields = field.Fields(ITasksPortlet)
-    label = _("Add Tasklist")
+    label = _("Add Task list")
     description = _("This portlet displays available pending BPM tasks.")
 
     def create(self, data):
@@ -60,7 +60,7 @@ class AddForm(base.AddForm):
 class EditForm(base.EditForm):
     schema = ITasksPortlet
     form_fields = field.Fields(ITasksPortlet)
-    label = _("Edit Tasklist")
+    label = _("Edit Task list")
     description = _("This portlet displays available pending BPM tasks.")
 
 

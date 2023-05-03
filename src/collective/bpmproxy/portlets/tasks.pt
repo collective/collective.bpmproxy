@@ -8,7 +8,7 @@
 
   <div class="card-header" i18n:translate="">
       <span tal:omit-tag="python:True" i18n:translate="">
-        Tasklist
+        Task list
       </span>
     <tal:comment replace="nothing">
       <a href="#"
