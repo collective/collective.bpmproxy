@@ -1,0 +1,117 @@
+{
+  "components": [
+    {
+      "text": "# {{title}}",
+      "type": "text",
+      "layout": {
+        "row": "Row_199wq39",
+        "columns": null
+      },
+      "id": "Field_0yig0q8"
+    },
+    {
+      "label": "Change final title",
+      "type": "radio",
+      "layout": {
+        "row": "Row_1y75qi6",
+        "columns": null
+      },
+      "id": "Field_1xcjh3q",
+      "key": "title",
+      "validate": {
+        "required": true
+      },
+      "valuesKey": "titles"
+    },
+    {
+      "label": "Image view",
+      "type": "image",
+      "layout": {
+        "row": "Row_161pq2m",
+        "columns": 4
+      },
+      "id": "Field_09lrf5b",
+      "source": "=imageUrl"
+    },
+    {
+      "text": "*{{description}}*",
+      "type": "text",
+      "layout": {
+        "row": "Row_161pq2m",
+        "columns": null
+      },
+      "id": "Field_1p5qtuv"
+    },
+    {
+      "text": "=text",
+      "type": "text",
+      "layout": {
+        "row": "Row_0ynibna",
+        "columns": null
+      },
+      "id": "Field_0uhi6xa"
+    },
+    {
+      "action": "submit",
+      "label": "Publish",
+      "type": "button",
+      "layout": {
+        "row": "Row_0zawsn5",
+        "columns": null
+      },
+      "id": "Field_139esvi",
+      "key": "field_15ux6h6"
+    },
+    {
+      "label": "Image",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_0ntpg39",
+        "columns": null
+      },
+      "id": "Field_09s1fhz",
+      "key": "imageUrl",
+      "disabled": true,
+      "conditional": {
+        "hide": "=true"
+      }
+    },
+    {
+      "label": "Description",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_0hoysgz",
+        "columns": null
+      },
+      "id": "Field_0n68yj2",
+      "key": "description",
+      "disabled": true,
+      "conditional": {
+        "hide": "=true"
+      }
+    },
+    {
+      "label": "Text",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_1goi7bc",
+        "columns": null
+      },
+      "id": "Field_1mpt7jd",
+      "key": "text",
+      "disabled": true,
+      "conditional": {
+        "hide": "=true"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "FromIdeaToArticleFinish",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.19.0",
+  "schemaVersion": 8
+}

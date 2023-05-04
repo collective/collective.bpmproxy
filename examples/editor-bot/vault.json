@@ -1,0 +1,6 @@
+{
+    "env": {
+        "OPENAI_API_KEY": "",
+        "PLONE_AUTHORIZATION":  ""
+    }
+  }

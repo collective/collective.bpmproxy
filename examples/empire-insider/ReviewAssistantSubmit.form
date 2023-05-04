@@ -1,0 +1,46 @@
+{
+  "components": [
+    {
+      "text": "# Ask for assistance\nPlease, describe, how I could enhance the article text.",
+      "type": "text",
+      "layout": {
+        "row": "Row_010p60q",
+        "columns": null
+      },
+      "id": "Field_14m1639"
+    },
+    {
+      "label": "Instructions",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_0rg0nu2",
+        "columns": null
+      },
+      "id": "Field_02dmkz8",
+      "key": "instructions",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "layout": {
+        "row": "Row_0zawsn5",
+        "columns": null
+      },
+      "id": "Field_139esvi",
+      "key": "field_15ux6h6"
+    }
+  ],
+  "type": "default",
+  "id": "ReviewAssistantSubmit",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.19.0",
+  "schemaVersion": 8
+}

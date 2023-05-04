@@ -1,0 +1,31 @@
+tasks:
+  GPT Create Article:
+    robotTaskName: Create article
+  GPT Iterate Article:
+    robotTaskName: Iterate article
+  GPT Create Titles:
+    robotTaskName: Create titles
+  GPT Create Description:
+    robotTaskName: Create description
+  GPT Create Keywords:
+    robotTaskName: Create keywords
+  GPT Create Image:
+    robotTaskName: Create image
+
+condaConfigFile: conda.yaml
+
+environmentConfigs:
+  - environment_windows_amd64_freeze.yaml
+  - environment_linux_amd64_freeze.yaml
+  - environment_darwin_amd64_freeze.yaml
+  - conda.yaml
+
+artifactsDir: output  
+
+PATH:
+  - .
+PYTHONPATH:
+  - .
+
+ignoreFiles:
+  - .gitignore

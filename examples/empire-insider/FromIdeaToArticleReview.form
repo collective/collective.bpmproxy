@@ -1,0 +1,115 @@
+{
+  "components": [
+    {
+      "text": "# {{title}}",
+      "type": "text",
+      "layout": {
+        "row": "Row_0zl8pti",
+        "columns": null
+      },
+      "id": "Field_1gkfn2c"
+    },
+    {
+      "text": "=text",
+      "type": "text",
+      "layout": {
+        "row": "Row_112hlrh",
+        "columns": null
+      },
+      "id": "Field_0uhi6xa"
+    },
+    {
+      "values": [
+        {
+          "label": "Accept draft",
+          "value": "accept"
+        },
+        {
+          "label": "Require changes",
+          "value": "changes"
+        },
+        {
+          "label": "Previous version",
+          "value": "previous"
+        }
+      ],
+      "label": "Action",
+      "type": "radio",
+      "layout": {
+        "row": "Row_1y75qi6",
+        "columns": null
+      },
+      "id": "Field_1xcjh3q",
+      "key": "action",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Changes",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_18s4hh9",
+        "columns": null
+      },
+      "id": "Field_0jiqj58",
+      "key": "instructions",
+      "description": "Instructions for the required changes.",
+      "validate": {
+        "required": true,
+        "minLength": 10
+      },
+      "conditional": {
+        "hide": "=action != \"changes\""
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Continue",
+      "type": "button",
+      "layout": {
+        "row": "Row_0zawsn5",
+        "columns": null
+      },
+      "id": "Field_139esvi",
+      "key": "field_15ux6h6"
+    },
+    {
+      "label": "Title",
+      "type": "textfield",
+      "layout": {
+        "row": "Row_06ml0cm",
+        "columns": null
+      },
+      "id": "Field_0q28erg",
+      "key": "title",
+      "conditional": {
+        "hide": "=true"
+      },
+      "disabled": true
+    },
+    {
+      "label": "Draft",
+      "type": "textarea",
+      "layout": {
+        "row": "Row_1f8wpio",
+        "columns": null
+      },
+      "id": "Field_1mpt7jd",
+      "key": "text",
+      "disabled": true,
+      "conditional": {
+        "hide": "=true"
+      }
+    }
+  ],
+  "type": "default",
+  "id": "FromIdeaToArticleReview",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.10.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.19.0",
+  "schemaVersion": 8
+}
