@@ -79,13 +79,19 @@ def _throwSignal(signal, payload, username=None, tenant_ids=None):
             dto = SignalDto(
                 name=signal, variables=infer_variables(payload), tenant_id=tenant_id
             )
-            api.throw_signal(signal_dto=dto)
+            try:
+                api.throw_signal(signal_dto=dto)
+            except Exception as e:
+                logger.warning(e)
         dto = SignalDto(
             name=signal,
             variables=infer_variables(payload),
             without_tenant_id="true",
         )
-        api.throw_signal(signal_dto=dto)
+        try:
+            api.throw_signal(signal_dto=dto)
+        except Exception as e:
+            logger.warning(e)
 
 
 @implementer(IExecutable)
