@@ -18,8 +18,13 @@
     for="plone.uuid.interfaces.IUUIDAware"
     provides="plone.stringinterp.interfaces.IStringSubstitution"
     factory=".substitutions.UUIDSubstitution"
-    name="uuid"
-  />
+    name="uuid" />
+
+  <adapter
+    for="plone.uuid.interfaces.IUUIDAware"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.ParentUUIDSubstitution"
+    name="parent_uuid" />
 
   <adapter
     for="*"

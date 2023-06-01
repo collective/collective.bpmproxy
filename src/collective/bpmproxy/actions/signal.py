@@ -7,7 +7,6 @@ from collective.bpmproxy.utils import (
 )
 from generic_camunda_client import SignalDto
 from OFS.SimpleItem import SimpleItem
-from plone.app.contentrules import PloneMessageFactory as _
 from plone.app.contentrules.actions import ActionAddForm, ActionEditForm
 from plone.app.contentrules.browser.formhelper import ContentRuleFormWrapper
 from plone.autoform import directives as form
@@ -18,6 +17,7 @@ from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from zope import schema
 from zope.component import adapter
 from zope.interface import implementer, Interface
+from collective.bpmproxy import _
 
 import functools
 import generic_camunda_client

@@ -27,20 +27,36 @@ import plone.api
 
 class ITasksPortlet(IPortletDataProvider):
 
+    header = schema.TextLine(
+        title=_("Portlet header"),
+        description=_("Title of the rendered portlet"),
+        required=False,
+    )
+
     use_context = schema.Bool(
         title=_("Show only tasks for the current context"),
         required=False,
-        default=False,
+        default=True,
+    )
+
+    process_definition_key = schema.Choice(
+        title=_("Show only tasks for a single process type"),
+        required=False,
+        vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
 
 @implementer(ITasksPortlet)
 class Assignment(base.Assignment):
     schema = ITasksPortlet
+    header = None
     use_context = False
+    process_definition_key = None
 
-    def __init__(self, use_context=False):
+    def __init__(self, header=None, use_context=False, process_definition_key=None):
+        self.header = header
         self.use_context = use_context
+        self.process_definition_key = process_definition_key
 
     @property
     def title(self):
@@ -54,7 +70,11 @@ class AddForm(base.AddForm):
     description = _("This portlet displays available pending BPM tasks.")
 
     def create(self, data):
-        return Assignment(use_context=data["use_context"])
+        return Assignment(
+            header=data["header"],
+            use_context=data["use_context"],
+            process_definition_key=data["process_definition_key"],
+        )
 
 
 class EditForm(base.EditForm):
@@ -94,8 +114,23 @@ class Renderer(base.Renderer):
     def _data(self):
         with camunda_client() as client:
             context_key = IUUID(self.context) if self.data.use_context else None
-            return get_available_tasks(
+            tasks = get_available_tasks(
                 client, context_key=context_key, for_display=True
+            )
+            # XXX: Being able to filter by process definition key relies on Camunda
+            # default ID generator, where generated unique IDs are prefixed with key
+            return (
+                [
+                    task
+                    for task in tasks
+                    if task.process_definition_id.split(":", 1)[0]
+                    in [
+                        self.data.process_definition_key,
+                        self.data.process_definition_key.rsplit(":", 1)[0],
+                    ]
+                ]
+                if self.data.process_definition_key
+                else tasks
             )
 
 

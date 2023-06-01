@@ -23,4 +23,18 @@
 
   </portlet>
 
+  <portlet
+    addview="collective.bpmproxy.portlets.Signal"
+    title="Signal dispatch"
+    description="This portlet displays button for dispatching BPM Signal."
+    i18n:attributes="title title_signal_dispatch;
+                     description description_signal_dispatch">
+
+    <!-- This will enable the portlet for right column,
+    left column and the footer too.
+    -->
+    <for interface="plone.app.portlets.interfaces.IColumn" />
+
+  </portlet>
+
 </portlets>

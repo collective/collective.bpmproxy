@@ -7,6 +7,8 @@ from zope.interface import Interface
 
 import plone.api
 
+from collective.bpmproxy.utils import parents
+
 
 @adapter(IUUIDAware)
 class UUIDSubstitution(BaseSubstitution):
@@ -16,6 +18,17 @@ class UUIDSubstitution(BaseSubstitution):
 
     def safe_call(self):
         return IUUID(self.context)
+
+
+@adapter(IUUIDAware)
+class ParentUUIDSubstitution(BaseSubstitution):
+
+    category = _("All Content")
+    description = _("Unique identifier (UUID) of the parent")
+
+    def safe_call(self):
+        for parent in parents(self.context, iface=IUUIDAware):
+            return IUUID(parent)
 
 
 @adapter(Interface)

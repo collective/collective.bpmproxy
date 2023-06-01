@@ -8,6 +8,14 @@
   <!-- '-*- extra stuff goes here -*-' -->
 
   <plone:portlet
+    name="collective.bpmproxy.portlets.Signal"
+    interface=".signal.ISignalPortlet"
+    assignment=".signal.Assignment"
+    renderer=".signal.Renderer"
+    addview=".signal.AddForm"
+    editview=".signal.EditForm" />
+
+  <plone:portlet
     name="collective.bpmproxy.portlets.Tasks"
     interface=".tasks.ITasksPortlet"
     assignment=".tasks.Assignment"
