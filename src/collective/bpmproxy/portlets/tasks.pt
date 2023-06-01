@@ -34,7 +34,8 @@
           <a href="#"
              tal:attributes="href string:${view/base_url}/${task/id};
                              title task/description;">
-            <span tal:replace="task/name">Title</span>
+            <span tal:condition="task/name" tal:replace="task/name">Title</span>
+            <span tal:condition="not:task/name" tal:replace="task/task_definition_key">Title</span>
           </a>
           <span class="portletItemDetails">
               <span tal:replace="task/assignee">Jim Smith</span> &mdash;

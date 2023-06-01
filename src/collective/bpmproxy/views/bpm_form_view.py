@@ -367,5 +367,13 @@ class BpmProxyTaskFormView(BrowserView):
         if self.request.method == HTTPMethod.POST:
             check(self.request)
             return self._submit(tasks[self.task_id])
+        elif tasks[self.task_id].form_key and (
+            tasks[self.task_id].form_key.startswith("@@")
+            or tasks[self.task_id].form_key.startswith("++")
+        ):
+            self.request.response.redirect(
+                self.context.absolute_url() + "/" + tasks[self.task_id].form_key
+            )
+            return ""
         else:
             return self._view(tasks[self.task_id])
