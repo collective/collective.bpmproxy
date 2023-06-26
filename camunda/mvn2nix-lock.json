@@ -2525,11 +2525,6 @@
       "sha256": "15cf8cbd9e014b7156482bbb48e515613158bdd9b4b908d21e6b900f7876f6ff",
       "url": "https://repo.maven.apache.org/maven2/org/codehaus/plexus/plexus-io/3.2.0/plexus-io-3.2.0.jar"
     },
-    "com.nimbusds:nimbus-jose-jwt:pom:9.23": {
-      "layout": "com/nimbusds/nimbus-jose-jwt/9.23/nimbus-jose-jwt-9.23.pom",
-      "sha256": "2dd972cf300e64e08ae50c3090a0f6904aad56112e37877e9da9b7e8fca605de",
-      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.23/nimbus-jose-jwt-9.23.pom"
-    },
     "io.netty:netty-codec-http2:jar:4.1.91.Final": {
       "layout": "io/netty/netty-codec-http2/4.1.91.Final/netty-codec-http2-4.1.91.Final.jar",
       "sha256": "5f29d77c208427a382f3da16f7a98c6fd57e7f4158fa6b172d54abde647ff58f",
@@ -2599,6 +2594,11 @@
       "layout": "org/eclipse/jetty/jetty-io/9.4.43.v20210629/jetty-io-9.4.43.v20210629.pom",
       "sha256": "ea7dcfbe7ce0d6e49b62df1d913198cb7a528d3424a475bd9c41c201ca3ba16e",
       "url": "https://repo.maven.apache.org/maven2/org/eclipse/jetty/jetty-io/9.4.43.v20210629/jetty-io-9.4.43.v20210629.pom"
+    },
+    "com.nimbusds:nimbus-jose-jwt:pom:9.31": {
+      "layout": "com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.pom",
+      "sha256": "7aaa64db6a7764e7a5ad55dedd94e7e74190c5a059f9aa653c0eb49594eff5a9",
+      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.pom"
     },
     "io.micronaut:micronaut-bom:pom:3.9.0": {
       "layout": "io/micronaut/micronaut-bom/3.9.0/micronaut-bom-3.9.0.pom",
@@ -6055,6 +6055,11 @@
       "sha256": "fbcc976f7d78290e008493b831f4bc620360e7c31cf1852713f1bddef3692793",
       "url": "https://repo.maven.apache.org/maven2/io/micronaut/groovy/micronaut-groovy-bom/3.3.1/micronaut-groovy-bom-3.3.1.pom"
     },
+    "com.nimbusds:nimbus-jose-jwt:jar:9.31": {
+      "layout": "com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.jar",
+      "sha256": "e0d1d9beafde7ebd46b69246bffd73dcb33409ea4ab7b91ac5622b1e6766f34e",
+      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.jar"
+    },
     "org.camunda.bpm.model:camunda-xml-model:jar:7.19.0": {
       "layout": "org/camunda/bpm/model/camunda-xml-model/7.19.0/camunda-xml-model-7.19.0.jar",
       "sha256": "214ad3b8fa40380c91499bcf642b3947a5f4058541883e4d979f250dabd227c4",
@@ -6174,11 +6179,6 @@
       "layout": "com/thoughtworks/qdox/qdox/2.0-M8/qdox-2.0-M8.jar",
       "sha256": "5de01a9b2c8c3600f8dd4524693ca511cc0973e5cd40116e0391fe8abc617b55",
       "url": "https://repo.maven.apache.org/maven2/com/thoughtworks/qdox/qdox/2.0-M8/qdox-2.0-M8.jar"
-    },
-    "com.nimbusds:nimbus-jose-jwt:jar:9.23": {
-      "layout": "com/nimbusds/nimbus-jose-jwt/9.23/nimbus-jose-jwt-9.23.jar",
-      "sha256": "33ab8084fdae1d75be1b061b1489d4a12045bd7b50c2e24ff152911e4551ec07",
-      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.23/nimbus-jose-jwt-9.23.jar"
     },
     "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:pom:2.14.2": {
       "layout": "com/fasterxml/jackson/datatype/jackson-datatype-jdk8/2.14.2/jackson-datatype-jdk8-2.14.2.pom",

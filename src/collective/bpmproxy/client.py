@@ -61,7 +61,7 @@ def get_token(username, groups, tenant_ids=None):
             "tenant_ids": tenant_ids,
         },
         private_key,
-        algorithm="ES256",
+        algorithm="EdDSA",
     )
 
 

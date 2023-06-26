@@ -1,12 +1,9 @@
 package com.example.camunda;
 
-import com.nimbusds.jose.JOSEException;
-import com.nimbusds.jose.JWSVerifier;
-import com.nimbusds.jose.crypto.ECDSAVerifier;
-import com.nimbusds.jose.jwk.ECKey;
-import com.nimbusds.jose.jwk.JWK;
-import com.nimbusds.jwt.SignedJWT;
 import io.micronaut.http.HttpHeaders;
+import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.util.io.pem.PemObject;
+import org.bouncycastle.util.io.pem.PemReader;
 import org.camunda.bpm.engine.IdentityService;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.rest.security.auth.AuthenticationResult;
@@ -15,7 +12,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
-import java.text.ParseException;
+import java.io.IOException;
+import java.io.StringReader;
+import java.security.*;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
+import java.util.Base64;
 
 
 public class JWTAuthenticationProvider extends HttpBasicAuthenticationProvider {
@@ -39,13 +41,37 @@ public class JWTAuthenticationProvider extends HttpBasicAuthenticationProvider {
             if (authorizationHeader != null && authorizationHeader.startsWith(TOKEN_AUTH_HEADER_PREFIX)) {
                 String token = authorizationHeader.substring(TOKEN_AUTH_HEADER_PREFIX.length());
                 try {
-                    JWK key = JWK.parseFromPEMEncodedObjects(publicKey);
-                    SignedJWT jwt = SignedJWT.parse(token);
-                    JWSVerifier verifier = new ECDSAVerifier((ECKey) key);
-                    if (jwt.verify(verifier)) {
-                        return AuthenticationResult.successful(token);
+                    // Add the Bouncy Castle provider
+                    Security.addProvider(new BouncyCastleProvider());
+
+                    // Decode the PEM formatted public key
+                    PemReader pemReader = new PemReader(new StringReader(publicKey));
+                    PemObject pemObject = pemReader.readPemObject();
+                    byte[] publicKeyBytes = pemObject.getContent();
+
+                    // Create a public key instance from the decoded bytes
+                    KeyFactory keyFactory = KeyFactory.getInstance("EdDSA", "BC");
+                    X509EncodedKeySpec publicKeySpec = new X509EncodedKeySpec(publicKeyBytes);
+                    PublicKey publicKey_ = keyFactory.generatePublic(publicKeySpec);
+
+                    // Verify the JWT signature
+                    Signature signature = Signature.getInstance("EdDSA", "BC");
+                    signature.initVerify(publicKey_);
+                    String[] parts = token.split("\\.");
+                    if (parts.length < 3) {
+                        return result;
                     }
-                } catch (ParseException | JOSEException e) {
+                    signature.update(parts[0].concat(".").concat(parts[1]).getBytes());
+                    byte[] jwtSignature = Base64.getUrlDecoder().decode(parts[2]);
+                    boolean isSignatureValid = signature.verify(jwtSignature);
+
+                    if (isSignatureValid) {
+                        return AuthenticationResult.successful(token);
+                    } else {
+                        log.debug("JWT signature validation failed.");
+                    }
+                } catch (IOException | NoSuchAlgorithmException | NoSuchProviderException | InvalidKeySpecException |
+                         SignatureException | InvalidKeyException e) {
                     // No op.
                 }
             }
