@@ -30,7 +30,7 @@ collective.bpmproxy
 
 Publish BPMN 2.0 processes from Camunda Platform 7, and interact with the processes with Camunda Forms or BPMN signals.
 
-The add-on requires Camunda Platform 7 with a special authentication plugin authorizing requests from Plone as their initiating Plone users. See the project repository for details.
+The add-on requires its bundled Camunda Platform 7 with a special authentication plugin authorizing requests from Plone as their initiating Plone users. See the project repository for details.
 
 
 Features
@@ -40,9 +40,13 @@ Features
 
 * A portlet to list all tasks available in every running process on the configured C7 instance. (Or just the tasks related to the current Plone page.)
 
+* A Portlet to trigger BPMN signals at the configured C7 instance from Plone.
+
 * A content-rule action to broadcast BPMN signals events at the configured C7 instance from configured events at Plone.
 
 * Support to show related available user task forms also for pages of other types than BPM Proxy.
+
+* Support to map ++add++ and ++edit++ forms as user task forms and complete user task from their completion.
 
 
 .. Examples
@@ -57,32 +61,20 @@ Documentation
 
 Generate private key for Plone-Camunda JWT-authentication::
 
-    $ openssl ecparam -name prime256v1 -genkey -noout -out ec-prime256v1-priv-key.pem
+    $ openssl genpkey -algorithm ed25519 -out ec-ed25519-priv-key.pem
 
 Generate public key for Plone-Camunda JWT-authentication::
 
-    $ openssl ec -in ec-prime256v1-priv-key.pem -pubout > camunda/ec-prime256v1-pub-key.pem
+    $ openssl ec -in ec-ed25519-priv-key.pem -pubout > ec-ed25519-pub-key.pem
 
-Configure Plone with environment variables::
+Start bundled Camunda application with PostgreSQL backend on docker compose with:
 
-    CAMUNDA_API_URL=http://localhost:8081/engine-rest
-    CAMUNDA_API_PRIVATE_KEY=/full/path/to/ec-prime256v1-priv-key.pem
+    $ docker-compose up
 
-For example::
+Start Plone with environment variables::
 
-    $ CAMUNDA_API_URL=http://localhost:8081/engine-rest CAMUNDA_API_PRIVATE_KEY=$(pwd)/ec-prime256v1-priv-key.pem bin/instance fg
+    CAMUNDA_API_URL=http://localhost:8081/engine-rest CAMUNDA_API_PRIVATE_KEY=$(pwd)/ec-ed25519-priv-key.pem ./bin/instance fg
 
-where http://localhost:8081/engine-rest is full Camunda Platform 7 REST API base URL and ec-prime256v1-priv-key.pem is full path to your Camunda-Plone JWT-authentication private key (or the value of the private key).
-
-Configure Camunda with the usual Micronaut Camunda Platform 7 environment variables, and::
-
-    PLONE_PUBLIC_KEY=/full/path/to/ec-prime256v1-pub-key.pem
-
-For example::
-
-    $ PLONE_PUBLIC_KEY=$(pwd)/ec-prime256v1-pub-key.pem ./mvnw mn:run
-
-where ec-prime256v1-pub-key.pem is full path to your Camunda-Plone JWT-authentication public key (or the value of the private key).
 
 .. Translations
 .. ------------

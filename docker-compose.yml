@@ -23,10 +23,10 @@ services:
     volumes:
       - ./ec-ed25519-pub-key.pem:/var/lib/plone-jwt-signing-key.pub:ro
 
-# mailhog:
-#   image: mailhog/mailhog
-#   logging:
-#     driver: 'none'  # disable saving logs
-#   ports:
-#     - 1025:1025 # smtp server
-#     - 8025:8025 # web ui
+  mailhog:
+    image: mailhog/mailhog
+    logging:
+      driver: 'none'  # disable saving logs
+    ports:
+      - 1025:1025 # smtp server
+      - 8025:8025 # web ui
