@@ -1,11 +1,10 @@
-{ pkgs ? import ./nix {}
-}:
-
-pkgs.mkShell {
-  buildInputs = with pkgs; [
-    jdk17_headless
-    (maven.override { jdk = jdk17_headless; })
-    mvn2nix
-    zip
-  ];
-}
+(import
+  (
+    let lock = builtins.fromJSON (builtins.readFile ./flake.lock); in
+    fetchTarball {
+      url = "https://github.com/edolstra/flake-compat/archive/${lock.nodes.flake-compat.locked.rev}.tar.gz";
+      sha256 = lock.nodes.flake-compat.locked.narHash;
+    }
+  )
+  { src = ./.; }
+).shellNix

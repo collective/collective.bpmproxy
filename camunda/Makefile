@@ -1,19 +1,29 @@
-all: target/camunda-app-0.1.jar
+SOURCES = $(shell find . -name "*.java" -or -name "*.xml" -or -name "*.yaml")
+
+NIX_OPTIONS ?= --accept-flake-config
+
+.PHONY: all
+all: artifact
+
+.PHONY: build
+build: $(SOURCES)
+	nix build $(NIX_OPTIONS)
+
+.PHONY: clean
+clean:
+	$(RM) $(ARTIFACT_NAME)-*.tar.*
+
+.PHONY: dist
+dist: image
+
+###
 
 mvn2nix-lock.json: pom.xml
-	mvn2nix -vvv --jdk=$(JAVA_HOME) > mvn2nix-lock.json
-
-target/camunda-app-0.1.jar:
-	mvn package
-	# TODO: figure a way to override maven-shade-plugin config for this
-	zip -d target/camunda-app-0.1.jar META-INF/BC1024KE.SF
-	zip -d target/camunda-app-0.1.jar META-INF/BC1024KE.DSA
-	zip -d target/camunda-app-0.1.jar META-INF/BC2048KE.SF
-	zip -d target/camunda-app-0.1.jar META-INF/BC2048KE.DSA
+	mvn2nix -vvv > mvn2nix-lock.json
 
 ###
 
 .PHONY: nix-%
 nix-%:
-	@echo "run inside nix-shell: $*"
-	nix-shell --pure --run "$(MAKE) $*"
+	@echo "run inside nix devShell: $*"
+	nix develop $(NIX_OPTIONS) --command $(MAKE) $*
