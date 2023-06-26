@@ -1,0 +1,30 @@
+version: '3.1'
+
+services:
+
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: postgres
+
+  camunda:
+    image: datakurre/plone-camunda:latest
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      - MICRONAUT_SERVER_HOST=0.0.0.0
+      - MICRONAUT_SERVER_PORT=8081
+      - DATASOURCES_DEFAULT_URL=jdbc:postgresql://db:5432/postgres
+      - PLONE_PUBLIC_KEY=/var/lib/plone-jwt-signing-key.pub
+    volumes:
+      - ./ec-prime256v1-pub-key.pem:/var/lib/plone-jwt-signing-key.pub:ro
+
+# mailhog:
+#   image: mailhog/mailhog
+#   logging:
+#     driver: 'none'  # disable saving logs
+#   ports:
+#     - 1025:1025 # smtp server
+#     - 8025:8025 # web ui

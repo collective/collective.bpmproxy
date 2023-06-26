@@ -38,7 +38,7 @@
         cp $src $out/var/lib/${call-name}.jar
         cat << EOF > $out/bin/${call-name}
 #!/usr/bin/env bash
-exec ${pkgs.temurin-jre-bin-11}/bin/java ''\\$@ -jar $out/var/lib/${call-name}.jar
+exec ${pkgs.temurin-jre-bin-17}/bin/java ''\\$@ -jar $out/var/lib/${call-name}.jar
 EOF
         chmod u+x $out/bin/${call-name}
       '';
