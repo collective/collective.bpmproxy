@@ -19,9 +19,11 @@ services:
       - MICRONAUT_SERVER_PORT=8081
       - DATASOURCES_DEFAULT_URL=jdbc:postgresql://db:5432/postgres
       - PLONE_PUBLIC_KEY=/var/lib/plone-jwt-signing-key.pub
+      - MAIL_CONFIG=/var/lib/camunda-mail-config.ini
     command: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     volumes:
       - ./ec-ed25519-pub-key.pem:/var/lib/plone-jwt-signing-key.pub:ro
+      - ./docker-compose-mail-config.ini:/var/lib/camunda-mail-config.ini:ro
 
   mailhog:
     image: mailhog/mailhog

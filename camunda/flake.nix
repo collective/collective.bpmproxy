@@ -78,7 +78,7 @@ EOF
           pkgs.dockerTools.fakeNss
           pkgs.dockerTools.usrBinEnv
           pkgs.tini
-          pkgs.temurin-jre-bin-11
+          pkgs.temurin-jre-bin-17
           self.packages.${system}.default
         ];
         pathsToLink = [ "/etc" "/sbin" "/bin" ];
