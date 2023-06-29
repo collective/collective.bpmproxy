@@ -99,6 +99,9 @@ Install collective.bpmproxy by adding it to your buildout::
 
 and then running ``bin/buildout``
 
+Token simulator plugin
+----------------------
+
 
 Contribute
 ----------
