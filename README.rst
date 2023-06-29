@@ -112,7 +112,7 @@ To install it::
 
 Then close and reopen your Camunda Modeler and a label top-left of a diagram will show up:
 
-.. .. image:: https://github.com/collective/collective.bpmproxy/blob/master/docs/token-simulator-button.png?raw=true
+.. image:: https://github.com/collective/collective.bpmproxy/blob/master/docs/token-simulator-button.png?raw=true
 
 
 Contribute
