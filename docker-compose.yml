@@ -22,8 +22,8 @@ services:
       - MAIL_CONFIG=/var/lib/camunda-mail-config.ini
     command: -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005
     volumes:
-      - ./ec-ed25519-pub-key.pem:/var/lib/plone-jwt-signing-key.pub:ro
-      - ./docker-compose-mail-config.ini:/var/lib/camunda-mail-config.ini:ro
+      - ./ec-ed25519-pub-key.pem:/var/lib/plone-jwt-signing-key.pub:Z
+      - ./docker-compose-mail-config.ini:/var/lib/camunda-mail-config.ini:Z
 
   mailhog:
     image: mailhog/mailhog
