@@ -101,6 +101,18 @@ and then running ``bin/buildout``
 
 Token simulator plugin
 ----------------------
+The [Camunda modeler token](https://github.com/camunda/camunda-modeler-token-simulation-plugin) plugin for the Camunda Modeler allows you, to play and see how your models behave.
+
+To install it::
+
+    shell
+    cd ~/.config/camunda-modeler
+    mkdir -p /resources/plugins
+    git clone https://github.com/camunda/camunda-modeler-token-simulation-plugin
+
+Then close and reopen your Camunda Modeler and a label top-left of a diagram will show up:
+
+.. .. image:: https://github.com/collective/collective.bpmproxy/blob/master/docs/token-simulator-button.png?raw=true
 
 
 Contribute
