@@ -63,6 +63,11 @@ Specially regarding __the license__.
 
 Version 7 is completely open source and will remain like that forever.
 
+### Camunda 7 resources
+
+- [official website](https://camunda.com/platform-7/)
+- [official documentation](https://docs.camunda.org/manual/latest/)
+
 ## Add-on high level features
 
 Publish BPMN 2.0 processes from Camunda Platform 7,
