@@ -67,6 +67,8 @@ Version 7 is completely open source and will remain like that forever.
 
 - [official website](https://camunda.com/platform-7/)
 - [official documentation](https://docs.camunda.org/manual/latest/)
+- [Training on BPMN](https://academy.camunda.com/camunda-bpmn) _(it might not be free)_
+- [Training on DMN](https://academy.camunda.com/camunda-dmn) _(it might not be free)_
 
 ## Add-on high level features
 
