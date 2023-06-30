@@ -10,7 +10,7 @@ This Process can be deployed to Camunda and then selected for the "Bpm Proxy" Co
 ### Prerequisites
 * Plone with installed "collective.bpmproxy" installed
 * Running Camunda service
-* Running Camunda Modeler applikation
+* Running Camunda Modeler application
 
 ### Deploying Process to Camunda
 To use the Process it needs to be deployed to Camunda. This is done with the Camunda Modeler applikation.
