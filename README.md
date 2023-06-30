@@ -325,6 +325,18 @@ but for the braves ones, here are some advanced topics:
 
 - [Automation playground](https://datakurre.github.io/automation-playground/)
 
+### Multi-tenancy support
+
+Camunda 7 support multi-tenancy identifiers
+allowing single process engine to support multiple independent customers.
+
+Tenant id could be set in Camunda Modeler, when deploying models and their resources.
+With `collective.bpmproxy` installed,
+it is possible to define set of tenancy identifiers for the site
+by setting configuration registry key `collective.bpmproxy.tenant_ids`.
+Each Plone site will allow its users to access only those Camunda resources,
+which are deployed or related to its tenant ids or no tenant ids at all.
+
 ## Troubleshooting
 
 A few of the installation errors that we have found and solved:
