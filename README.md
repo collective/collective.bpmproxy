@@ -318,6 +318,13 @@ with a `Signal` configured to `plone-content-submitted`.
 Open the [`examples/empire-insider/ReviewAssistant`](./examples/empire-insider/ReviewAssistant.bpmn) diagram
 with the [Modeler app](#processes-modeler) for such an example.
 
+## Advanced topics
+
+Note that you need to be already comfortable with Camunda 7 and designing processes,
+but for the braves ones, here are some advanced topics:
+
+- [Automation playground](https://datakurre.github.io/automation-playground/)
+
 ## Troubleshooting
 
 A few of the installation errors that we have found and solved:
