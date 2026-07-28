@@ -1,0 +1,1 @@
+Operaton webapps now authenticate via OIDC (Keycloak in development, provisioned by devenv with realm "plone"); Plone-to-Operaton REST keeps the ed25519 JWT filter. docker-compose was retired in favor of devenv.

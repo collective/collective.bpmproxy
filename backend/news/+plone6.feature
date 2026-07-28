@@ -1,0 +1,1 @@
+Modernized packaging and tooling to Plone 6 / Cookieplone standards: pyproject.toml (hatchling), Makefile, pytest (pytest-plone + gocept.pytestlayer), Ruff, pre-commit, towncrier, and an updated GitHub Actions workflow.

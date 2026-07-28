@@ -1,0 +1,76 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="collective.bpmproxy">
+
+  <i18n:registerTranslations directory="locales" />
+
+  <include package=".browser" />
+  <include package=".subscribers" />
+
+  <include file="permissions.zcml" />
+
+  <genericsetup:registerProfile
+      name="default"
+      title="collective.bpmproxy"
+      directory="profiles/default"
+      description="Installs the collective.bpmproxy add-on."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      post_handler=".setuphandlers.post_install"
+      />
+
+  <genericsetup:upgradeSteps
+      source="1000"
+      destination="1001"
+      profile="collective.bpmproxy:default">
+
+    <genericsetup:upgradeDepends
+        title="Reload bundles (split form and diagram)"
+        description="Register the separate form and diagram bundles"
+        import_profile="collective.bpmproxy:default"
+        import_steps="plone.app.registry"
+        />
+
+    <genericsetup:upgradeStep
+        title="Remove the obsolete combined bundle"
+        description="Remove the bundle record still pointing at the removed bundle.js"
+        handler=".upgrades.remove_legacy_bundle_records"
+        />
+
+  </genericsetup:upgradeSteps>
+
+  <include package=".modeler" />
+
+  <genericsetup:registerProfile
+      name="uninstall"
+      title="collective.bpmproxy (uninstall)"
+      directory="profiles/uninstall"
+      description="Uninstalls the collective.bpmproxy add-on."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      post_handler=".setuphandlers.uninstall"
+      />
+
+  <utility
+      factory=".setuphandlers.HiddenProfiles"
+      name="collective.bpmproxy-hiddenprofiles"
+      />
+
+  <!-- -*- extra stuff goes here -*- -->
+
+  <include package=".services" />
+
+  <include package=".portlets" />
+
+  <include package=".viewlets" />
+
+  <include package=".vocabularies" />
+
+  <include package=".views" />
+
+  <include package=".adapters" />
+
+  <include package=".actions" />
+
+</configure>

@@ -1,0 +1,29 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:plone="http://namespaces.plone.org/plone">
+
+  <plone:service
+      method="POST"
+      name="@bpmproxy-deploy"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      factory=".deploy.DeployProcess"
+      permission="cmf.ManagePortal"
+      />
+
+  <plone:service
+      method="GET"
+      name="@bpmproxy-deployments"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      factory=".deployments.DeploymentsGet"
+      permission="cmf.ManagePortal"
+      />
+
+  <plone:service
+      method="DELETE"
+      name="@bpmproxy-deployments"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      factory=".deployments.DeploymentsDelete"
+      permission="cmf.ManagePortal"
+      />
+
+</configure>

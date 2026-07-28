@@ -1,0 +1,180 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      lang="en"
+      metal:use-macro="context/main_template/macros/master"
+      i18n:domain="collective.bpmproxy">
+<body>
+
+<metal:main fill-slot="main">
+  <h1 class="documentFirstHeading">BPMN / DMN Deployments</h1>
+
+  <div id="bpmproxy-deployments-app">
+    <!-- Tab headers -->
+    <ul class="nav nav-tabs" id="bpmproxyTabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active" id="bpmn-tab" data-bs-toggle="tab" data-bs-target="#bpmn" type="button" role="tab" aria-controls="bpmn" aria-selected="true">BPMN Modeler</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="dmn-tab" data-bs-toggle="tab" data-bs-target="#dmn" type="button" role="tab" aria-controls="dmn" aria-selected="false">DMN Modeler</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="form-tab" data-bs-toggle="tab" data-bs-target="#form" type="button" role="tab" aria-controls="form" aria-selected="false">Form Playground</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link" id="deployments-tab" data-bs-toggle="tab" data-bs-target="#deployments" type="button" role="tab" aria-controls="deployments" aria-selected="false">Manage Deployments</button>
+      </li>
+    </ul>
+
+    <!-- Tab content -->
+    <div class="tab-content" id="bpmproxyTabsContent">
+      <div class="tab-pane fade show active" id="bpmn" role="tabpanel" aria-labelledby="bpmn-tab">
+        <div class="d-flex justify-content-between mb-2 mt-2">
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary active" id="bpmn-design-btn">Design</button>
+            <button type="button" class="btn btn-outline-secondary" id="bpmn-xml-btn">XML</button>
+          </div>
+          <button type="button" class="btn btn-success" id="bpmn-deploy-btn">Deploy to Operaton</button>
+        </div>
+        <div id="bpmn-design-view" style="height: 600px; display: flex; flex-direction: row; border: 1px solid #ccc; margin-top: 10px;">
+          <div id="bpmn-modeler-container" style="height: 100%; width: 100%;"></div>
+          <div id="bpmn-properties-panel" style="height: 100%; overflow: auto;"></div>
+        </div>
+        <div id="bpmn-xml-view" style="height: 600px; display: none; border: 1px solid #ccc; margin-top: 10px;">
+          <textarea id="bpmn-xml-editor" style="width: 100%; height: 100%; font-family: monospace;"></textarea>
+        </div>
+      </div>
+      
+      <div class="tab-pane fade" id="dmn" role="tabpanel" aria-labelledby="dmn-tab">
+        <div class="d-flex justify-content-between mb-2 mt-2">
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary active" id="dmn-design-btn">Design</button>
+            <button type="button" class="btn btn-outline-secondary" id="dmn-xml-btn">XML</button>
+          </div>
+          <button type="button" class="btn btn-success" id="dmn-deploy-btn">Deploy to Operaton</button>
+        </div>
+        <div id="dmn-design-view" style="height: 600px; display: flex; flex-direction: row; border: 1px solid #ccc; margin-top: 10px;">
+          <div id="dmn-modeler-container" style="height: 100%; width: 100%;"></div>
+          <div id="dmn-properties-panel" style="height: 100%; overflow: auto;"></div>
+        </div>
+        <div id="dmn-xml-view" style="height: 600px; display: none; border: 1px solid #ccc; margin-top: 10px;">
+          <textarea id="dmn-xml-editor" style="width: 100%; height: 100%; font-family: monospace;"></textarea>
+        </div>
+      </div>
+      
+      <div class="tab-pane fade" id="form" role="tabpanel" aria-labelledby="form-tab">
+        <div class="d-flex justify-content-between mb-2 mt-2">
+          <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary active" id="form-design-btn">Design</button>
+            <button type="button" class="btn btn-outline-secondary" id="form-json-btn">JSON</button>
+          </div>
+          <button type="button" class="btn btn-success" id="form-deploy-btn">Deploy to Operaton</button>
+        </div>
+        <div id="form-design-view" style="height: 600px; border: 1px solid #ccc; margin-top: 10px;">
+          <div id="form-playground-container" style="height: 100%;"></div>
+        </div>
+        <div id="form-json-view" style="height: 600px; display: none; border: 1px solid #ccc; margin-top: 10px;">
+          <textarea id="form-json-editor" style="width: 100%; height: 100%; font-family: monospace;"></textarea>
+        </div>
+      </div>
+      
+      <div class="tab-pane fade" id="deployments" role="tabpanel" aria-labelledby="deployments-tab">
+        <div style="margin-top: 20px;">
+          <button id="refresh-deployments-btn" class="btn btn-primary mb-3">Refresh</button>
+          <table class="table table-striped" id="deployments-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Source</th>
+                <th>Time</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Populated via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="text/javascript">
+    document.addEventListener("DOMContentLoaded", function() {
+      const refreshBtn = document.getElementById('refresh-deployments-btn');
+      const tbody = document.querySelector('#deployments-table tbody');
+
+      function portalUrl() {
+        return document.body.dataset.portalUrl || '';
+      }
+
+      function cell(row, text) {
+        const td = document.createElement('td');
+        td.textContent = text;
+        row.appendChild(td);
+      }
+
+      function deleteDeployment(id) {
+        if (!confirm('Are you sure?')) return;
+        // plone.rest routes to the service on the Accept header; without it
+        // this is an ordinary traversal and 404s.
+        fetch(portalUrl() + '/@bpmproxy-deployments', {
+          method: 'DELETE',
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ id: id })
+        }).then(fetchDeployments);
+      }
+
+      function renderRow(deployment) {
+        const tr = document.createElement('tr');
+        cell(tr, deployment.id);
+        cell(tr, deployment.name || '-');
+        cell(tr, deployment.source || '-');
+        cell(tr, deployment.deploymentTime || '-');
+
+        const actions = document.createElement('td');
+        const button = document.createElement('button');
+        button.className = 'btn btn-danger btn-sm';
+        button.textContent = 'Delete';
+        button.addEventListener('click', function() {
+          deleteDeployment(deployment.id);
+        });
+        actions.appendChild(button);
+        tr.appendChild(actions);
+
+        tbody.appendChild(tr);
+      }
+
+      function fetchDeployments() {
+        return fetch(portalUrl() + '/@bpmproxy-deployments', {
+          method: 'GET',
+          headers: { 'Accept': 'application/json' }
+        })
+        .then(res => res.json())
+        .then(data => {
+          tbody.replaceChildren();
+          if (Array.isArray(data)) {
+            data.forEach(renderRow);
+          }
+        })
+        .catch(err => console.error(err));
+      }
+
+      // The modeler bundle refreshes the table after a successful deployment
+      window.fetchDeployments = fetchDeployments;
+
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', fetchDeployments);
+      }
+
+      fetchDeployments();
+    });
+  </script>
+</metal:main>
+</body>
+</html>

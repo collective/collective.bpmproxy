@@ -1,0 +1,62 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="collective.bpmproxy">
+
+  <browser:page
+    name="bpm-proxy-orphan-attachments"
+    for="Products.CMFCore.interfaces.ISiteRoot"
+    class=".bpm_attachments_orphans_view.BpmAttachmentsOrphansView"
+    permission="cmf.ManagePortal"
+  />
+
+  <browser:page
+    name="view"
+    for="..content.bpm_proxy.IBpmProxy"
+    class=".bpm_form_view.BpmProxyStartFormView"
+    template="bpm_form_view.pt"
+    permission="zope2.View"
+    />
+
+  <!-- TODO: BPM tasks for content types should maybe be made into a behavior -->
+  <browser:page
+    name="bpm-task"
+    for="plone.uuid.interfaces.IUUIDAware"
+    class=".bpm_form_view.BpmProxyTaskFormView"
+    template="bpm_form_view.pt"
+    permission="zope2.View"
+    />
+
+  <browser:page
+    for="plone.uuid.interfaces.IUUIDAware"
+    name="breadcrumbs_view"
+    class=".bpm_form_view.BpmProxyNavigationBreadcrumbs"
+    layer="..interfaces.ICollectiveBpmproxyLayer"
+    permission="zope.Public"
+    allowed_attributes="breadcrumbs"
+  />
+
+  <browser:page
+    name="add-attachment"
+    for=".bpm_form_view.BpmProxyTaskFormView"
+    class=".bpm_attachments_view.BpmProxyTaskAttachmentsView"
+    permission="zope2.View"
+  />
+
+  <browser:page
+    name="contentlistings"
+    class=".bpm_attachments_listing.AttachmentsListing"
+    permission="zope2.View"
+    for="..content.bpm_attachments.IBpmAttachments"
+  />
+
+  <!-- BBB -->
+  <browser:page
+    name="folderListing"
+    class=".bpm_attachments_listing.AttachmentsListing"
+    permission="zope2.View"
+    for="..content.bpm_attachments.IBpmAttachments"
+  />
+
+</configure>

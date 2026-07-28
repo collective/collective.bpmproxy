@@ -1,0 +1,8 @@
+[report]
+include =
+    src/collective/*
+omit =
+    */tests/*
+    */upgrades/*
+    */locales/*
+    */__init__.py
