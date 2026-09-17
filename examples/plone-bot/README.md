@@ -1,14 +1,11 @@
-# Template: Standard Robot Framework
+# Plone bot
 
-This is the simplest template to start from.
+This directory is a [purjo](https://datakurre.github.io/purjo/) Robot
+Framework task package. Copy `secrets.example.json` to `secrets.json` and set
+`PLONE_AUTHORIZATION` to the authorization value used by the Plone REST API.
 
-- Get started from a simple task template in `tasks.robot`.
-  - Uses [Robot Framework](https://robocorp.com/docs/languages-and-frameworks/robot-framework/basics) syntax.
-- You can configure your robot `robot.yaml`.
-- You can configure dependencies in `conda.yaml`.
-
-## Learning materials
-
-- [Robocorp Developer Training Courses](https://robocorp.com/docs/courses)
-- [Documentation links on Robot Framework](https://robocorp.com/docs/languages-and-frameworks/robot-framework)
-- [Example bots in Robocorp Portal](https://robocorp.com/portal)
+Run `pur serve .` against an Operaton instance containing either of the
+`../empire-insider/ReviewAssistant.bpmn` or
+`../empire-insider/FromIdeaToArticle.bpmn` processes. Use `uv lock` to create
+or refresh `uv.lock`, `pur wrap` to build a deployable `robot.zip`, and
+`pur serve robot.zip` to serve the wrapped package.

@@ -1,5 +1,6 @@
 output/
 venv/
+.venv/
 temp/
 .rpa/
 .idea/
@@ -11,7 +12,10 @@ temp/
 .DS_Store
 *.pyc
 *.zip
-*/work-items-out/*
+secrets.json
+output.xml
+log.html
+report.html
 testrun/*
 .~lock*
 *.pkl

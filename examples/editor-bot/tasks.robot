@@ -1,14 +1,12 @@
 *** Settings ***
-Library     RPA.Robocorp.WorkItems
-Library     RPA.Robocorp.Vault
 Library     RPA.OpenAI
 Library     Collections
 Library     OperatingSystem
 Library     re
-Library     requests
 
 
 *** Variables ***
+${BPMN:PROCESS}     local
 ${context}          SEPARATOR=
 ...                 Make it Star Wars context, but without mentioning Star Wars.\\n
 ...                 Make it look like a news article.\\n
@@ -22,15 +20,12 @@ ${format}           SEPARATOR=
 ${title}            ${EMPTY}
 ${description}      ${EMPTY}
 ${text}             ${EMPTY}
+${imageUrl}         ${EMPTY}
 
 
 *** Tasks ***
-Create article
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+Create draft
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${text}    @{conversation}    Chat Completion Create
     ...    ${context}\\n\\n${instructions}\\n\\n${format}
     ...    temperature=0.6
@@ -39,19 +34,12 @@ Create article
         ${text}    Set variable    ${text.split("\n", 1)[-1].strip()}
     END
 
-    ###
-    Create Output Work Item
-    Set Work Item Variable    title    ${title}
-    Set Work Item Variable    text    ${text}
-    Set Work Item Variable    conversation    ${conversation}
-    Save Work Item
+    VAR    ${title}    ${title}    scope=${BPMN:PROCESS}
+    VAR    ${text}    ${text}    scope=${BPMN:PROCESS}
+    VAR    ${conversation}    ${conversation}    scope=${BPMN:PROCESS}
 
-Iterate article
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+Iterate draft
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${text}    @{conversation}    Chat Completion Create
     ...    ${instructions}
     ...    temperature=0.6
@@ -61,19 +49,12 @@ Iterate article
         ${text}    Set variable    ${text.split("\n", 1)[-1].strip()}
     END
 
-    ###
-    Create Output Work Item
-    Set Work Item Variable    title    ${title}
-    Set Work Item Variable    text    ${text}
-    Set Work Item Variable    conversation    ${conversation}
-    Save Work Item
+    VAR    ${title}    ${title}    scope=${BPMN:PROCESS}
+    VAR    ${text}    ${text}    scope=${BPMN:PROCESS}
+    VAR    ${conversation}    ${conversation}    scope=${BPMN:PROCESS}
 
-Create titles
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+Create title
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${response}    @{conversation}    Chat Completion Create
     ...    Please, list five title options with varying length, including some very short ones, for: ${text}
     ...    temperature=0.6
@@ -84,32 +65,18 @@ Create titles
         Append To List    ${titles}    ${{$title.strip().strip('"')}}
     END
 
-    ###
-    Create Output Work Item
-    Set Work Item Variable    titles    ${titles}
-    Save Work Item
+    VAR    ${titles}    ${titles}    scope=${BPMN:PROCESS}
 
 Create description
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${description}    @{conversation}    Chat Completion Create
     ...    Please, create a introductory paragraph under 300 characters: ${text}
     ...    temperature=0.6
 
-    ###
-    Create Output Work Item
-    Set Work Item Variable    description    ${description}
-    Save Work Item
+    VAR    ${description}    ${description}    scope=${BPMN:PROCESS}
 
 Create image
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${instructions}    @{conversation}    Chat Completion Create
     ...    Create super minimal instructions to illustrate this without text:\\n\\n ${description}
     ...    temperature=0.6
@@ -119,22 +86,14 @@ Create image
     ...    size=256x256
     ...    num_images=1
 
-    ###
-    Create Output Work Item
+    ${imageUrl}    Set variable    ${EMPTY}
     FOR    ${url}    IN    @{images}
-        ${response}    Get    ${url}
-        Create binary file    image.png    ${response.content}
-        Add Work Item File    image.png
-        Set Work Item Variable    imageUrl    ${url}
+        ${imageUrl}    Set variable    ${url}
     END
-    Save Work Item
+    VAR    ${imageUrl}    ${imageUrl}    scope=${BPMN:PROCESS}
 
 Create keywords
-    Set task variables from work item
-    ###
-
-    ${secrets}    Get Secret    secret_name=env
-    Authorize To OpenAI    api_key=${secrets}[OPENAI_API_KEY]
+    Authorize To OpenAI    api_key=${OPENAI_API_KEY.value}
     ${response}    @{conversation}    Chat Completion Create
     ...    Please, list five top keywords for: ${text}
     ...    temperature=0.6
@@ -145,7 +104,4 @@ Create keywords
         Append To List    ${keywords}    ${{$keyword.strip().strip('"')}}
     END
 
-    ###
-    Create Output Work Item
-    Set Work Item Variable    keywords    ${keywords}
-    Save Work Item
+    VAR    ${keywords}    ${keywords}    scope=${BPMN:PROCESS}

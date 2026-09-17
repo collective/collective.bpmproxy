@@ -1,0 +1,40 @@
+[project]
+name = "bpmproxy-plone-bot"
+version = "0.1.0"
+description = "Purjo Robot Framework tasks for the BPM proxy Plone example"
+requires-python = ">=3.10"
+dependencies = [
+    "markdown>=3.4.3",
+    "markdownify>=0.11.6",
+    "requests>=2.32.0",
+    "robotframework>=7.4b2",
+]
+
+[tool.purjo.topics."Plone Get Content"]
+name = "Get Article"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.topics."Plone Submit Content"]
+name = "Submit for review"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.topics."Plone Update Title"]
+name = "Update title"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.topics."Plone Update Description"]
+name = "Update description"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.topics."Plone Update Text"]
+name = "Update article text"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.secrets.default]
+provider = "file"
+path = "secrets.json"

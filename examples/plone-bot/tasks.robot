@@ -1,6 +1,4 @@
 *** Settings ***
-Library     RPA.Robocorp.WorkItems
-Library     RPA.Robocorp.Vault
 Library     OperatingSystem
 Library     requests
 Library     markdown
@@ -10,11 +8,13 @@ Library     base64
 
 
 *** Variables ***
+${BPMN:PROCESS}     local
 ${type}             News Item
 ${title}            ${EMPTY}
 ${description}      ${EMPTY}
 ${text}             ${EMPTY}
 ${keywords}         ${EMPTY}
+${imageUrl}         ${EMPTY}
 
 ${portalUrl}        http://localhost:8080/Plone
 ${path}             /news
@@ -22,9 +22,7 @@ ${uuid}             ${EMPTY}
 
 
 *** Tasks ***
-Get content
-    Set task variables from work item
-
+Get Article
     Should not be empty    ${uuid}
 
     ${headers}    Get headers
@@ -35,16 +33,12 @@ Get content
 
     ${text}    markdownify    ${data}[text][data]
 
-    Create output work item
-    Set Work Item Variable    text    ${text}
-    Set Work Item Variable    title    ${data}[title]
-    Set Work Item Variable    description    ${data}[description]
-    Set Work Item Variable    keywords    ${data}[subjects]
-    Save work item
+    VAR    ${text}    ${text}    scope=${BPMN:PROCESS}
+    VAR    ${title}    ${data}[title]    scope=${BPMN:PROCESS}
+    VAR    ${description}    ${data}[description]    scope=${BPMN:PROCESS}
+    VAR    ${keywords}    ${data}[subjects]    scope=${BPMN:PROCESS}
 
-Submit content
-    Set task variables from work item
-
+Submit for review
     ${html}    markdown    ${text}
 
     ${headers}    Get headers
@@ -63,10 +57,9 @@ Submit content
 
     ${url}    Set variable    ${response.headers}[Location]
 
-    ${images}    Get work item files    image
-    FOR    ${path}    IN    @{images}
-        ${bytes}    Get binary file    ${path}
-        ${data}    b64encode    ${bytes}
+    IF    '${imageUrl}' != '${EMPTY}'
+        ${response}    Get    ${imageUrl}
+        ${data}    b64encode    ${response.content}
         ${image}    Create dictionary
         ...    data=${data.decode("utf-8")}
         ...    encoding=base64
@@ -84,13 +77,9 @@ Submit content
     ...    headers=${headers}
     Should be equal    "${response.status_code}"    "200"
 
-    Create output work item
-    Set Work Item Variable    url    ${url}
-    Save work item
+    VAR    ${url}    ${url}    scope=${BPMN:PROCESS}
 
 Update title
-    Set task variables from work item
-
     ${headers}    Get headers
 
     ${payload}    Create dictionary
@@ -105,12 +94,9 @@ Update title
 
     ${url}    Set variable    ${response.headers}[Location]
 
-    Create output work item
-    Save work item
+    VAR    ${url}    ${url}    scope=${BPMN:PROCESS}
 
 Update description
-    Set task variables from work item
-
     ${headers}    Get headers
 
     ${payload}    Create dictionary
@@ -123,12 +109,9 @@ Update description
     ...    json=${payload}
     Should be equal    "${response.status_code}"    "204"
 
-    Create output work item
-    Save work item
+    VAR    ${url}    ${url}    scope=${BPMN:PROCESS}
 
-Update text
-    Set task variables from work item
-
+Update article text
     ${headers}    Get headers
 
     ${html}    markdown    ${text}
@@ -142,18 +125,12 @@ Update text
     ...    json=${payload}
     Should be equal    "${response.status_code}"    "204"
 
-    Create output work item
-    Save work item
-
-
 *** Keywords ***
 Get headers
-    ${secrets}    Get Secret    secret_name=env
-
     ${headers}    Create dictionary
     ...    Accept=application/json
     ...    Content-Type=application/json
-    ...    Authorization=${secrets}[PLONE_AUTHORIZATION]
+    ...    Authorization=${PLONE_AUTHORIZATION.value}
 
     RETURN    ${headers}
 

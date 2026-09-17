@@ -1,0 +1,5 @@
+secrets.json
+output/
+*.html
+*.xml
+*.png
