@@ -55,7 +55,8 @@ def get_token(username, groups, tenant_ids=None):
     return jwt.encode(
         {
             "sub": username,
-            "exp": datetime.datetime.utcnow() + datetime.timedelta(seconds=3600),
+            "exp": datetime.datetime.now(datetime.timezone.utc)
+            + datetime.timedelta(seconds=3600),
             "groups": groups,
             "tenant_ids": tenant_ids,
         },
@@ -161,12 +162,37 @@ def get_task_form(
         )
 
 
+def business_key_needle(context_key=None, attachments_key=None):
+    """Build the LIKE pattern matching a ``{context}:{attachments}`` key.
+
+    Business keys are written by the form views as
+    ``IUUID(context) + ":" + uuid4().hex`` -- two dash-less hex strings around
+    a colon. Two things therefore have to happen here, and neither is
+    optional:
+
+    * the colon has to be in the pattern, otherwise a query narrowed by both
+      halves matches the concatenation of them and never the real key;
+    * the attachments half has to be normalised to hex, because callers pass
+      the attachment container's id, which is the *dashed* ``str(UUID(...))``
+      form of the same value.
+
+    Missing halves become ``%`` so a query narrowed by one still matches.
+    """
+
+    def normalize(value):
+        if value is None:
+            return "%"
+        return str(value).replace("-", "")
+
+    return f"{normalize(context_key)}:{normalize(attachments_key)}"
+
+
 def get_available_tasks(
     client, context_key=None, attachments_key=None, for_display=False
 ):
     # we assume that authentication is enough to filter tasks by tenants
     task_api = generic_camunda_client.TaskApi(client)
-    needle = (context_key or "%") + (attachments_key or "%")
+    needle = business_key_needle(context_key, attachments_key)
     tasks = (
         task_api.query_tasks(
             task_query_dto=TaskQueryDto(
@@ -330,4 +356,11 @@ def get_deployments(client, tenant_id=None):
 
 def delete_deployment(client, deployment_id):
     api = generic_camunda_client.DeploymentApi(client)
-    return api.delete_deployment(id=deployment_id, cascade=True)
+    # generic_camunda_client's query-param serialization stringifies a
+    # Python bool with str(), producing "True" -- the engine's boolean query
+    # parsing for this endpoint doesn't recognize that capitalization as
+    # true, so a deployment with running instances silently fails to
+    # cascade-delete them (ENGINE-03076) despite this call asking it to.
+    # The lowercase string is what a raw REST client sends and what the
+    # engine actually expects.
+    return api.delete_deployment(id=deployment_id, cascade="true")

@@ -865,15 +865,21 @@ name = "collective-bpmproxy"
 version = "1.0a1"
 source = { editable = "." }
 dependencies = [
+    { name = "borg-localrole" },
     { name = "cryptography" },
     { name = "generic-camunda-client" },
     { name = "plone-api" },
     { name = "plone-app-caching" },
+    { name = "plone-app-contentrules" },
     { name = "plone-app-dexterity" },
+    { name = "plone-app-portlets" },
     { name = "plone-restapi" },
+    { name = "plone-schema" },
+    { name = "plone-stringinterp" },
     { name = "pyjwt" },
     { name = "python-dateutil" },
     { name = "pytz" },
+    { name = "requests" },
     { name = "z3c-jbot" },
 ]
 
@@ -897,16 +903,21 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "borg-localrole" },
     { name = "cryptography" },
     { name = "generic-camunda-client" },
     { name = "gocept-pytestlayer", marker = "extra == 'test'" },
     { name = "plone-api", specifier = ">=1.8.4" },
     { name = "plone-app-caching" },
+    { name = "plone-app-contentrules" },
     { name = "plone-app-contenttypes", marker = "extra == 'test'" },
     { name = "plone-app-dexterity" },
+    { name = "plone-app-portlets" },
     { name = "plone-app-robotframework", extras = ["debug"], marker = "extra == 'test'" },
     { name = "plone-app-testing", marker = "extra == 'test'" },
     { name = "plone-restapi" },
+    { name = "plone-schema" },
+    { name = "plone-stringinterp" },
     { name = "plone-testing", marker = "extra == 'test'", specifier = ">=5.0.0" },
     { name = "pyjwt" },
     { name = "pytest", marker = "extra == 'test'" },
@@ -914,6 +925,7 @@ requires-dist = [
     { name = "pytest-plone", marker = "extra == 'test'", specifier = ">=0.5.0" },
     { name = "python-dateutil" },
     { name = "pytz" },
+    { name = "requests" },
     { name = "z3c-jbot" },
 ]
 provides-extras = ["test"]

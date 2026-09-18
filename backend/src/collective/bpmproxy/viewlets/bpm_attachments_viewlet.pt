@@ -8,7 +8,12 @@
                    portal_state nocall:context/@@plone_portal_state;
                    icons nocall:context/@@iconresolver" />
   </section>
-  <form action="${view/view/task_id}/@@add-attachment">
+  <!-- POST with an authenticator: @@add-attachment creates the attachment
+       container on first use, and plone.protect answers a write made by an
+       unauthenticated GET with a "Confirm action" interstitial instead of the
+       add form. -->
+  <form method="post" action="${view/view/task_id}/@@add-attachment">
+    <span tal:replace="structure context/@@authenticator/authenticator"/>
     <input type="submit" value="Add attachment"
            class="btn btn-secondary"
            i18n:attributes="value" />

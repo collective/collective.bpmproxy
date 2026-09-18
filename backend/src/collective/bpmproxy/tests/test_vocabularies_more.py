@@ -1,11 +1,8 @@
+from collective.bpmproxy.vocabularies import VocabItem
 from collective.bpmproxy.vocabularies.available_process_definitions import (
     AvailableProcessDefinitionsFactory,
 )
-from collective.bpmproxy.vocabularies.available_process_definitions import (
-    VocabItem as AvailableVocabItem,
-)
 from collective.bpmproxy.vocabularies.task_attachments import TaskAttachmentsFactory
-from collective.bpmproxy.vocabularies.task_attachments import VocabItem as TaskVocabItem
 from unittest.mock import MagicMock
 from unittest.mock import patch
 import unittest
@@ -13,7 +10,7 @@ import unittest
 
 class TestAvailableProcessDefinitions(unittest.TestCase):
     def test_vocab_item_init(self):
-        item = AvailableVocabItem("token1", "value1")
+        item = VocabItem("token1", "value1")
         self.assertEqual(item.token, "token1")
         self.assertEqual(item.value, "value1")
 
@@ -90,11 +87,6 @@ class TestAvailableProcessDefinitions(unittest.TestCase):
 
 
 class TestTaskAttachments(unittest.TestCase):
-    def test_vocab_item_init(self):
-        item = TaskVocabItem("token1", "value1")
-        self.assertEqual(item.token, "token1")
-        self.assertEqual(item.value, "value1")
-
     @patch("plone.api.portal.getRequest")
     @patch("collective.bpmproxy.vocabularies.task_attachments.AttachmentsListing")
     def test_call_success(self, mock_attachments_listing, mock_getRequest):

@@ -5,6 +5,7 @@ from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.client import get_task_variables
 from collective.bpmproxy.interfaces import PLONE_TASK_VIEW
 from collective.bpmproxy.utils import is_valid_uuid
+from generic_camunda_client.rest import ApiException
 from plone.app.portlets.portlets import base
 from plone.memoize.instance import memoize
 from plone.portlets.interfaces import IPortletDataProvider
@@ -145,7 +146,13 @@ class RedirectView(BrowserView):
 
     def __call__(self):
         with camunda_client() as client:
-            variables = get_task_variables(client, self.task_id)
+            try:
+                variables = get_task_variables(client, self.task_id)
+            except ApiException:
+                # The engine has no such task. Portlet links go stale as soon
+                # as somebody else completes the task, so this is an ordinary
+                # 404, not a server error.
+                raise NotFound(self, self.task_id, self.request) from None
         if not variables or "businessKey" not in variables:
             raise NotFound(self, self.task_id, self.request)
         uuid = variables["businessKey"].split(":", 1)[0]

@@ -1,3 +1,4 @@
+from collective.bpmproxy.client import business_key_needle
 from collective.bpmproxy.client import camunda_admin_client
 from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_api_url
@@ -261,7 +262,30 @@ def test_get_available_tasks_with_keys(mock_api_cls):
     assert res == ["task1"]
     mock_api.query_tasks.assert_called_once()
     dto = mock_api.query_tasks.call_args[1]["task_query_dto"]
-    assert dto.process_instance_business_key_like == "ctx1att1"
+    # Business keys are "{context}:{attachments}", so the colon belongs in the
+    # pattern -- without it this matched the concatenation and never a real
+    # key, which made attachments unreachable.
+    assert dto.process_instance_business_key_like == "ctx1:att1"
+
+
+def test_business_key_needle_matches_the_stored_format():
+    """The needle has to match what the form views actually write."""
+    # Both halves known: an exact key, colon included.
+    assert business_key_needle("ctx1", "att1") == "ctx1:att1"
+
+    # The attachments half arrives as a container id, which is the dashed
+    # str(UUID(...)) form of the hex written into the business key.
+    assert (
+        business_key_needle(
+            "9d2c0f1e4b3a4c5d8e7f6a5b4c3d2e1f",
+            "12345678-1234-5678-1234-567812345678",
+        )
+        == "9d2c0f1e4b3a4c5d8e7f6a5b4c3d2e1f:12345678123456781234567812345678"
+    )
+
+    # A missing half still matches anything in that position.
+    assert business_key_needle("ctx1", None) == "ctx1:%"
+    assert business_key_needle(None, "att1") == "%:att1"
 
 
 @patch("collective.bpmproxy.client.plone.api.portal")

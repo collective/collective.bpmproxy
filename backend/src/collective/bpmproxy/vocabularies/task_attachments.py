@@ -6,12 +6,6 @@ from zope.schema.vocabulary import SimpleVocabulary
 import plone.api
 
 
-class VocabItem:
-    def __init__(self, token, value):
-        self.token = token
-        self.value = value
-
-
 @implementer(IVocabularyFactory)
 class TaskAttachments:
     """ """

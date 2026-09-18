@@ -28,12 +28,20 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v2 (GPLv2)",
 ]
 dependencies = [
+    # Imported directly by this package. Several of these also arrive
+    # transitively via Plone, but relying on that means a Plone release that
+    # drops one breaks this add-on with an ImportError -- so declare them.
+    "borg.localrole",
     "cryptography",
     "generic-camunda-client",
     "plone.api>=1.8.4",
     "plone.app.caching",
+    "plone.app.contentrules",
     "plone.app.dexterity",
+    "plone.app.portlets",
     "plone.restapi",
+    "plone.schema",
+    "plone.stringinterp",
     "pyjwt",
     "python-dateutil",
     "pytz",

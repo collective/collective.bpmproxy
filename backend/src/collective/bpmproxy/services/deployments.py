@@ -3,6 +3,10 @@ from collective.bpmproxy.client import delete_deployment
 from collective.bpmproxy.client import get_deployments
 from plone.restapi.services import Service
 import json
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class DeploymentsGet(Service):
@@ -28,9 +32,13 @@ class DeploymentsGet(Service):
                     }
                 )
             return result
-        except Exception as e:
+        except Exception:
+            # Do not echo internal exception text (paths, connection
+            # strings) back to the client; log it and return a generic
+            # message. Deliberate, actionable errors are returned above.
+            logger.exception("Unexpected error in %s", type(self).__name__)
             self.request.response.setStatus(500)
-            return {"error": str(e)}
+            return {"error": "Unexpected error; see the Plone log for details."}
 
 
 class DeploymentsDelete(Service):
@@ -55,6 +63,10 @@ class DeploymentsDelete(Service):
                 delete_deployment(client, deployment_id)
 
             return {"status": "deleted", "id": deployment_id}
-        except Exception as e:
+        except Exception:
+            # Do not echo internal exception text (paths, connection
+            # strings) back to the client; log it and return a generic
+            # message. Deliberate, actionable errors are returned above.
+            logger.exception("Unexpected error in %s", type(self).__name__)
             self.request.response.setStatus(500)
-            return {"error": str(e)}
+            return {"error": "Unexpected error; see the Plone log for details."}

@@ -1,17 +1,12 @@
 from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.utils import get_tenant_ids
+from collective.bpmproxy.vocabularies import VocabItem
 from zope.interface import implementer
 from zope.schema.interfaces import IVocabularyFactory
 from zope.schema.vocabulary import SimpleTerm
 from zope.schema.vocabulary import SimpleVocabulary
 import generic_camunda_client
 import urllib3.exceptions
-
-
-class VocabItem:
-    def __init__(self, token, value):
-        self.token = token
-        self.value = value
 
 
 @implementer(IVocabularyFactory)

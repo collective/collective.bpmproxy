@@ -44,7 +44,9 @@ class TestServicesDeployments(unittest.TestCase):
 
         result = service.reply()
 
-        self.assertEqual(result["error"], "API Error")
+        # The internal exception text must not reach the client.
+        self.assertNotIn("API Error", result["error"])
+        self.assertIn("see the Plone log", result["error"])
         service.request.response.setStatus.assert_called_with(500)
 
     @mock.patch("collective.bpmproxy.services.deployments.delete_deployment")
@@ -90,5 +92,7 @@ class TestServicesDeployments(unittest.TestCase):
 
         result = service.reply()
 
-        self.assertEqual(result["error"], "API Error")
+        # The internal exception text must not reach the client.
+        self.assertNotIn("API Error", result["error"])
+        self.assertIn("see the Plone log", result["error"])
         service.request.response.setStatus.assert_called_with(500)

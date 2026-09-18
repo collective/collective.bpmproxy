@@ -34,7 +34,9 @@ def test_deploy_process_service():
     ):
         result = service.reply()
         assert "error" in result
-        assert result["error"] == "API Error"
+        # The internal exception text must not reach the client.
+        assert "API Error" not in result["error"]
+        assert "see the Plone log" in result["error"]
         service.request.response.setStatus.assert_called_with(500)
 
 
