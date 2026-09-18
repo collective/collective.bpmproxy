@@ -6,8 +6,13 @@ VERSION := 2.1.0
 PLUGINS_REPO ?= https://github.com/datakurre/operaton-cockpit-plugins
 PLUGINS_REF ?= main
 
+# Share the Maven cache devenv.nix uses, without hardcoding anyone's checkout
+# path. Override with MAVEN_REPO_LOCAL=... if you keep ~/.m2 instead.
+REPO_ROOT := $(abspath $(CURDIR)/../..)
+MAVEN_REPO_LOCAL ?= $(REPO_ROOT)/tmp/.m2/repository
+
 .PHONY: all
-all: artifact
+all: build
 
 .PHONY: build
 build: $(SOURCES)
@@ -15,18 +20,18 @@ build: $(SOURCES)
 
 .PHONY: test
 test:
-	mvn -Dmaven.repo.local=/workspace/collective.bpmproxy/tmp/.m2/repository test
+	mvn -Dmaven.repo.local=$(MAVEN_REPO_LOCAL) test
 
 .PHONY: start
 start:
-	mvn spring-boot:run
+	./mvnw -Dmaven.repo.local=$(MAVEN_REPO_LOCAL) spring-boot:run
 
 .PHONY: watch
 watch: start
 
 .PHONY: clean
 clean:
-	$(RM) $(ARTIFACT_NAME)-*.tar.*
+	$(RM) plone-operaton-app-*.tar.*
 
 .PHONY: dist
 dist:
@@ -40,6 +45,7 @@ push: dist
 	podman push datakurre/plone-operaton:latest
 
 .PHONY: shell
+shell:
 	nix develop
 
 ###
@@ -62,8 +68,7 @@ fetch-plugins:
 	curl -fsSL --retry 3 $(PLUGINS_REPO)/archive/refs/heads/$(PLUGINS_REF).tar.gz \
 		| tar -xz --strip-components=1 -C "$$tmp"; \
 	for app in cockpit admin tasklist welcome; do \
-		mkdir -p "src/main/resources/META-INF/resources/webjars/operaton/app/$$app/scripts" \
-			"src/main/resources/app/$$app/scripts"; \
+		mkdir -p "src/main/resources/META-INF/resources/webjars/operaton/app/$$app/scripts"; \
 	done; \
 	for file in \
 		cockpit-custom-styles.js dashboard-favourites.js dashboard-integrations.js \
@@ -73,11 +78,9 @@ fetch-plugins:
 		instance-tab-modify.js robot-module.js; do \
 		cp "$$tmp/$$file" \
 			"src/main/resources/META-INF/resources/webjars/operaton/app/cockpit/scripts/$$file"; \
-		cp "$$tmp/$$file" "src/main/resources/app/cockpit/scripts/$$file"; \
 	done; \
 	cp "$$tmp/config.js" \
 		src/main/resources/META-INF/resources/webjars/operaton/app/cockpit/scripts/config.js; \
-	cp "$$tmp/config.js" src/main/resources/app/cockpit/scripts/config.js; \
 	for pair in \
 		"admin-route-authorization.js admin" \
 		"admin-custom-styles.js admin" \
@@ -87,7 +90,6 @@ fetch-plugins:
 		set -- $$pair; \
 		cp "$$tmp/$$1" \
 			"src/main/resources/META-INF/resources/webjars/operaton/app/$$2/scripts/$$1"; \
-		cp "$$tmp/$$1" "src/main/resources/app/$$2/scripts/$$1"; \
 	done; \
 	for pair in \
 		"admin-config.js admin" \
@@ -96,9 +98,8 @@ fetch-plugins:
 		set -- $$pair; \
 		cp "$$tmp/$$1" \
 			"src/main/resources/META-INF/resources/webjars/operaton/app/$$2/scripts/config.js"; \
-		cp "$$tmp/$$1" "src/main/resources/app/$$2/scripts/config.js"; \
 	done; \
-	find src/main/resources/app src/main/resources/META-INF/resources/webjars/operaton/app \
+	find src/main/resources/META-INF/resources/webjars/operaton/app \
 		-type f -name '*nologin*' -delete; \
 	rm -f \
 		src/main/resources/META-INF/resources/webjars/operaton/app/cockpit/config.js \
