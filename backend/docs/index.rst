@@ -1,5 +1,0 @@
-===================
-collective.bpmproxy
-===================
-
-User documentation

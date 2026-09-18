@@ -146,7 +146,7 @@ please check where the configuration folder of apps is located.
 Re-start the Modeler app and you should see at the top left of an BPMN diagram
 the following image:
 
-![Simulator button](docs/token-simulator-button.png?raw=true)
+![Simulator button](docs/images/token-simulator-button.png?raw=true)
 
 With this you can start simulating your process:
 
