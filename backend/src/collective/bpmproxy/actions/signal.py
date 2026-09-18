@@ -2,6 +2,7 @@ from collective.bpmproxy import _
 from collective.bpmproxy.client import camunda_admin_client
 from collective.bpmproxy.utils import get_tenant_ids
 from collective.bpmproxy.utils import infer_variables
+from collective.bpmproxy.utils import interpolate
 from collective.bpmproxy.utils import SideEffectDataManager
 from generic_camunda_client import SignalDto
 from OFS.SimpleItem import SimpleItem
@@ -58,17 +59,6 @@ class BpmSignalAction(SimpleItem):
     @property
     def summary(self):
         return self.name
-
-
-def interpolate(value, interpolator):
-    """Recursively interpolate supported values"""
-    if isinstance(value, str):
-        return interpolator(value).strip()
-    elif isinstance(value, list):
-        return [interpolate(v, interpolator) for v in value]
-    elif isinstance(value, dict):
-        return {k: interpolate(v, interpolator) for k, v in value.items()}
-    return value
 
 
 def _throwSignal(signal, payload, username=None, tenant_ids=None):

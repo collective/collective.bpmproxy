@@ -16,6 +16,14 @@
     editview=".signal.EditForm" />
 
   <plone:portlet
+    name="collective.bpmproxy.portlets.Message"
+    interface=".message.IMessagePortlet"
+    assignment=".message.Assignment"
+    renderer=".message.Renderer"
+    addview=".message.AddForm"
+    editview=".message.EditForm" />
+
+  <plone:portlet
     name="collective.bpmproxy.portlets.Tasks"
     interface=".tasks.ITasksPortlet"
     assignment=".tasks.Assignment"
