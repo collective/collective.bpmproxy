@@ -53,3 +53,6 @@ instance/
 dist/
 .pytest_cache/
 .ruff_cache/
+
+# large screen recordings; not worth tracking in git history
+docs/**/*.webm
