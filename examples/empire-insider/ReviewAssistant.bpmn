@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_0jas57f" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.10.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.19.0">
-  <bpmn:process id="ReviewSupport" name="Review assistant" isExecutable="true" camunda:historyTimeToLive="P7D">
+  <bpmn:process id="ReviewAssistant" name="Review assistant" isExecutable="true" camunda:historyTimeToLive="P7D">
     <bpmn:startEvent id="Event_09p6198" name="Page submitted">
       <bpmn:outgoing>Flow_14o7igb</bpmn:outgoing>
       <bpmn:signalEventDefinition id="SignalEventDefinition_0ixlejm" signalRef="Signal_3huq26d" />

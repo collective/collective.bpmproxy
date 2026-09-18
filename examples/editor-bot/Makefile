@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-DEPLOY_FILES = ../empire-insider/FromIdeaToArticle.bpmn
+DEPLOY_FILES = ../empire-insider/FromIdeaToArticle.bpmn ../empire-insider/ReviewAssistant.bpmn
 
 .PHONY: help lock test dist deploy serve run
 

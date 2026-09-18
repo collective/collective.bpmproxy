@@ -3,7 +3,7 @@
   <bpmn:collaboration id="Collaboration_1kb0s9f">
     <bpmn:participant id="Participant_0cbtunk" name="Request for quote" processRef="example-request-for-quote" />
   </bpmn:collaboration>
-  <bpmn:process id="example-request-for-quote" name="Example: Request for quote" isExecutable="true">
+  <bpmn:process id="example-request-for-quote" name="Example: Request for quote" camunda:historyTimeToLive="P1D" isExecutable="true">
     <bpmn:laneSet id="LaneSet_009fdh4">
       <bpmn:lane id="Lane_1jr36z8" name="Visitor">
         <bpmn:flowNodeRef>Activity_194l477</bpmn:flowNodeRef>

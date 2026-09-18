@@ -161,7 +161,7 @@
   <bpmn:signal id="Signal_1k47qqc" name="plone-content-retracted:${uuid}" />
   <bpmn:signal id="Signal_0p35p00" name="example-published-lifecycle-obsolete:${uuid}" />
   <bpmn:signal id="Signal_0cgg8rt" name="plone-content-published:${uuid}" />
-  <bpmn:signal id="Signal_1m9o8u9" name="plone-contnet-modified:${uuid}" />
+  <bpmn:signal id="Signal_1m9o8u9" name="plone-content-modified:${uuid}" />
   <bpmn:signal id="Signal_26bcpff" name="plone-content-deleted:${uuid}" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="example-plone-published-lifecycle">
