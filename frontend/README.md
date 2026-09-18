@@ -3,7 +3,7 @@
 This directory is a placeholder for a future [Volto](https://github.com/plone/volto)
 add-on (`volto-bpmproxy` or similar) providing the React frontend for
 `collective.bpmproxy`. The Plone Classic UI integration (browser views,
-portlets, viewlets in `src/collective/bpmproxy/`) remains the primary frontend
+portlets, viewlets in `backend/src/collective/bpmproxy/`) remains the primary frontend
 until this add-on exists.
 
 ## REST API surface needed for Volto
@@ -23,7 +23,7 @@ the Classic UI does server-side today:
 | Attachments | `Bpm Attachments` / `Bpm Attachment` content plus dynamic local roles (`adapters/security.py`) | standard `plone.restapi` content endpoints |
 
 Client-side rendering building blocks already used by the Classic UI bundle
-(`src/collective/bpmproxy/browser/static/`) and reusable in Volto:
+(`backend/src/collective/bpmproxy/browser/static/`) and reusable in Volto:
 
 - `@bpmn-io/form-js-viewer` — renders Camunda Form JSON schemas
 - `bpmn-js` — BPMN 2.0 diagram viewer with current-task highlighting

@@ -4,7 +4,7 @@ This project is a Spring Boot application running Operaton BPM (Camunda fork). I
 
 ## Prerequisites
 
-- Java 17
+- Java 21
 - Maven
 - (Optional) Nix for reproducible builds and containerization
 
@@ -32,15 +32,19 @@ By default, the application is configured to use a PostgreSQL database. Ensure y
 ```
 
 ### With H2 Database (In-Memory)
-To run the application without requiring a PostgreSQL instance, you can activate the `h2` profile:
+H2 is the **default**: with no profile active the application uses an in-memory
+database (`jdbc:h2:mem:operaton`), so simply run
 ```bash
-./mvnw spring-boot:run -Dspring-boot.run.profiles=h2
+./mvnw spring-boot:run
 ```
-Or by setting the environment variable:
+*Note: all data is lost when the application shuts down. There is no `h2`
+profile -- `application.yml` defines only `postgres` and `oauth2`.*
+
+### With PostgreSQL
 ```bash
-SPRING_PROFILES_ACTIVE=h2 ./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=postgres ./mvnw spring-boot:run
 ```
-*Note: The `h2` profile configures an in-memory database (`jdbc:h2:mem:operaton`), so all data is lost when the application shuts down.*
+This is what `devenv up` runs (as `postgres,oauth2`).
 
 ## Security Configuration
 
@@ -59,7 +63,7 @@ To activate it:
 ```bash
 SPRING_PROFILES_ACTIVE=oauth2 ./mvnw spring-boot:run
 ```
-*(You can combine profiles by comma-separating them, e.g., `SPRING_PROFILES_ACTIVE=h2,oauth2`)*
+*(You can combine profiles by comma-separating them, e.g., `SPRING_PROFILES_ACTIVE=postgres,oauth2`)*
 
 In development, a Keycloak instance is typically provided by `devenv` (realm "plone"). The OAuth2 client relies on the following environment variables (with defaults):
 - `KEYCLOAK_ISSUER_URI` (default: `http://localhost:8082/realms/plone`)

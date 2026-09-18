@@ -314,6 +314,34 @@ This new content type allows to select (with autocompletion!) a process you want
 
 After creating the document, fill it and monitor the process in [Camunda's Cockpit](#camunda-cockpit).
 
+#### Folderish integration
+
+The `Bpm Proxy` type's whole schema is also available as a reusable
+Dexterity behavior, `collective.bpmproxy.process_context`
+(`IProcessContext`/`IProcessContextBehavior`). Enable it on any
+project-specific folderish Dexterity type to host a process directly on
+that type, instead of on a dedicated `Bpm Proxy` page.
+
+Configure the deployed process definition, optional diagram/attachments,
+initial process variables, and start-form defaults on each instance. The
+start form is available at the instance's normal `view` URL — that only
+works because `views/configure.zcml` registers `view` for `IProcessContext`
+generically, not for any one content type. Assign the Task list portlet with
+**Show only tasks for the current context** enabled so only tasks belonging
+to that instance are shown.
+
+Each start creates the business key `<instance-UID>:<process-instance-UUID>`.
+This keeps all process instances linked to the content while allowing
+multiple concurrent instances. BPMN start and task forms can use the
+configured Plone string substitutions and deployed form vocabularies; task
+links return to the content through its UID.
+
+A folderish content type does not have to use this behavior at all, though —
+see `examples/renovation-project/` and `docs/renovation-project-scenario.md`
+for a richer example where a plain Dexterity Container relies entirely on
+the Task list and Message dispatch portlets, with every process
+signal/message-started from Plone workflow transitions.
+
 #### Content rules integration
 
 For processes that should happen automatically _given a certain condition_,
