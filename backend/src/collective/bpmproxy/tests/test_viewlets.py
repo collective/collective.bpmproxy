@@ -29,14 +29,14 @@ class TestBpmAttachmentsTasksViewlet(unittest.TestCase):
         mock_bpm_attachments.id = "attach_123"
 
         def parents_side_effect(context, iface):
+            from collective.bpmproxy.behaviors.process_context import IProcessContext
             from collective.bpmproxy.content.bpm_attachments import IBpmAttachments
-            from collective.bpmproxy.content.bpm_proxy import IBpmProxy
 
-            if iface == IBpmProxy and context == viewlet.context:
+            if iface == IProcessContext and context == viewlet.context:
                 return [mock_bpm_proxy]
             elif iface == IBpmAttachments and context == viewlet.context:
                 return [mock_bpm_attachments]
-            elif iface == IBpmProxy and context == mock_bpm_attachments:
+            elif iface == IProcessContext and context == mock_bpm_attachments:
                 return [mock_bpm_proxy]
             return []
 

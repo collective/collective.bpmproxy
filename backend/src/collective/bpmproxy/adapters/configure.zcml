@@ -3,7 +3,7 @@
     i18n_domain="collective.bpmproxy">
 
   <adapter
-    for="..content.bpm_proxy.IBpmProxy * *"
+    for="..behaviors.process_context.IProcessContext * *"
     factory=".patterns.PatternsSettings"
     provides="Products.CMFPlone.interfaces.IPatternsSettings"
     name="collective_bpmproxy" />

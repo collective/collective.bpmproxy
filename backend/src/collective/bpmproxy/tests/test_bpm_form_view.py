@@ -206,6 +206,7 @@ class TestBpmProxyStartFormView(unittest.TestCase):
         mock_client,
     ):
         self.request.method = "POST"
+        self.request.form = {FORM_DATA_KEY: '{"foo": "bar"}'}
         mock_get_form.return_value = ('{"foo": "bar"}', "raw_data", "schema")
         mock_validate.side_effect = AssertionError("Invalid data")
 
@@ -234,6 +235,7 @@ class TestBpmProxyStartFormView(unittest.TestCase):
         mock_client,
     ):
         self.request.method = "POST"
+        self.request.form = {FORM_DATA_KEY: '{"foo": "bar"}'}
         self.context.process_variables = {}
         self.mock_iuuid.return_value = "12345678-1234-5678-1234-567812345678"
         mock_uuid4.return_value.hex = "12345678123456781234567812345678"
@@ -521,6 +523,7 @@ class TestBpmProxyTaskFormView(unittest.TestCase):
         mock_client,
     ):
         self.request.method = "POST"
+        self.request.form = {FORM_DATA_KEY: '{"foo": "bar"}'}
 
         task = MagicMock()
         task.id = "task-1"
@@ -558,6 +561,7 @@ class TestBpmProxyTaskFormView(unittest.TestCase):
         mock_client,
     ):
         self.request.method = "POST"
+        self.request.form = {FORM_DATA_KEY: '{"foo": "bar"}'}
 
         task = MagicMock()
         task.id = "task-1"
@@ -626,3 +630,121 @@ class TestBpmProxyAdapter(unittest.TestCase):
         self.assertFalse(proxy.attachments_enabled)
         self.assertEqual(proxy.default_values, {})
         self.assertEqual(proxy.default_data, {})
+
+
+class BpmProxyStartFormViewMissingProcessTest(unittest.TestCase):
+    """The start form view when the engine no longer has the process.
+
+    Deleting a deployment from the control panel cascades into its instances,
+    so every page configured with that process definition ends up here. It has
+    to render a message, not a traceback.
+    """
+
+    def setUp(self):
+        self.context = MagicMock()
+        self.context.process_definition_key = "gone-from-the-engine"
+        self.context.default_values = {}
+        self.context.diagram_enabled = True
+        self.context.absolute_url.return_value = "http://site"
+
+        self.request = MagicMock()
+        self.request.form = {}
+        self.request.method = "GET"
+
+        self.view = BpmProxyStartFormView(self.context, self.request)
+        self.view.index = MagicMock(return_value="rendered_html")
+
+        patcher = patch(
+            "collective.bpmproxy.views.bpm_form_view.IUUID",
+            return_value="12345678-1234-5678-1234-567812345678",
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @patch("collective.bpmproxy.views.bpm_form_view.doNotCache")
+    @patch("collective.bpmproxy.views.bpm_form_view.plone.api.portal.show_message")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_start_form")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_diagram_xml")
+    @patch("collective.bpmproxy.views.bpm_form_view.camunda_client")
+    def test_missing_definition_renders_a_message(
+        self,
+        mock_client,
+        mock_diagram,
+        mock_start_form,
+        mock_show_message,
+        mock_do_not_cache,
+    ):
+        mock_diagram.side_effect = ApiException(status=404)
+
+        # Must not raise: before this was handled, the 404 propagated and the
+        # page answered with a Zope traceback.
+        self.assertEqual(self.view(), "rendered_html")
+
+        self.assertEqual(self.view.data, "{}")
+        self.assertEqual(self.view.schema, "{}")
+        # The template reads diagram_xml whenever diagrams are enabled, so it
+        # must survive a failed fetch.
+        self.assertEqual(self.view.diagram_xml, "")
+        mock_start_form.assert_not_called()
+        mock_show_message.assert_called_once()
+
+
+class BpmProxyStartFormViewNoInteractiveStartTest(unittest.TestCase):
+    """The start form view for a process opted out of interactive start.
+
+    renovation_demo's Plan Review process is signal-started and has no
+    deployed start form -- get_start_form would always 404 for it. Setting
+    interactive_start_enabled = False must skip that call entirely, so the
+    page renders normally with no error banner (the diagram and task list
+    still come from their own, independent calls).
+    """
+
+    def setUp(self):
+        self.context = MagicMock()
+        self.context.process_definition_key = "renovation-plan-review"
+        self.context.default_values = {}
+        self.context.diagram_enabled = True
+        self.context.interactive_start_enabled = False
+        self.context.absolute_url.return_value = "http://site"
+
+        self.request = MagicMock()
+        self.request.form = {}
+        self.request.method = "GET"
+
+        self.view = BpmProxyStartFormView(self.context, self.request)
+        self.view.index = MagicMock(return_value="rendered_html")
+
+        patcher = patch(
+            "collective.bpmproxy.views.bpm_form_view.IUUID",
+            return_value="12345678-1234-5678-1234-567812345678",
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    @patch("collective.bpmproxy.views.bpm_form_view.doNotCache")
+    @patch("collective.bpmproxy.views.bpm_form_view.plone.api.portal.show_message")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_start_form")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_available_tasks")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_diagram_xml")
+    @patch("collective.bpmproxy.views.bpm_form_view.camunda_client")
+    def test_start_form_is_never_fetched_and_no_error_shown(
+        self,
+        mock_client,
+        mock_diagram,
+        mock_get_tasks,
+        mock_start_form,
+        mock_show_message,
+        mock_do_not_cache,
+    ):
+        mock_diagram.return_value = "<xml>"
+        mock_get_tasks.return_value = ["task1"]
+
+        self.assertEqual(self.view(), "rendered_html")
+
+        mock_start_form.assert_not_called()
+        mock_show_message.assert_not_called()
+        self.assertEqual(self.view.data, "{}")
+        self.assertEqual(self.view.schema, "{}")
+        self.assertEqual(self.view.diagram_xml, "<xml>")
+        self.assertEqual(self.view.tasks, ["task1"])
+        self.assertTrue(self.view.tabs)

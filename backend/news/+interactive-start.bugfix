@@ -1,0 +1,6 @@
+Skip fetching a process's start form when its process context has
+``interactive_start_enabled`` set to ``False``, e.g. for a signal-started
+process with no deployed start form. Previously this always raised
+``ApiException`` (404) and showed a spurious "This process is not
+available." error banner, as happens on every view of the ``renovation_demo``
+profile's demo project.

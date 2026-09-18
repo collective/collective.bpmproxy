@@ -13,7 +13,7 @@
 
   <browser:page
     name="view"
-    for="..content.bpm_proxy.IBpmProxy"
+    for="..behaviors.process_context.IProcessContext"
     class=".bpm_form_view.BpmProxyStartFormView"
     template="bpm_form_view.pt"
     permission="zope2.View"

@@ -1,8 +1,8 @@
 from borg.localrole.interfaces import ILocalRoleProvider
+from collective.bpmproxy.behaviors.process_context import IProcessContext
 from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.content.bpm_attachments import IBpmAttachments
-from collective.bpmproxy.content.bpm_proxy import IBpmProxy
 from collective.bpmproxy.utils import parents
 from plone.memoize.request import cache
 from plone.uuid.interfaces import IUUID
@@ -18,7 +18,7 @@ class AttachmentsLocalRoleProvider:
         self.context = context
         self.request = plone.api.portal.getRequest()
         self.proxy = None
-        for proxy in parents(self.context, iface=IBpmProxy):
+        for proxy in parents(self.context, iface=IProcessContext):
             self.proxy = proxy
             break
 

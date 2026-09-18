@@ -1,7 +1,7 @@
+from collective.bpmproxy.behaviors.process_context import IProcessContext
 from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.content.bpm_attachments import IBpmAttachments
-from collective.bpmproxy.content.bpm_proxy import IBpmProxy
 from collective.bpmproxy.interfaces import CAMUNDA_ADMIN_GROUP
 from collective.bpmproxy.utils import parents
 from plone.uuid.interfaces import IUUID
@@ -32,7 +32,7 @@ class BpmAttachmentsOrphansView(BrowserView):
         with camunda_client() as client:
             for brain in pc(object_provides=IBpmAttachments.__identifier__):
                 ob = brain.getObject()
-                for context in parents(ob, iface=IBpmProxy):
+                for context in parents(ob, iface=IProcessContext):
                     if not get_available_tasks(
                         client, context_key=IUUID(context), attachments_key=ob.id
                     ):

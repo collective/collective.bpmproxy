@@ -1,5 +1,6 @@
 from Acquisition import aq_inner
 from collective.bpmproxy import _
+from collective.bpmproxy.behaviors.process_context import IProcessContext
 from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.client import get_diagram_xml
@@ -9,6 +10,7 @@ from collective.bpmproxy.client import get_task_form
 from collective.bpmproxy.client import get_task_variables
 from collective.bpmproxy.client import submit_start_form
 from collective.bpmproxy.client import submit_task_form
+from collective.bpmproxy.content.bpm_proxy import get_process_context
 from collective.bpmproxy.content.bpm_proxy import IBpmProxy
 from collective.bpmproxy.interfaces import ANONYMOUS_USER_ANNOTATION_KEY
 from collective.bpmproxy.interfaces import BUSINESS_KEY_VARIABLE_NAME
@@ -80,33 +82,68 @@ class BpmProxyStartFormView(BrowserView):
 
     def __init__(self, context, request):
         super().__init__(context, request)
+        self.process_context = get_process_context(context)
 
         self.data = "{}"
         self.schema = "{}"
         self.tasks = []
+        self.diagram_xml = ""
 
         self.tabs = False
 
     def _view(self):
-        with camunda_client() as client:
-            # Get diagram
-            if self.context.diagram_enabled:
-                self.diagram_xml = get_diagram_xml(
-                    client, definition_key=self.context.process_definition_key
-                )
-            # Get form and data
-            __, self.data, self.schema = get_start_form(
-                client,
-                self.context.process_definition_key,
-                current_values={},
-                default_values=self.context.default_values,
-                context=self.context,
+        if not self.process_context.process_definition_key:
+            # A process context can exist (and be viewable) before anyone
+            # has picked a process definition for it -- e.g. right after
+            # creation, or when the field pointed at a definition that
+            # hasn't been deployed yet. Every engine call below requires a
+            # definition key, so there is nothing more to render.
+            plone.api.portal.show_message(
+                message=_("This process is not configured yet."),
+                request=self.request,
+                type=PloneNotificationLevel.ERROR,
             )
-            self.tasks = get_available_tasks(
-                client, context_key=IUUID(self.context), for_display=True
-            )
+            return self.index()
 
-        if self.context.diagram_enabled or self.tasks:
+        with camunda_client() as client:
+            try:
+                # Get diagram
+                if self.process_context.diagram_enabled:
+                    self.diagram_xml = get_diagram_xml(
+                        client,
+                        definition_key=self.process_context.process_definition_key,
+                    )
+                # Get form and data
+                if self.process_context.interactive_start_enabled:
+                    __, self.data, self.schema = get_start_form(
+                        client,
+                        self.process_context.process_definition_key,
+                        current_values={},
+                        default_values=self.process_context.default_values,
+                        context=self.context,
+                    )
+                self.tasks = get_available_tasks(
+                    client, context_key=IUUID(self.context), for_display=True
+                )
+            except ApiException as e:
+                # The engine no longer has this process definition or its
+                # start form. Deleting a deployment cascades into its
+                # instances, so this is what every page configured with that
+                # process looks like afterwards -- an ordinary operational
+                # state, not a server error.
+                logger.warning(
+                    "No start form for %s: %s",
+                    self.process_context.process_definition_key,
+                    e,
+                )
+                plone.api.portal.show_message(
+                    message=_("This process is not available."),
+                    request=self.request,
+                    type=PloneNotificationLevel.ERROR,
+                )
+                self.data = self.schema = "{}"
+
+        if self.process_context.diagram_enabled or self.tasks:
             self.tabs = True
         return self.index()
 
@@ -115,9 +152,9 @@ class BpmProxyStartFormView(BrowserView):
             current_values = json.loads(self.request.form.get(FORM_DATA_KEY) or "{}")
             self.data, __, self.schema = get_start_form(
                 client,
-                self.context.process_definition_key,
+                self.process_context.process_definition_key,
                 current_values=current_values,
-                default_values=self.context.default_values,
+                default_values=self.process_context.default_values,
                 context=self.context,
             )
             try:
@@ -125,10 +162,10 @@ class BpmProxyStartFormView(BrowserView):
                 validate_camunda_form(self.data, self.schema, self.context)
                 # Submit
                 business_key = IUUID(self.context) + ":" + uuid4().hex
-                process_variables = self.context.process_variables.copy()
+                process_variables = self.process_context.process_variables.copy()
                 process = submit_start_form(
                     client,
-                    self.context.process_definition_key,
+                    self.process_context.process_definition_key,
                     business_key=business_key,
                     form_variables=json.loads(self.data),
                     process_variables=process_variables,
@@ -145,7 +182,7 @@ class BpmProxyStartFormView(BrowserView):
                 __, self.data, ___ = prepare_camunda_form(
                     self.schema,
                     default_data={},
-                    default_values=self.context.default_values,
+                    default_values=self.process_context.default_values,
                     context=self.context,
                 )
 
@@ -177,24 +214,36 @@ class BpmProxyStartFormView(BrowserView):
                     )
                     if token:
                         url += "?token=" + token
-                    if self.context.diagram_enabled:
+                    if self.process_context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
                     break
             except ApiException:
                 pass  # process may have already ended
 
-        if self.context.diagram_enabled or self.tasks:
+        if self.process_context.diagram_enabled or self.tasks:
             self.tabs = True
         return self.index()
 
     def __call__(self):
         self.request.set("bpmproxy_form_required", True)
-        if getattr(self.context, "diagram_enabled", False):
+        if self.process_context.diagram_enabled:
             self.request.set("bpmproxy_diagram_required", True)
 
         doNotCache(self, self.request, self.request.response)
-        if self.request.method == HTTPMethod.POST:
+        # A POST to this page is not necessarily this view's own start-form
+        # submission -- e.g. a portlet rendered in the same page (the Signal
+        # portlet's SignalForm) posts back to this same URL when its own
+        # button is clicked. Only FORM_DATA_KEY's presence means this form's
+        # own hidden `<form id="collective-bpmproxy-form-submit">` (see
+        # bpm_form_view.pt) actually submitted; any other POST falls through
+        # to _view(), whose template rendering is what gives portlets their
+        # chance to process their own submission via z3c.form's normal
+        # button-dispatch in Renderer.render()/form.update().
+        if (
+            self.request.method == HTTPMethod.POST
+            and FORM_DATA_KEY in self.request.form
+        ):
             check(self.request)
             return self._submit()
         else:
@@ -215,9 +264,11 @@ class BpmProxyTaskFormView(BrowserView):
     def __init__(self, context, request):
         super().__init__(context, request)
 
-        # TODO: Need adapter to allow BpmProxy configuration on non-BpmProxy content
-        if not IBpmProxy.providedBy(self.context):
+        if not IBpmProxy.providedBy(self.context) and not IProcessContext.providedBy(
+            self.context
+        ):
             self.context = BpmProxy(self.context)
+        self.process_context = get_process_context(self.context)
 
         self.attachments_enabled = False
         self.attachments_key = None
@@ -246,7 +297,7 @@ class BpmProxyTaskFormView(BrowserView):
                 current_values = get_task_variables(client, self.task_id)
 
                 # Get diagram
-                if self.context.diagram_enabled:
+                if self.process_context.diagram_enabled:
                     self.diagram_xml = get_diagram_xml(
                         client, task.process_definition_id, task.tenant_id
                     )
@@ -254,7 +305,7 @@ class BpmProxyTaskFormView(BrowserView):
                 # Enable attachments when possible.
                 try:
                     business_key = current_values[BUSINESS_KEY_VARIABLE_NAME]
-                    if ":" in business_key and self.context.attachments_enabled:
+                    if ":" in business_key and self.process_context.attachments_enabled:
                         self.attachments_key = str(UUID(business_key.split(":")[-1]))
                         self.attachments_enabled = bool(self.attachments_key)
                 except (KeyError, TypeError, ValueError):
@@ -264,7 +315,7 @@ class BpmProxyTaskFormView(BrowserView):
                     client,
                     self.task_id,
                     current_values=current_values,
-                    default_values=self.context.default_values,
+                    default_values=self.process_context.default_values,
                     context=self.context,
                 )
             except ApiException as e:
@@ -272,7 +323,7 @@ class BpmProxyTaskFormView(BrowserView):
                 logger.warning(e)
                 raise NotFound(self, self.task_id, self.request) from e
 
-        if self.context.diagram_enabled:
+        if self.process_context.diagram_enabled:
             self.tabs = True
         return self.index()
 
@@ -286,7 +337,7 @@ class BpmProxyTaskFormView(BrowserView):
             # Enable attachments when possible.
             try:
                 business_key = current_values[BUSINESS_KEY_VARIABLE_NAME]
-                if ":" in business_key and self.context.attachments_enabled:
+                if ":" in business_key and self.process_context.attachments_enabled:
                     self.attachments_key = str(UUID(business_key.split(":")[-1]))
                     self.attachments_enabled = bool(self.attachments_key)
             except (KeyError, TypeError, ValueError):
@@ -296,7 +347,7 @@ class BpmProxyTaskFormView(BrowserView):
                 client,
                 self.task_id,
                 current_values=current_values,
-                default_values=self.context.default_values,
+                default_values=self.process_context.default_values,
                 context=self.context,
             )
             try:
@@ -334,20 +385,20 @@ class BpmProxyTaskFormView(BrowserView):
                     )
                     if token:
                         url += "?token=" + token
-                    if self.context.diagram_enabled:
+                    if self.process_context.diagram_enabled:
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
                     break
             except ApiException:
                 pass  # process may have already ended
 
-        if self.context.diagram_enabled:
+        if self.process_context.diagram_enabled:
             self.tabs = True
         return self.index()
 
     def __call__(self):
         self.request.set("bpmproxy_form_required", True)
-        if getattr(self.context, "diagram_enabled", False):
+        if self.process_context.diagram_enabled:
             self.request.set("bpmproxy_diagram_required", True)
 
         doNotCache(self, self.request, self.request.response)
@@ -376,7 +427,10 @@ class BpmProxyTaskFormView(BrowserView):
                 )
                 self.request.response.redirect(self.context.absolute_url())
                 return ""
-        if self.request.method == HTTPMethod.POST:
+        if (
+            self.request.method == HTTPMethod.POST
+            and FORM_DATA_KEY in self.request.form
+        ):
             check(self.request)
             return self._submit(tasks[self.task_id])
         elif tasks[self.task_id].form_key and (
