@@ -53,6 +53,15 @@
       post_handler=".setuphandlers.uninstall"
       />
 
+  <genericsetup:registerProfile
+      name="renovation_demo"
+      title="collective.bpmproxy renovation-project demo"
+      directory="profiles/renovation_demo"
+      description="Installs the manually configured renovation-project demo."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      post_handler=".renovation_demo.install"
+      />
+
   <utility
       factory=".setuphandlers.HiddenProfiles"
       name="collective.bpmproxy-hiddenprofiles"

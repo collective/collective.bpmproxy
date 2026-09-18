@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<rolemap>
+  <permissions>
+    <!--
+      plone.restapi's own rolemap grants "Use REST API" to Anonymous only
+      (see plone/restapi/profiles/default/rolemap.xml). Zope's built-in
+      Manager role bypasses permission checks entirely, which is why a
+      Manager/"manager" user can call plone.restapi endpoints regardless,
+      but Site Administrator (renovation-bot's role, used to run the
+      renovation-bot purjo worker's Plone workflow transitions over REST)
+      is not Manager and needs this granted explicitly.
+    -->
+    <permission name="plone.restapi: Use REST API" acquire="True">
+      <role name="Anonymous"/>
+      <role name="Manager"/>
+      <role name="Site Administrator"/>
+    </permission>
+  </permissions>
+</rolemap>

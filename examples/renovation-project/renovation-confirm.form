@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "text": "# Confirm",
+      "type": "text",
+      "id": "Field_confirm_header"
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_confirm_submit"
+    }
+  ],
+  "type": "default",
+  "id": "renovation-confirm",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

@@ -1,0 +1,39 @@
+{
+  "components": [
+    {
+      "text": "# Review",
+      "type": "text",
+      "id": "Field_inspector_header"
+    },
+    {
+      "label": "Approved",
+      "type": "checkbox",
+      "id": "Field_inspector_approved",
+      "key": "inspectorApproved"
+    },
+    {
+      "label": "Comments",
+      "type": "textarea",
+      "id": "Field_inspector_comments",
+      "key": "comments",
+      "validate": {
+        "required": false
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Submit",
+      "type": "button",
+      "id": "Field_inspector_submit"
+    }
+  ],
+  "type": "default",
+  "id": "renovation-inspector-approval",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.2.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.17.0",
+  "schemaVersion": 4
+}

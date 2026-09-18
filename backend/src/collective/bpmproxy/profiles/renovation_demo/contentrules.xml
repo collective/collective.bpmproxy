@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contentrules>
+ <rule name="renovation-plan-submitted" title="BPMN signal: renovation plan submitted" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>submit-plan</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">renovation-plan-submitted</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="renovation-work-phase-started" title="BPMN signal: renovation work phase started" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>approve-plan</element>
+     <element>reject-final-review</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">renovation-work-phase-started</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="renovation-final-review-requested" title="BPMN signal: renovation final review requested" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>submit-for-final-review</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">renovation-final-review-requested</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="renovation-plan-rejected" title="BPMN signal: renovation plan rejected" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>reject-plan</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">renovation-plan-rejected:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="renovation-project-closed" title="BPMN signal: renovation project closed" cascading="False"
+    description="" enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>close-project</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">renovation-project-closed:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <assignment location="" name="renovation-plan-submitted" enabled="True" bubbles="True" insert-before="" />
+ <assignment location="" name="renovation-work-phase-started" enabled="True" bubbles="True" insert-before="" />
+ <assignment location="" name="renovation-final-review-requested" enabled="True" bubbles="True" insert-before="" />
+ <assignment location="" name="renovation-plan-rejected" enabled="True" bubbles="True" insert-before="" />
+ <assignment location="" name="renovation-project-closed" enabled="True" bubbles="True" insert-before="" />
+</contentrules>
