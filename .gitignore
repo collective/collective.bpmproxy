@@ -9,6 +9,9 @@
 .claude/
 .idea/
 .mvn/
+# ...but the Operaton fixture's Maven wrapper must be tracked: devenv's
+# operaton process runs ./mvnw, which cannot start without it.
+!fixture/operaton/.mvn/
 bin/
 buildout-cache/
 develop-eggs/
@@ -41,7 +44,6 @@ venv/
 .devenv/
 .devenv.flake.nix
 devenv.local.nix
-.pre-commit-config.yaml
 .direnv/
 tmp/
 
