@@ -1,7 +1,7 @@
 { pkgs, lib, config, ... }:
 
 # Development environment for collective.bpmproxy. Two terminals, both
-# inside `make shell` (== devenv shell; toolchain: JDK 17, Maven, Python,
+# inside `make shell` (== devenv shell; toolchain: JDK 21, Maven, Python,
 # CAMUNDA_* env set):
 #
 #   make services  # -> devenv up: postgres + keycloak (realm "plone") + mailpit + operaton
@@ -69,6 +69,24 @@
   scripts.e2e-smoke.exec = ''
     exec ${pkgs.python312.withPackages (ps: [ ps.playwright ])}/bin/python \
       "$DEVENV_ROOT/scripts/e2e_smoke.py" "$@"
+  '';
+
+  # `make ui-test` / `make screenshots`. The browser test campaign in
+  # scripts/uitest/, run as a module so its relative imports resolve; same
+  # nixpkgs playwright as e2e-smoke, so `playwright install` is never needed.
+  scripts.ui-test.exec = ''
+    cd "$DEVENV_ROOT"
+    exec ${pkgs.python312.withPackages (ps: [ ps.playwright ])}/bin/python \
+      -m scripts.uitest "$@"
+  '';
+
+  # The documented runner for the recording scripts (docs/AGENTS.md), e.g.
+  # `playwright-python scripts/e2e_request_for_quote.py`. Same nixpkgs
+  # playwright as e2e-smoke, and runs from the repo root because those scripts
+  # resolve examples/ and docs/ relatively.
+  scripts.playwright-python.exec = ''
+    cd "$DEVENV_ROOT"
+    exec ${pkgs.python312.withPackages (ps: [ ps.playwright ])}/bin/python "$@"
   '';
 
   services.postgres = {

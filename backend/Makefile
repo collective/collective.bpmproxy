@@ -1,4 +1,4 @@
-.PHONY: all install lock test test-live lint format i18n start reset-site clean
+.PHONY: all install lock test test-offline test-live lint format i18n start reset-site clean
 
 all: install
 
@@ -28,8 +28,20 @@ lock:
 test: install
 	uv run pytest
 
+# The default addopts in pyproject.toml already exclude the "operaton" marker,
+# so this is what `test` does. It exists because the root Makefile offers
+# `test-offline` as the explicit counterpart to `test-live`.
+test-offline: install
+	uv run pytest -m "not operaton"
+
+# Needs the engine: `devenv up -d` first. Exits 5 ("no tests ran") if nothing
+# carries the marker, which is not a failure -- say so rather than looking
+# like a broken build.
 test-live: install
-	uv run pytest -m "operaton"
+	@uv run pytest -m "operaton"; status=$$?; \
+		if [ $$status -eq 5 ]; then \
+			echo "no tests are marked 'operaton'"; exit 0; \
+		else exit $$status; fi
 
 lint: install
 	uv run ruff check src
@@ -50,6 +62,10 @@ i18n: install
 # because `install` is phony and always "changed".
 instance/etc/zope.ini: | install
 	uv run mkwsgiinstance -d instance -u admin:admin
+	# mkwsgiinstance writes a bare <filestorage>, which cannot store the ZODB
+	# blobs every Plone file upload becomes. Without this, the first upload
+	# fails at commit with "Storing Blobs ... is not supported".
+	uv run python scripts/configure_blobstorage.py instance/etc/zope.conf
 
 start: instance/etc/zope.ini
 	uv run runwsgi -v instance/etc/zope.ini
