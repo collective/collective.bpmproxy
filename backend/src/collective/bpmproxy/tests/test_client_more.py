@@ -73,9 +73,16 @@ def test_get_token_no_tenant_ids(
 @patch("collective.bpmproxy.client.plone.api.user")
 @patch("collective.bpmproxy.client.plone.api.portal")
 @patch("collective.bpmproxy.client.IAnnotations")
+@patch("collective.bpmproxy.client.sign_anonymous_token")
+@patch("collective.bpmproxy.client.verify_anonymous_token", return_value=None)
 @patch("collective.bpmproxy.client.get_token")
 def test_get_authorization_anonymous_new_token(
-    mock_get_token, mock_IAnnotations, mock_portal, mock_user
+    mock_get_token,
+    mock_verify,
+    mock_sign,
+    mock_IAnnotations,
+    mock_portal,
+    mock_user,
 ):
     mock_user.is_anonymous.return_value = True
     request = MagicMock()
@@ -86,12 +93,15 @@ def test_get_authorization_anonymous_new_token(
     mock_IAnnotations.return_value.__setitem__.side_effect = annotations.__setitem__
 
     mock_get_token.return_value = "anon_token"
+    mock_sign.side_effect = lambda token: token + ".signed"
 
     auth = get_authorization()
 
     assert auth == "Bearer anon_token"
     assert ANONYMOUS_USER_ANNOTATION_KEY in annotations
-    token_val = annotations[ANONYMOUS_USER_ANNOTATION_KEY]
+    signed_val = annotations[ANONYMOUS_USER_ANNOTATION_KEY]
+    assert signed_val.endswith(".signed")
+    token_val = signed_val[: -len(".signed")]
     mock_get_token.assert_called_with(
         username=ANONYMOUS_USER_PREFIX + token_val, groups=[]
     )
@@ -100,24 +110,32 @@ def test_get_authorization_anonymous_new_token(
 @patch("collective.bpmproxy.client.plone.api.user")
 @patch("collective.bpmproxy.client.plone.api.portal")
 @patch("collective.bpmproxy.client.IAnnotations")
+@patch("collective.bpmproxy.client.sign_anonymous_token")
+@patch("collective.bpmproxy.client.verify_anonymous_token")
 @patch("collective.bpmproxy.client.get_token")
 def test_get_authorization_anonymous_existing_token(
-    mock_get_token, mock_IAnnotations, mock_portal, mock_user
+    mock_get_token,
+    mock_verify,
+    mock_sign,
+    mock_IAnnotations,
+    mock_portal,
+    mock_user,
 ):
     mock_user.is_anonymous.return_value = True
     request = MagicMock()
     request.form = {}
     mock_portal.getRequest.return_value = request
     mock_IAnnotations.return_value.get.return_value = (
-        "12345678-1234-5678-1234-567812345678"
+        "12345678-1234-5678-1234-567812345678.some-signature"
     )
+    mock_verify.return_value = "12345678-1234-5678-1234-567812345678"
 
     mock_get_token.return_value = "anon_token"
 
-    with patch("collective.bpmproxy.client.is_valid_uuid", return_value=True):
-        auth = get_authorization()
+    auth = get_authorization()
 
     assert auth == "Bearer anon_token"
+    mock_sign.assert_not_called()
     mock_get_token.assert_called_with(
         username=ANONYMOUS_USER_PREFIX + "12345678-1234-5678-1234-567812345678",
         groups=[],

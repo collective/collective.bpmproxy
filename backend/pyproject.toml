@@ -39,6 +39,7 @@ dependencies = [
     "plone.app.contentrules",
     "plone.app.dexterity",
     "plone.app.portlets",
+    "plone.keyring",
     "plone.restapi",
     "plone.schema",
     "plone.stringinterp",

@@ -2,6 +2,7 @@ from Acquisition import aq_inner
 from Acquisition import aq_parent
 from concurrent.futures import ThreadPoolExecutor
 from dateutil.parser import isoparse
+from plone.keyring.interfaces import IKeyManager
 from plone.stringinterp.interfaces import IStringInterpolator
 from transaction.interfaces import IDataManager
 from uuid import UUID
@@ -10,6 +11,8 @@ from zope.interface import implementer
 from zope.interface.interfaces import ComponentLookupError
 from zope.schema.interfaces import IVocabularyFactory
 import datetime
+import hashlib
+import hmac
 import json
 import logging
 import plone.api
@@ -361,3 +364,38 @@ def is_valid_uuid(uuid_to_test, version=4):
     except ValueError:
         return False
     return str(uuid_obj) == uuid_to_test or uuid_obj.hex == uuid_to_test
+
+
+def sign_anonymous_token(token):
+    """Sign an anonymous-session token with Plone's rotating "_anon" keyring.
+
+    The identity itself is still just a UUID4 -- it doubles as the suffix of
+    the Operaton JWT "sub" claim minted for it -- but pairing it with a
+    keyring-backed HMAC means a client can no longer just make one up: only
+    a token this call issued (or one from before the keyring last rotated,
+    see verify_anonymous_token) verifies afterwards.
+    """
+    secret = getUtility(IKeyManager).secret(ring="_anon")
+    signature = hmac.new(secret.encode(), token.encode(), hashlib.sha256).hexdigest()
+    return f"{token}.{signature}"
+
+
+def verify_anonymous_token(value):
+    """Return the UUID payload of ``value`` if sign_anonymous_token issued it.
+
+    Checks every secret still in the "_anon" keyring, not just the current
+    one, so a token signed just before a rotation keeps verifying until it
+    ages out of the ring.
+    """
+    if not value or "." not in value:
+        return None
+    token, _, signature = value.rpartition(".")
+    if not is_valid_uuid(token):
+        return None
+    for secret in getUtility(IKeyManager)["_anon"]:
+        if secret is None:
+            continue
+        expected = hmac.new(secret.encode(), token.encode(), hashlib.sha256).hexdigest()
+        if hmac.compare_digest(expected, signature):
+            return token
+    return None

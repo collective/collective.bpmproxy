@@ -10,8 +10,9 @@ from collective.bpmproxy.interfaces import PENDING_TASKS_MAX_RESULTS
 from collective.bpmproxy.utils import flatten_variables
 from collective.bpmproxy.utils import get_tenant_ids
 from collective.bpmproxy.utils import infer_variables
-from collective.bpmproxy.utils import is_valid_uuid
 from collective.bpmproxy.utils import prepare_camunda_form
+from collective.bpmproxy.utils import sign_anonymous_token
+from collective.bpmproxy.utils import verify_anonymous_token
 from contextlib import contextmanager
 from generic_camunda_client import ApiException
 from generic_camunda_client import CompleteTaskDto
@@ -68,12 +69,23 @@ def get_token(username, groups, tenant_ids=None):
 def get_authorization():
     if plone.api.user.is_anonymous():
         request = plone.api.portal.getRequest()
-        token = IAnnotations(request).get(
+        # The identity that ties an anonymous visitor's requests together
+        # travels as a bare "?token=" URL value (see views/bpm_form_view.py),
+        # so it has to keep working as a plain string a link can carry -- but
+        # unlike a bare UUID, it must be one this call issued: verifying the
+        # signature is what stops a client from just picking any syntactically
+        # valid UUID4 and assuming that identity. Its unguessability is by
+        # design the *only* thing that keeps two visitors' sessions apart, so
+        # anyone holding the (signed) link can resume it -- that is how the
+        # anonymous requester flow hands off across a reviewer's turn.
+        signed = IAnnotations(request).get(
             ANONYMOUS_USER_ANNOTATION_KEY
         ) or request.form.get("token")
-        if not (token and is_valid_uuid(token)):
+        token = verify_anonymous_token(signed)
+        if not token:
             token = str(uuid.uuid4())
-        IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = token
+            signed = sign_anonymous_token(token)
+        IAnnotations(request)[ANONYMOUS_USER_ANNOTATION_KEY] = signed
         token = get_token(
             username=ANONYMOUS_USER_PREFIX + token,
             groups=[],

@@ -4,6 +4,8 @@ from collective.bpmproxy.client import deploy_process
 from collective.bpmproxy.client import get_api_url
 from collective.bpmproxy.client import get_authorization
 from collective.bpmproxy.client import get_token
+from collective.bpmproxy.interfaces import ANONYMOUS_USER_ANNOTATION_KEY
+from collective.bpmproxy.interfaces import ANONYMOUS_USER_PREFIX
 from collective.bpmproxy.interfaces import CAMUNDA_API_PRIVATE_KEY_ENV
 from collective.bpmproxy.interfaces import CAMUNDA_API_URL_ENV
 from unittest import mock
@@ -39,10 +41,19 @@ def test_get_token(mock_jwt, mock_tenants, monkeypatch):
 @mock.patch("collective.bpmproxy.client.plone.api.user.is_anonymous", return_value=True)
 @mock.patch("collective.bpmproxy.client.plone.api.portal.getRequest")
 @mock.patch("collective.bpmproxy.client.IAnnotations")
+@mock.patch("collective.bpmproxy.client.sign_anonymous_token", return_value="new.sig")
+@mock.patch("collective.bpmproxy.client.verify_anonymous_token", return_value=None)
 @mock.patch("collective.bpmproxy.client.get_token", return_value="anon_token")
-def test_get_authorization_anonymous(
-    mock_get_token, mock_annotations, mock_get_request, mock_is_anon
+def test_get_authorization_anonymous_mints_a_token(
+    mock_get_token,
+    mock_verify,
+    mock_sign,
+    mock_annotations,
+    mock_get_request,
+    mock_is_anon,
 ):
+    # No token in the annotation or request.form, so a fresh one is minted
+    # and signed rather than trusting a bare client-supplied value.
     mock_request = mock.MagicMock()
     mock_request.form = {}
     mock_get_request.return_value = mock_request
@@ -52,7 +63,75 @@ def test_get_authorization_anonymous(
 
     auth = get_authorization()
     assert auth == "Bearer anon_token"
-    mock_get_token.assert_called_once()
+    mock_sign.assert_called_once()
+    assert mock_dict[ANONYMOUS_USER_ANNOTATION_KEY] == "new.sig"
+    username = mock_get_token.call_args.kwargs["username"]
+    assert username.startswith(ANONYMOUS_USER_PREFIX)
+
+
+@mock.patch("collective.bpmproxy.client.plone.api.user.is_anonymous", return_value=True)
+@mock.patch("collective.bpmproxy.client.plone.api.portal.getRequest")
+@mock.patch("collective.bpmproxy.client.IAnnotations")
+@mock.patch("collective.bpmproxy.client.sign_anonymous_token")
+@mock.patch(
+    "collective.bpmproxy.client.verify_anonymous_token", return_value="known-uuid"
+)
+@mock.patch("collective.bpmproxy.client.get_token", return_value="anon_token")
+def test_get_authorization_anonymous_reuses_a_verified_token(
+    mock_get_token,
+    mock_verify,
+    mock_sign,
+    mock_annotations,
+    mock_get_request,
+    mock_is_anon,
+):
+    # A token that verifies is reused as-is; nothing new is signed.
+    mock_request = mock.MagicMock()
+    mock_request.form = {"token": "known-uuid.some-sig"}
+    mock_get_request.return_value = mock_request
+
+    mock_dict = {}
+    mock_annotations.return_value = mock_dict
+
+    auth = get_authorization()
+    assert auth == "Bearer anon_token"
+    mock_verify.assert_called_once_with("known-uuid.some-sig")
+    mock_sign.assert_not_called()
+    assert mock_dict[ANONYMOUS_USER_ANNOTATION_KEY] == "known-uuid.some-sig"
+    mock_get_token.assert_called_once_with(
+        username=ANONYMOUS_USER_PREFIX + "known-uuid", groups=[]
+    )
+
+
+@mock.patch("collective.bpmproxy.client.plone.api.user.is_anonymous", return_value=True)
+@mock.patch("collective.bpmproxy.client.plone.api.portal.getRequest")
+@mock.patch("collective.bpmproxy.client.IAnnotations")
+@mock.patch("collective.bpmproxy.client.sign_anonymous_token", return_value="new.sig")
+@mock.patch("collective.bpmproxy.client.verify_anonymous_token", return_value=None)
+@mock.patch("collective.bpmproxy.client.get_token", return_value="anon_token")
+def test_get_authorization_anonymous_rejects_an_unsigned_token(
+    mock_get_token,
+    mock_verify,
+    mock_sign,
+    mock_annotations,
+    mock_get_request,
+    mock_is_anon,
+):
+    # A client-supplied value that does not verify (e.g. a bare made-up
+    # UUID, or an old client still sending the pre-signing format) is
+    # rejected exactly like no token at all: a fresh one is minted.
+    mock_request = mock.MagicMock()
+    mock_request.form = {"token": "550e8400-e29b-41d4-a716-446655440000"}
+    mock_get_request.return_value = mock_request
+
+    mock_dict = {}
+    mock_annotations.return_value = mock_dict
+
+    auth = get_authorization()
+    assert auth == "Bearer anon_token"
+    mock_verify.assert_called_once_with("550e8400-e29b-41d4-a716-446655440000")
+    mock_sign.assert_called_once()
+    assert mock_dict[ANONYMOUS_USER_ANNOTATION_KEY] == "new.sig"
 
 
 @mock.patch(

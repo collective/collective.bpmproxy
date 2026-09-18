@@ -1,0 +1,5 @@
+The anonymous visitor identity carried in a process form's ``?token=`` URL
+parameter is now signed with Plone's rotating "_anon" keyring secret and
+verified on every request. Previously any syntactically valid UUID4 was
+accepted as a legitimate anonymous identity, whether or not this site had
+ever issued it.

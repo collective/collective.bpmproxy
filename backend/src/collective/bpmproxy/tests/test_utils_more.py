@@ -8,7 +8,9 @@ from collective.bpmproxy.utils import is_valid_uuid
 from collective.bpmproxy.utils import parents
 from collective.bpmproxy.utils import prepare_camunda_form
 from collective.bpmproxy.utils import SideEffectDataManager
+from collective.bpmproxy.utils import sign_anonymous_token
 from collective.bpmproxy.utils import validate_camunda_form
+from collective.bpmproxy.utils import verify_anonymous_token
 from unittest import mock
 from zope.interface import implementer
 from zope.interface import Interface
@@ -363,3 +365,73 @@ def test_is_valid_uuid():
     valid_uuid = str(uuid.uuid4())
     assert is_valid_uuid(valid_uuid)
     assert not is_valid_uuid("invalid-uuid")
+
+
+class FakeKeyring(list):
+    """A stand-in for plone.keyring's Keyring: a list with a .current."""
+
+    @property
+    def current(self):
+        return self[0]
+
+
+class FakeKeyManager(dict):
+    """A stand-in for plone.keyring's IKeyManager utility."""
+
+    def secret(self, ring="_system"):
+        return self[ring].current
+
+
+@pytest.fixture
+def fake_key_manager():
+    return FakeKeyManager(_anon=FakeKeyring(["current-secret", "previous-secret"]))
+
+
+def test_sign_and_verify_anonymous_token(fake_key_manager):
+    import uuid
+
+    token = str(uuid.uuid4())
+    with mock.patch(
+        "collective.bpmproxy.utils.getUtility", return_value=fake_key_manager
+    ):
+        signed = sign_anonymous_token(token)
+        assert signed.startswith(token + ".")
+        assert verify_anonymous_token(signed) == token
+
+
+def test_verify_anonymous_token_accepts_a_previous_keyring_secret(fake_key_manager):
+    import uuid
+
+    token = str(uuid.uuid4())
+    with mock.patch(
+        "collective.bpmproxy.utils.getUtility", return_value=fake_key_manager
+    ):
+        # Sign with what was, until just now, the current secret.
+        old_secret = fake_key_manager["_anon"].current
+        signed = sign_anonymous_token(token)
+        # Rotate: the secret used to sign is no longer current, but it is
+        # still in the ring.
+        fake_key_manager["_anon"].insert(0, "rotated-in-secret")
+        assert old_secret in fake_key_manager["_anon"]
+        assert verify_anonymous_token(signed) == token
+
+
+def test_verify_anonymous_token_rejects_forgeries():
+    import uuid
+
+    unsigned_uuid = str(uuid.uuid4())
+    fake_key_manager = FakeKeyManager(_anon=FakeKeyring(["real-secret"]))
+    with mock.patch(
+        "collective.bpmproxy.utils.getUtility", return_value=fake_key_manager
+    ):
+        # Not signed at all -- the pre-hardening format, or a bare made-up
+        # UUID a client supplied.
+        assert verify_anonymous_token(unsigned_uuid) is None
+        # Well-formed but signed with a secret that was never in the ring.
+        forged = f"{unsigned_uuid}.deadbeef"
+        assert verify_anonymous_token(forged) is None
+        # Not even a valid UUID as the payload.
+        assert verify_anonymous_token("not-a-uuid.deadbeef") is None
+        # Empty / None input.
+        assert verify_anonymous_token("") is None
+        assert verify_anonymous_token(None) is None
