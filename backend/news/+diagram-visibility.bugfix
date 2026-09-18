@@ -1,0 +1,2 @@
+Render the BPMN diagram only once its container becomes visible, so a diagram in
+a hidden tab no longer renders into a zero-sized viewport.
