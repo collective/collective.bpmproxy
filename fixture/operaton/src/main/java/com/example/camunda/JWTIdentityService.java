@@ -1,7 +1,6 @@
 package com.example.camunda;
 
 import com.nimbusds.jwt.JWTClaimsSet;
-import com.nimbusds.jwt.SignedJWT;
 import org.operaton.bpm.engine.impl.IdentityServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,6 +25,12 @@ public class JWTIdentityService extends IdentityServiceImpl {
     }
 
     public String getPublicKey() {
+        if (publicKey == null || publicKey.isEmpty()) {
+            // Unconfigured: fail closed and legibly rather than throwing a
+            // NullPointerException out of the authentication filter.
+            log.warn("No plone.public-key configured; JWT authentication is disabled.");
+            return null;
+        }
         File f = new File(publicKey);
         if (f.exists()) {
             try {
@@ -41,17 +46,23 @@ public class JWTIdentityService extends IdentityServiceImpl {
 
     @Override
     public void setAuthentication(String userId, List<String> groups, List<String> tenantIds) {
-        try {
-            // Transient JWT (verified at filter)
-            SignedJWT jwt = SignedJWT.parse(userId);
-            JWTClaimsSet claims = jwt.getJWTClaimsSet();
-            userId = claims.getStringClaim("sub");
-            groups = claims.getStringListClaim("groups");
-            tenantIds = claims.getStringListClaim("tenant_ids");
-            super.setAuthentication(userId, groups, tenantIds);
-        } catch (NullPointerException | ParseException e) {
-            // Persistent Basic Auth
-            super.setAuthentication(userId, groups, tenantIds);
+        // Transient JWT. Verify it here rather than assuming the REST
+        // authentication filter was the only way in: this method is reachable
+        // from other code paths, and claims from an unverified token must
+        // never reach the engine's identity.
+        JWTClaimsSet claims = JWTTokens.verify(userId, getPublicKey());
+        if (claims != null) {
+            try {
+                super.setAuthentication(
+                        claims.getStringClaim("sub"),
+                        claims.getStringListClaim("groups"),
+                        claims.getStringListClaim("tenant_ids"));
+                return;
+            } catch (ParseException e) {
+                log.warn("Verified JWT carries unusable claims: {}", e.toString());
+            }
         }
+        // Persistent Basic Auth
+        super.setAuthentication(userId, groups, tenantIds);
     }
 }

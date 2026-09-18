@@ -13,7 +13,7 @@ import java.util.List;
 @Configuration
 public class ProcessEngineConfig {
 
-    @Value("${plone.public-key:ec-prime256v1-pub-key.pem}")
+    @Value("${plone.public-key:ec-ed25519-pub-key.pem}")
     private String jwtPublicKey;
 
     @Bean

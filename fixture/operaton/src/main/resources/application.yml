@@ -39,7 +39,7 @@ spring:
     password: ""
 
 plone:
-  public-key: ec-prime256v1-pub-key.pem
+  public-key: ${PLONE_PUBLIC_KEY:ec-ed25519-pub-key.pem}
 
 ---
 # OIDC login for the Operaton webapps (Cockpit/Tasklist/Admin/Welcome).
