@@ -64,7 +64,6 @@ test = [
     "plone.app.testing",
     "plone.testing>=5.0.0",
     "plone.app.contenttypes",
-    "plone.app.robotframework[debug]",
 ]
 
 [dependency-groups]
@@ -549,7 +548,7 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = ["src/collective/bpmproxy/tests"]
-addopts = "--ignore-glob=*test_robot* --strict-markers -m \"not operaton\""
+addopts = "--strict-markers -m \"not operaton\""
 markers = [
     "operaton: marks tests that require a live Operaton engine",
 ]

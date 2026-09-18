@@ -1,0 +1,5 @@
+Remove the Robot Framework acceptance test suites: pytest already excluded
+them (``--ignore-glob=*test_robot*``) and no Makefile or CI target ever ran
+them via ``zope.testrunner``, so they were scaffolding that never executed.
+Browser coverage lives in ``scripts/uitest/`` and the ``scripts/e2e_*.py``
+recording scripts instead.

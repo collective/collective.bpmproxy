@@ -887,7 +887,6 @@ dependencies = [
 test = [
     { name = "gocept-pytestlayer" },
     { name = "plone-app-contenttypes" },
-    { name = "plone-app-robotframework", extra = ["debug"] },
     { name = "plone-app-testing" },
     { name = "plone-testing" },
     { name = "pytest" },
@@ -913,7 +912,6 @@ requires-dist = [
     { name = "plone-app-contenttypes", marker = "extra == 'test'" },
     { name = "plone-app-dexterity" },
     { name = "plone-app-portlets" },
-    { name = "plone-app-robotframework", extras = ["debug"], marker = "extra == 'test'" },
     { name = "plone-app-testing", marker = "extra == 'test'" },
     { name = "plone-restapi" },
     { name = "plone-schema" },
@@ -2639,11 +2637,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a2/07/8024cf0cef3474e0405f5beb71775a0adb34ef06edd4f170a0aad6351dd1/plone_app_robotframework-2.1.6.tar.gz", hash = "sha256:b1d55aaa8641b06820dfe78704b761cb35264fbd7ae3592c8e5374d215f14131", size = 914302, upload-time = "2026-02-26T10:27:43.178Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/f7/51/149ba9feff98384e531d398c315169550557edc9efc278ecb9acfc488d1f/plone_app_robotframework-2.1.6-py3-none-any.whl", hash = "sha256:15cb905ecad92ab6d01d4be8f0f99e7a51c8f5fc2a3ea1a4c711687b0fce968a", size = 130977, upload-time = "2026-02-26T10:27:41.36Z" },
-]
-
-[package.optional-dependencies]
-debug = [
-    { name = "robotframework-debuglibrary" },
 ]
 
 [[package]]

@@ -1,10 +1,8 @@
 from plone.app.contenttypes.testing import PLONE_APP_CONTENTTYPES_FIXTURE
-from plone.app.robotframework.testing import REMOTE_LIBRARY_BUNDLE_FIXTURE
 from plone.app.testing import applyProfile
 from plone.app.testing import FunctionalTesting
 from plone.app.testing import IntegrationTesting
 from plone.app.testing import PloneSandboxLayer
-from plone.testing.zope import WSGI_SERVER_FIXTURE
 import collective.bpmproxy
 
 
@@ -36,14 +34,4 @@ COLLECTIVE_BPMPROXY_INTEGRATION_TESTING = IntegrationTesting(
 COLLECTIVE_BPMPROXY_FUNCTIONAL_TESTING = FunctionalTesting(
     bases=(COLLECTIVE_BPMPROXY_FIXTURE,),
     name="CollectiveBpmproxyLayer:FunctionalTesting",
-)
-
-
-COLLECTIVE_BPMPROXY_ACCEPTANCE_TESTING = FunctionalTesting(
-    bases=(
-        COLLECTIVE_BPMPROXY_FIXTURE,
-        REMOTE_LIBRARY_BUNDLE_FIXTURE,
-        WSGI_SERVER_FIXTURE,
-    ),
-    name="CollectiveBpmproxyLayer:AcceptanceTesting",
 )
