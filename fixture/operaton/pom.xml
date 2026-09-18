@@ -102,6 +102,12 @@
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
+      <!-- Deliberately NOT test-scoped: the default Spring profile's
+           datasource is jdbc:h2:mem:operaton, so `./mvnw spring-boot:run`
+           with no profile (see README) needs the driver at runtime. Making
+           this test-scoped fails startup with "Cannot load driver class:
+           org.h2.Driver". devenv runs the `postgres` profile instead, but
+           the H2 default has to keep working. -->
     </dependency>
   </dependencies>
 
