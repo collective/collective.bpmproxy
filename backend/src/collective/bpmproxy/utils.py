@@ -67,7 +67,6 @@ def infer_variable(value):
                 except ValueError:
                     pass
             if dt:
-                # print(value, datetime_to_c7(dt))
                 return {"value": datetime_to_c7(dt), "type": "Date"}
         return {"value": str(value), "type": "String"}
 
@@ -89,14 +88,11 @@ def flatten_variables(variables):
             dt_utc = dt.astimezone(pytz.utc)
             if dt_utc.time().isoformat() == "00:00:00":
                 # date
-                # print(iso, str(dt_utc.date()))
                 return str(dt_utc.date())
             if dt.date() == datetime.date.min:
                 # time
-                # print(iso, dt.isoformat().split("T")[-1])
                 return dt.isoformat().split("T")[-1]
             # datetime
-            # print(iso, iso)
             return iso
         except ValueError:
             return None
@@ -185,6 +181,20 @@ def prepare_camunda_form(schema_json, default_data, default_values, context):
     )
 
 
+class ValidationError(AssertionError):
+    """Raised when submitted form data does not satisfy its form schema.
+
+    Subclasses AssertionError so that existing ``except AssertionError``
+    handlers keep catching it, but -- unlike the bare ``assert`` statements
+    this replaced -- it is not stripped when Python runs with ``-O``.
+    """
+
+
+def _require(condition, message):
+    if not condition:
+        raise ValidationError(message)
+
+
 def validate_camunda_form(data_json, schema_json, context):
     data = json.loads(data_json)
     schema = json.loads(schema_json)
@@ -196,56 +206,65 @@ def validate_camunda_form(data_json, schema_json, context):
 
         key = component.get("key")
         validation = component.get("validate") or {}
+        value = data.get(key)
 
         pattern = validation.get("pattern")
-        assert not pattern or re.match(pattern, data.get(key) or ""), (
-            "Field " + key + " must match pattern /" + pattern + "/."
-        )
+        if pattern:
+            _require(
+                re.match(pattern, value or ""),
+                f"Field {key} must match pattern /{pattern}/.",
+            )
 
-        required = validation.get("required")
-        assert not required or data.get(key) not in [None, ""], (
-            "Field " + key + " is required."
-        )
+        if validation.get("required"):
+            _require(value not in [None, ""], f"Field {key} is required.")
 
+        # Numeric bounds only apply to fields that were actually filled in;
+        # an empty value is the "required" check's business, not theirs.
         min_value = validation.get("min")
-        assert min_value is None or data.get(key) or 0 >= min_value, (
-            "Field " + key + " must have minimum value of " + min_value + "."
-        )
+        if min_value is not None and value not in [None, ""]:
+            _require(
+                value >= min_value,
+                f"Field {key} must have minimum value of {min_value}.",
+            )
 
         max_value = validation.get("max")
-        assert max_value is None or data.get(key) or 0 <= max_value, (
-            "Field " + key + " must have maximum value of " + max_value + "."
-        )
+        if max_value is not None and value not in [None, ""]:
+            _require(
+                value <= max_value,
+                f"Field {key} must have maximum value of {max_value}.",
+            )
 
         min_length = validation.get("minLength")
-        assert min_length is None or len(data.get(key) or "") >= min_length, (
-            "Field " + key + " must have minimum length of " + min_length + "."
-        )
+        if min_length is not None:
+            _require(
+                len(value or "") >= min_length,
+                f"Field {key} must have minimum length of {min_length}.",
+            )
 
         max_length = validation.get("maxLength")
-        assert max_length is None or len(data.get(key) or "") <= max_length, (
-            "Field " + key + " must have maximum length of " + max_length + "."
-        )
+        if max_length is not None:
+            _require(
+                len(value or "") <= max_length,
+                f"Field {key} must have maximum length of {max_length}.",
+            )
 
-        if (component.get("properties") or {}).get("vocabulary") and data.get(key):
+        if (component.get("properties") or {}).get("vocabulary") and value:
             try:
                 name = component["properties"]["vocabulary"]
                 factory = getUtility(IVocabularyFactory, name)
                 vocabulary = factory(context)
-                assert vocabulary.getTermByToken(data.get(key)), (
-                    "Field " + key + " must be selected from given options."
+                _require(
+                    vocabulary.getTermByToken(value),
+                    f"Field {key} must be selected from given options.",
                 )
             except ComponentLookupError:
-                raise AssertionError(
-                    "Field " + key + " must define vocabulary."
-                ) from None
+                raise ValidationError(f"Field {key} must define vocabulary.") from None
             except LookupError:
-                raise AssertionError(
-                    "Field " + key + " must be selected from given options."
+                raise ValidationError(
+                    f"Field {key} must be selected from given options."
                 ) from None
 
 
-# noinspection PyUnresolvedReferences
 def parents(context, iface=None):
     """Iterate through parents for the context (providing the given interface).
     Return generator to walk the acquisition chain of object, considering that
@@ -313,12 +332,22 @@ class SideEffectDataManager:
         if self.vote is not None:
             return self.vote(*self.args)
 
+    def _log_side_effect_result(self, future):
+        # The work runs after the transaction has committed, so there is
+        # nothing left to roll back -- but a failure must not be silent.
+        try:
+            future.result()
+        except Exception:
+            logger.exception("Deferred side effect failed: %r", self.callable)
+
     def tpc_finish(self, txn):
         try:
-            SIDE_EFFECT_WORKER.submit(self.callable, *self.args)
+            future = SIDE_EFFECT_WORKER.submit(self.callable, *self.args)
         except Exception:
             # Any exceptions here can cause database corruption.
             logger.exception("Failed in tpc_finish for %r", self.callable)
+        else:
+            future.add_done_callback(self._log_side_effect_result)
 
     tpc_abort = abort
 

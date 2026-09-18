@@ -192,25 +192,40 @@ def test_validate_camunda_form():
         bad_data["f_required"] = ""
         validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
 
-    with pytest.raises(TypeError, match="can only concatenate str"):
+    with pytest.raises(AssertionError, match="must have minimum value of 5"):
         bad_data = data.copy()
         bad_data["f_min"] = 0
         validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
 
-    with pytest.raises(TypeError, match="can only concatenate str"):
+    # A truthy value below the minimum used to pass: the old condition parsed
+    # as ``data.get(key) or (0 >= min_value)``, so any non-falsy value
+    # short-circuited the check entirely.
+    with pytest.raises(AssertionError, match="must have minimum value of 5"):
+        bad_data = data.copy()
+        bad_data["f_min"] = 1
+        validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
+
+    with pytest.raises(AssertionError, match="must have maximum value of -1"):
         bad_data = data.copy()
         bad_data["f_max"] = 0
         validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
 
-    with pytest.raises(TypeError, match="can only concatenate str"):
+    with pytest.raises(AssertionError, match="must have minimum length of 3"):
         bad_data = data.copy()
         bad_data["f_min_len"] = "ab"
         validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
 
-    with pytest.raises(TypeError, match="can only concatenate str"):
+    with pytest.raises(AssertionError, match="must have maximum length of 5"):
         bad_data = data.copy()
         bad_data["f_max_len"] = "abcdef"
         validate_camunda_form(json.dumps(bad_data), json.dumps(schema), None)
+
+    # Bounds must not fire on an empty optional value -- that is the
+    # "required" check's job.
+    ok_data = data.copy()
+    ok_data["f_min"] = ""
+    ok_data["f_max"] = ""
+    validate_camunda_form(json.dumps(ok_data), json.dumps(schema), None)
 
 
 def test_validate_camunda_form_vocabulary():

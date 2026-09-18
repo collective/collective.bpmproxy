@@ -1,0 +1,4 @@
+Enforce ``min``/``max`` in server-side Camunda form validation. An operator
+precedence bug meant any non-empty value satisfied both bounds. Validation now
+raises a ``ValidationError`` instead of using ``assert``, so it is no longer
+stripped when Python runs with ``-O``.
