@@ -1,7 +1,13 @@
+from collective.bpmproxy.testing import COLLECTIVE_BPMPROXY_INTEGRATION_TESTING
+from collective.bpmproxy.tests.helpers import process_context_behavior_enabled
 from collective.bpmproxy.viewlets.bpm_attachments_tasks_viewlet import (
     BpmAttachmentsTasksViewlet,
 )
 from collective.bpmproxy.viewlets.bpm_attachments_viewlet import BpmAttachmentsViewlet
+from plone import api
+from plone.app.testing import setRoles
+from plone.app.testing import TEST_USER_ID
+from plone.dexterity.utils import createContentInContainer
 from unittest.mock import MagicMock
 from unittest.mock import patch
 import unittest
@@ -58,6 +64,47 @@ class TestBpmAttachmentsTasksViewlet(unittest.TestCase):
             attachments_key="attach_123",
             for_display=True,
         )
+
+
+class TestBpmAttachmentsTasksViewletNestedProcessContexts(unittest.TestCase):
+    """Nested process contexts are now possible since process_context is a
+    behavior, not just Bpm Proxy's own schema. This is the case that
+    motivated taking the *nearest* ancestor instead of the outermost one --
+    covered here with real nested content, not a mocked parents().
+    """
+
+    layer = COLLECTIVE_BPMPROXY_INTEGRATION_TESTING
+
+    @patch("collective.bpmproxy.viewlets.bpm_attachments_tasks_viewlet.camunda_client")
+    @patch(
+        "collective.bpmproxy.viewlets.bpm_attachments_tasks_viewlet.get_available_tasks"
+    )
+    def test_nested_process_context_uses_the_inner_one(
+        self, mock_get_available_tasks, mock_camunda_client
+    ):
+        portal = self.layer["portal"]
+        setRoles(portal, TEST_USER_ID, ["Manager"])
+        mock_get_available_tasks.return_value = ["task1"]
+
+        with process_context_behavior_enabled("Folder"):
+            outer = api.content.create(portal, "Folder", "outer")
+            inner = api.content.create(outer, "Folder", "inner")
+            attachments = createContentInContainer(
+                inner, "Bpm Attachments", checkConstraints=False, id="attachments"
+            )
+
+            viewlet = BpmAttachmentsTasksViewlet(
+                attachments, portal.REQUEST, MagicMock(), MagicMock()
+            )
+            viewlet.update()
+
+            # Not the outer folder: the nearest process context is "inner".
+            self.assertEqual(viewlet.base_url, inner.absolute_url())
+            self.assertEqual(viewlet.tasks, ["task1"])
+            self.assertEqual(
+                mock_get_available_tasks.call_args.kwargs["context_key"],
+                api.content.get_uuid(inner),
+            )
 
 
 class TestBpmAttachmentsViewlet(unittest.TestCase):

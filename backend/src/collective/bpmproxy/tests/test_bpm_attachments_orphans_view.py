@@ -1,8 +1,17 @@
+from collective.bpmproxy.interfaces import CAMUNDA_ADMIN_GROUP
+from collective.bpmproxy.testing import COLLECTIVE_BPMPROXY_INTEGRATION_TESTING
+from collective.bpmproxy.tests.helpers import process_context_behavior_enabled
 from collective.bpmproxy.views.bpm_attachments_orphans_view import (
     BpmAttachmentsOrphansView,
 )
+from plone import api
+from plone.app.testing import setRoles
+from plone.app.testing import TEST_USER_ID
+from plone.app.testing import TEST_USER_NAME
+from plone.dexterity.utils import createContentInContainer
 from unittest.mock import MagicMock
 from unittest.mock import patch
+import json
 import unittest
 
 
@@ -106,3 +115,60 @@ class TestBpmAttachmentsOrphansView(unittest.TestCase):
         result = view()
 
         self.assertEqual(result, "[]")
+
+
+class TestBpmAttachmentsOrphansViewOnBehaviorEnabledContainer(unittest.TestCase):
+    """The view now walks IProcessContext, not just Bpm Proxy -- cover a
+    behavior-enabled container with real content, a real catalog query and
+    a real parents() walk. Only the engine call itself is mocked.
+    """
+
+    layer = COLLECTIVE_BPMPROXY_INTEGRATION_TESTING
+
+    def setUp(self):
+        self.portal = self.layer["portal"]
+        setRoles(self.portal, TEST_USER_ID, ["Manager", "Contributor"])
+        if not api.group.get(CAMUNDA_ADMIN_GROUP):
+            api.group.create(groupname=CAMUNDA_ADMIN_GROUP)
+        api.group.add_user(groupname=CAMUNDA_ADMIN_GROUP, username=TEST_USER_NAME)
+
+    @patch("collective.bpmproxy.views.bpm_attachments_orphans_view.camunda_client")
+    @patch("collective.bpmproxy.views.bpm_attachments_orphans_view.get_available_tasks")
+    def test_finds_orphans_under_a_behavior_enabled_container(
+        self, mock_get_tasks, mock_camunda_client
+    ):
+        with process_context_behavior_enabled("Folder"):
+            container = api.content.create(self.portal, "Folder", "container")
+            attachments = createContentInContainer(
+                container,
+                "Bpm Attachments",
+                checkConstraints=False,
+                id="attachments",
+            )
+
+            mock_get_tasks.return_value = []  # no tasks -> orphaned
+
+            view = BpmAttachmentsOrphansView(self.portal, self.portal.REQUEST)
+            result = json.loads(view())
+
+            self.assertEqual(result, [attachments.absolute_url()])
+            self.assertEqual(
+                mock_get_tasks.call_args.kwargs["context_key"],
+                api.content.get_uuid(container),
+            )
+
+    @patch("collective.bpmproxy.views.bpm_attachments_orphans_view.camunda_client")
+    @patch("collective.bpmproxy.views.bpm_attachments_orphans_view.get_available_tasks")
+    def test_not_orphaned_when_tasks_exist(self, mock_get_tasks, mock_camunda_client):
+        with process_context_behavior_enabled("Folder"):
+            container = api.content.create(self.portal, "Folder", "container")
+            createContentInContainer(
+                container, "Bpm Attachments", checkConstraints=False, id="attachments"
+            )
+
+            mock_get_tasks.return_value = ["task1"]
+
+            view = BpmAttachmentsOrphansView(self.portal, self.portal.REQUEST)
+            result = json.loads(view())
+
+            self.assertEqual(result, [])
