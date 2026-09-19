@@ -1,58 +1,67 @@
-.coverage
-*.egg-info
-*.log
-*.mo
-*.py?
-*.swp
-*.pem
-# dirs
+# Editors / IDEs
 .claude/
 .idea/
-.mvn/
-# ...but the Operaton fixture's Maven wrapper must be tracked: devenv's
-# operaton process runs ./mvnw, which cannot start without it.
-!fixture/operaton/.mvn/
+.vscode/
+
+# Python
+*.py?
+*.egg-info
+.coverage
+.installed.cfg
+.mr.developer.cfg
+.pytest_cache/
+.ruff_cache/
+.venv/
+instance/
+pip-selfcheck.json
+lib64
+venv/
+
+# Zope/Plone buildout
 bin/
 buildout-cache/
 develop-eggs/
 eggs/
-htmlcov/
 include/
 lib/
 local/
-node_modules/
 parts/
-dist/*
-test.plone_addon/
-var/
-target/
-# files
-.installed.cfg
-.mr.developer.cfg
-lib64
+
+# Node
+node_modules/
+
+# Test/coverage output
+.tox/
+htmlcov/
 log.html
 output.xml
-pip-selfcheck.json
 report.html
-.vscode/
-.tox/
 reports/
-venv/
-# excludes
+test.plone_addon/
 
-# devenv
+# Build artifacts
+dist/
+target/
+var/
+
+# Maven
+.mvn/
+# ...but the Operaton fixture's Maven wrapper must be tracked: devenv's
+# operaton process runs ./mvnw, which cannot start without it.
+!fixture/operaton/.mvn/
+
+# devenv / direnv
 .devenv/
 .devenv.flake.nix
 devenv.local.nix
 .direnv/
 tmp/
 
-# python tooling
-.venv/
-instance/
-dist/
-.pytest_cache/
-.ruff_cache/
+# Misc
+*.log
+*.mo
+*.pem
+*.swp
 
-# large screen recordings; not worth tracking in git history
+# Large media (not worth tracking in git history)
 docs/**/*.webm
