@@ -13,6 +13,7 @@ temp/
 *.pyc
 *.zip
 secrets.json
+secrets.env
 output.xml
 log.html
 report.html

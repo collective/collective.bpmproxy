@@ -7,6 +7,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import com.nimbusds.jwt.JWTClaimsSet;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.operaton.bpm.engine.ProcessEngine;
@@ -234,6 +235,54 @@ class JWTAuthenticationProviderTest {
         when(request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION)).thenReturn("Bearer " + token);
         when(engine.getIdentityService()).thenReturn(identityService);
         when(identityService.getPublicKey()).thenReturn(null);
+
+        AuthenticationResult result = provider.extractAuthenticatedUser(request, engine);
+
+        assertFalse(result.isAuthenticated());
+        assertNull(result.getAuthenticatedUser());
+    }
+
+    @Test
+    void testExtractAuthenticatedUser_KeycloakJwtSuccessWhenOAuth2Enabled() {
+        // Not a Plone JWT (no public key configured), but a valid Keycloak
+        // one, in the mode where Keycloak is the configured login mechanism.
+        when(request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION)).thenReturn("Bearer some-keycloak-token");
+        when(engine.getIdentityService()).thenReturn(identityService);
+        when(identityService.getPublicKey()).thenReturn(null);
+        when(identityService.isOAuth2Enabled()).thenReturn(true);
+        when(identityService.verifyKeycloakToken("some-keycloak-token"))
+                .thenReturn(new JWTClaimsSet.Builder().subject("service-account-operaton-worker").build());
+
+        AuthenticationResult result = provider.extractAuthenticatedUser(request, engine);
+
+        assertTrue(result.isAuthenticated());
+        assertEquals("some-keycloak-token", result.getAuthenticatedUser());
+    }
+
+    @Test
+    void testExtractAuthenticatedUser_KeycloakJwtIgnoredWhenOAuth2Disabled() {
+        // oauth2Enabled left at its default (false): the token is never even
+        // offered to verifyKeycloakToken.
+        when(request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION)).thenReturn("Bearer some-keycloak-token");
+        when(engine.getIdentityService()).thenReturn(identityService);
+        when(identityService.getPublicKey()).thenReturn(null);
+
+        AuthenticationResult result = provider.extractAuthenticatedUser(request, engine);
+
+        assertFalse(result.isAuthenticated());
+        assertNull(result.getAuthenticatedUser());
+        verify(identityService, never()).verifyKeycloakToken(org.mockito.ArgumentMatchers.anyString());
+    }
+
+    @Test
+    void testExtractAuthenticatedUser_BasicAuthRejectedWhenOAuth2Enabled() {
+        // Otherwise-valid Basic credentials must not succeed once Keycloak
+        // is the configured login mechanism -- the two are mutually
+        // exclusive, not a fallback chain.
+        when(request.getHeader(org.springframework.http.HttpHeaders.AUTHORIZATION)).thenReturn("Basic dXNlcjpwYXNz");
+        when(engine.getIdentityService()).thenReturn(identityService);
+        when(identityService.checkPassword("user", "pass")).thenReturn(true);
+        when(identityService.isOAuth2Enabled()).thenReturn(true);
 
         AuthenticationResult result = provider.extractAuthenticatedUser(request, engine);
 

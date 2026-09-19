@@ -17,10 +17,10 @@ dist: test
 	uv run --with=purjo pur wrap
 
 deploy:
-	uv run --with=purjo pur operaton deploy $(DEPLOY_FILES)
+	uv run --env-file secrets.env --with=purjo pur operaton deploy $(DEPLOY_FILES)
 
 serve:
-	uv run --with=purjo pur serve .
+	uv run --env-file secrets.env --with=purjo pur serve .
 
 run:
-	uv run --with=purjo pur run $(DEPLOY_FILES)
+	uv run --env-file secrets.env --with=purjo pur run $(DEPLOY_FILES)

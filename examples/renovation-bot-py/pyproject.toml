@@ -1,0 +1,6 @@
+[project]
+name = "bpmproxy-renovation-bot-py"
+version = "0.1.0"
+description = "operaton-tasks worker for the BPM proxy renovation-project example"
+requires-python = ">=3.10"
+dependencies = []

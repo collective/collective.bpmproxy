@@ -1,4 +1,5 @@
 secrets.json
+secrets.env
 output/
 *.html
 *.xml

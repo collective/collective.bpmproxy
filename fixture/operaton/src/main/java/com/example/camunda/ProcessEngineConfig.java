@@ -16,6 +16,16 @@ public class ProcessEngineConfig {
     @Value("${plone.public-key:ec-ed25519-pub-key.pem}")
     private String jwtPublicKey;
 
+    // Same property the webapp OAuth2 login already uses (only set under the
+    // "oauth2" Spring profile); engine-rest now keys its own Basic-vs-Keycloak
+    // choice off the exact same flag, so there is one source of truth for
+    // "is this deployment running with Keycloak login".
+    @Value("${operaton.bpm.oauth2.identity-provider.enabled:false}")
+    private boolean oauth2Enabled;
+
+    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri:http://localhost:8082/realms/plone}")
+    private String keycloakIssuerUri;
+
     @Bean
     public ProcessEnginePlugin customProcessEnginePlugin() {
         return new ProcessEnginePlugin() {
@@ -32,6 +42,8 @@ public class ProcessEngineConfig {
                 // Configure JWT authentication
                 JWTIdentityService identityService = new JWTIdentityService();
                 identityService.setPublicKey(jwtPublicKey);
+                identityService.setOAuth2Enabled(oauth2Enabled);
+                identityService.setKeycloakIssuerUri(keycloakIssuerUri);
                 processEngineConfiguration.setIdentityService(identityService);
             }
 

@@ -245,6 +245,47 @@ The private key, for Plone, needs to be within reach of the Plone instance,
 while the public key needs to be readable by Operaton
 (`make services` passes it via the `PLONE_PUBLIC_KEY` environment variable).
 
+#### `engine-rest` authentication modes
+
+Plone's own JWT is always tried first, in every configuration, and never
+stops working regardless of anything below -- see
+`JWTAuthenticationProvider`/`JWTIdentityService` in the fixture.
+
+Beyond that, `engine-rest` accepts exactly one of two mutually exclusive
+fallbacks, chosen by whether Operaton's own webapp login is configured for
+Keycloak (`operaton.bpm.oauth2.identity-provider.enabled`, set by the
+`oauth2` Spring profile -- which `devenv.nix` activates by default):
+
+- **OAuth2 (Keycloak) enabled:** `engine-rest` also only accepts
+  Keycloak-issued JWTs (validated against the realm's JWKS -- issuer,
+  signature and expiry checked; audience is not, since the realm is
+  dedicated to this deployment). Basic Auth no longer works at all in this
+  mode, including the built-in `admin`/`admin` account. A Keycloak token
+  authenticates as a **persistent** Operaton user: either the fixed
+  username a client's token hardcodes via an `operaton_username` claim (see
+  the `operaton-worker` service-account client below), or, for interactive
+  logins with no such claim, `preferred_username`. Group membership comes
+  from the token's `groups` claim when present (the realm's
+  `oidc-group-membership-mapper`, the same one Cockpit's own OAuth2 login
+  already relies on) -- and falls back to the resolved username's
+  persistent group membership when it is absent.
+- **OAuth2 disabled (the default Spring Boot profile, no `oauth2`):**
+  `engine-rest` falls back to persistent HTTP Basic Auth, same as before
+  this dual-mode existed.
+
+An unrecognized or absent credential is rejected (401) in both modes --
+there is no unauthenticated fallthrough.
+
+This means any external tool that talks to `engine-rest` directly (not
+through Plone) needs Keycloak credentials whenever the `oauth2` profile is
+active, which it is by default in this devenv stack -- see
+`examples/renovation-bot/` and `examples/renovation-bot-py/` for working
+examples, and `examples/simple-process/README.md` for the resulting Camunda
+Modeler caveat. `devenv/keycloak/realm-plone.json` defines an
+`operaton-worker` client for exactly this: a confidential,
+service-account-enabled (`client_credentials` grant) client whose tokens
+carry a hardcoded `operaton_username: admin` claim.
+
 #### Operaton cockpit
 
 The Operaton cockpit, its web UI to manage processes, can be found at:
@@ -380,6 +421,10 @@ Each Plone site will allow its users to access only those Camunda resources,
 which are deployed or related to its tenant ids or no tenant ids at all.
 
 ### Engine authorization model
+
+This is about *authorization* -- what an already-authenticated principal is
+allowed to do. See [`engine-rest` authentication modes](#engine-rest-authentication-modes)
+above for how a principal gets authenticated in the first place.
 
 `operaton.bpm.authorization.enabled: true` is set, but it does less than it
 looks like it does, and that is deliberate:

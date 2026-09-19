@@ -1,5 +1,14 @@
 package com.example.camunda;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.RSASSASigner;
+import com.nimbusds.jose.jwk.JWKSet;
+import com.nimbusds.jose.jwk.RSAKey;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
+import com.sun.net.httpserver.HttpServer;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 import org.junit.jupiter.api.AfterEach;
@@ -8,16 +17,22 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.security.Signature;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,6 +52,7 @@ class JWTIdentityServiceTest {
 
     private JWTIdentityService service;
     private File tempFile;
+    private HttpServer jwksServer;
 
     @BeforeEach
     void setUp() {
@@ -47,6 +63,9 @@ class JWTIdentityServiceTest {
     void tearDown() {
         if (tempFile != null && tempFile.exists()) {
             tempFile.delete();
+        }
+        if (jwksServer != null) {
+            jwksServer.stop(0);
         }
     }
 
@@ -165,6 +184,176 @@ class JWTIdentityServiceTest {
         assertEquals(invalidToken, currentAuth.getUserId());
         assertEquals(List.of("group1"), currentAuth.getGroupIds());
         assertEquals(List.of("tenant1"), currentAuth.getTenantIds());
+    }
+
+    private KeyPair generateRsaKeyPair() throws Exception {
+        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
+        kpg.initialize(2048);
+        return kpg.generateKeyPair();
+    }
+
+    /**
+     * Starts a throwaway HTTP server serving a JWKS containing exactly the
+     * given key, and returns the "issuer" URL for it -- the same value
+     * {@link JWTIdentityService#setKeycloakIssuerUri} expects, since
+     * {@code RemoteJWKSet} is configured to fetch
+     * {@code <issuer>/protocol/openid-connect/certs}, matching Keycloak's
+     * own layout.
+     */
+    private String startJwksServer(RSAPublicKey publicKey) throws Exception {
+        RSAKey jwk = new RSAKey.Builder(publicKey).keyID("test-key").build();
+        String jwksJson = new ObjectMapper().writeValueAsString(new JWKSet(jwk).toJSONObject());
+
+        jwksServer = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
+        jwksServer.createContext("/protocol/openid-connect/certs", exchange -> {
+            byte[] body = jwksJson.getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "application/json");
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream os = exchange.getResponseBody()) {
+                os.write(body);
+            }
+        });
+        jwksServer.start();
+        return "http://localhost:" + jwksServer.getAddress().getPort();
+    }
+
+    private String createKeycloakToken(RSAPrivateKey privateKey, String issuer, Instant expiration,
+                                        String usernameClaim, String usernameValue) throws Exception {
+        return createKeycloakToken(privateKey, issuer, expiration, usernameClaim, usernameValue, null);
+    }
+
+    private String createKeycloakToken(RSAPrivateKey privateKey, String issuer, Instant expiration,
+                                        String usernameClaim, String usernameValue,
+                                        List<String> groups) throws Exception {
+        JWTClaimsSet.Builder builder = new JWTClaimsSet.Builder()
+                .issuer(issuer)
+                .subject("service-account-operaton-worker")
+                .expirationTime(Date.from(expiration));
+        if (usernameClaim != null) {
+            builder.claim(usernameClaim, usernameValue);
+        }
+        if (groups != null) {
+            builder.claim("groups", groups);
+        }
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.RS256), builder.build());
+        jwt.sign(new RSASSASigner(privateKey));
+        return jwt.serialize();
+    }
+
+    @Test
+    void testSetAuthenticationWithValidKeycloakJWT() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        // The realm's oidc-group-membership-mapper on the operaton-worker
+        // client, the same mapper Cockpit's own OAuth2 login already uses.
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), issuer,
+                Instant.now().plusSeconds(3600), "operaton_username", "admin", List.of("camunda-admin"));
+
+        service.setAuthentication(token, null, null);
+
+        // Resolves to a *persistent* engine user, the same way Basic Auth
+        // would -- but with group membership taken from the token, the same
+        // way Plone's JWT and Cockpit's own OAuth2 login already do.
+        var currentAuth = service.getCurrentAuthentication();
+        assertEquals("admin", currentAuth.getUserId());
+        assertEquals(List.of("camunda-admin"), currentAuth.getGroupIds());
+        assertNull(currentAuth.getTenantIds());
+    }
+
+    @Test
+    void testSetAuthenticationKeycloakWithoutGroupsClaimFallsBackToPersistentGroups() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        // No groups claim at all: falls through to null, same as Basic Auth
+        // passing no groups -- the engine resolves persistent membership.
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), issuer,
+                Instant.now().plusSeconds(3600), "operaton_username", "admin");
+
+        service.setAuthentication(token, null, null);
+
+        assertNull(service.getCurrentAuthentication().getGroupIds());
+    }
+
+    @Test
+    void testSetAuthenticationKeycloakFallsBackToPreferredUsername() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        // No hardcoded operaton_username claim: an interactive Cockpit login.
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), issuer,
+                Instant.now().plusSeconds(3600), "preferred_username", "user");
+
+        service.setAuthentication(token, null, null);
+
+        assertEquals("user", service.getCurrentAuthentication().getUserId());
+    }
+
+    @Test
+    void testSetAuthenticationIgnoresKeycloakJWTWhenOAuth2Disabled() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        // oauth2Enabled left false (default): Basic Auth is the configured
+        // mode, so this otherwise-valid Keycloak token must not be adopted.
+        service.setKeycloakIssuerUri(issuer);
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), issuer,
+                Instant.now().plusSeconds(3600), "operaton_username", "admin");
+
+        service.setAuthentication(token, List.of("basic-group"), List.of("basic-tenant"));
+
+        var currentAuth = service.getCurrentAuthentication();
+        assertEquals(token, currentAuth.getUserId());
+        assertEquals(List.of("basic-group"), currentAuth.getGroupIds());
+    }
+
+    @Test
+    void testSetAuthenticationIgnoresExpiredKeycloakJWT() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), issuer,
+                Instant.now().minusSeconds(3600), "operaton_username", "admin");
+
+        service.setAuthentication(token, List.of("basic-group"), List.of("basic-tenant"));
+
+        assertEquals(token, service.getCurrentAuthentication().getUserId());
+    }
+
+    @Test
+    void testSetAuthenticationIgnoresKeycloakJWTFromWrongIssuer() throws Exception {
+        KeyPair keyPair = generateRsaKeyPair();
+        String issuer = startJwksServer((RSAPublicKey) keyPair.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        // Signed by the right key, but claiming a different issuer.
+        String token = createKeycloakToken((RSAPrivateKey) keyPair.getPrivate(), "http://attacker.example/realms/other",
+                Instant.now().plusSeconds(3600), "operaton_username", "admin");
+
+        service.setAuthentication(token, List.of("basic-group"), List.of("basic-tenant"));
+
+        assertEquals(token, service.getCurrentAuthentication().getUserId());
+    }
+
+    @Test
+    void testSetAuthenticationIgnoresWronglySignedKeycloakJWT() throws Exception {
+        KeyPair signing = generateRsaKeyPair();
+        KeyPair other = generateRsaKeyPair();
+        // The JWKS endpoint advertises a different key than the one that
+        // actually signed the token.
+        String issuer = startJwksServer((RSAPublicKey) other.getPublic());
+        service.setOAuth2Enabled(true);
+        service.setKeycloakIssuerUri(issuer);
+        String token = createKeycloakToken((RSAPrivateKey) signing.getPrivate(), issuer,
+                Instant.now().plusSeconds(3600), "operaton_username", "admin");
+
+        service.setAuthentication(token, List.of("basic-group"), List.of("basic-tenant"));
+
+        assertEquals(token, service.getCurrentAuthentication().getUserId());
     }
 
     @Test

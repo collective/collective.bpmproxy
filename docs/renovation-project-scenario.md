@@ -76,6 +76,7 @@ stall waiting for tasks that never get created if this isn't running**):
 ```sh
 cd examples/renovation-bot
 cp secrets.example.json secrets.json   # set PLONE_AUTHORIZATION for renovation-bot
+cp secrets.example.env secrets.env     # OAuth2 credentials purjo needs for engine-rest
 make deploy
 make serve &
 cd ../..

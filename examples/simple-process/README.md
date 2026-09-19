@@ -25,6 +25,14 @@ To use the Process it needs to be deployed to Camunda. This is done with the Cam
 * Select: Include addional Files and select "simple-process-submit.form" from your filesystem
 * Click: "Deploy" Button
 
+**Known limitation:** the local devenv fixture requires OAuth2
+(Keycloak-issued) tokens for `engine-rest`, not Basic Auth -- see
+`backend/README.md`'s "Engine authorization model" section. Modeler has no
+practical OAuth2 client-credentials flow, so the Basic `admin`/`admin`
+deploy steps above do not currently work against that stack. Deploy this
+example via `examples/renovation-bot/`'s `make deploy` pattern (adapted to
+this process) instead, or run Operaton without the `oauth2` profile.
+
 ### Use Process in Plone "Bpm Proxy" Contenttype
 Processes that are deployed to Camunda could be selected in the "Process Definition" field of the "Bpm Proxy" Contenttype. 
 
