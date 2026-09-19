@@ -295,10 +295,15 @@
       "sha256": "824b0d7de7827abfc6a47e6ef94b0ffaa138fef38af08c56a27f5d3a1522119e",
       "url": "https://repo.maven.apache.org/maven2/com/nimbusds/lang-tag/1.7/lang-tag-1.7.pom"
     },
-    "com.nimbusds:nimbus-jose-jwt:jar:9.31": {
-      "layout": "com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.jar",
-      "sha256": "e0d1d9beafde7ebd46b69246bffd73dcb33409ea4ab7b91ac5622b1e6766f34e",
-      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.jar"
+    "com.nimbusds:nimbus-jose-jwt:jar:10.3": {
+      "layout": "com/nimbusds/nimbus-jose-jwt/10.3/nimbus-jose-jwt-10.3.jar",
+      "sha256": "a8894a9176bbb2735b927abb48838d284d64ebfd34a8f0cac277518ece5f3015",
+      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/10.3/nimbus-jose-jwt-10.3.jar"
+    },
+    "com.nimbusds:nimbus-jose-jwt:pom:10.3": {
+      "layout": "com/nimbusds/nimbus-jose-jwt/10.3/nimbus-jose-jwt-10.3.pom",
+      "sha256": "df7a73ac02a9ebc4eee2144ba867e7ec6f323fd7eaae25061996f74285e25ebc",
+      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/10.3/nimbus-jose-jwt-10.3.pom"
     },
     "com.nimbusds:nimbus-jose-jwt:pom:10.4": {
       "layout": "com/nimbusds/nimbus-jose-jwt/10.4/nimbus-jose-jwt-10.4.pom",
@@ -309,11 +314,6 @@
       "layout": "com/nimbusds/nimbus-jose-jwt/10.9/nimbus-jose-jwt-10.9.pom",
       "sha256": "593a1e454878700c934ae6949eecbf32bfbd5b74e33b79aa4897bd39e19a4c72",
       "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/10.9/nimbus-jose-jwt-10.9.pom"
-    },
-    "com.nimbusds:nimbus-jose-jwt:pom:9.31": {
-      "layout": "com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.pom",
-      "sha256": "7aaa64db6a7764e7a5ad55dedd94e7e74190c5a059f9aa653c0eb49594eff5a9",
-      "url": "https://repo.maven.apache.org/maven2/com/nimbusds/nimbus-jose-jwt/9.31/nimbus-jose-jwt-9.31.pom"
     },
     "com.nimbusds:oauth2-oidc-sdk:jar:11.26.1": {
       "layout": "com/nimbusds/oauth2-oidc-sdk/11.26.1/oauth2-oidc-sdk-11.26.1.jar",
@@ -1560,35 +1560,35 @@
       "sha256": "ec817516c83141a33f695ff8f4d73ca6df3af268c3ab377e5cee7effccca8140",
       "url": "https://repo.maven.apache.org/maven2/org/awaitility/awaitility/4.3.0/awaitility-4.3.0.pom"
     },
-    "org.bouncycastle:bcpkix-jdk15to18:jar:1.71": {
-      "layout": "org/bouncycastle/bcpkix-jdk15to18/1.71/bcpkix-jdk15to18-1.71.jar",
-      "sha256": "4613d04668b712d49119852845335786c8de9d0f2da5e11f53c531728381e395",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.71/bcpkix-jdk15to18-1.71.jar"
+    "org.bouncycastle:bcpkix-jdk15to18:jar:1.80": {
+      "layout": "org/bouncycastle/bcpkix-jdk15to18/1.80/bcpkix-jdk15to18-1.80.jar",
+      "sha256": "5aee4e9464a7f76f105a30c197bb601d28c87abee2957ccbde75b3fb47d7504a",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.80/bcpkix-jdk15to18-1.80.jar"
     },
-    "org.bouncycastle:bcpkix-jdk15to18:pom:1.71": {
-      "layout": "org/bouncycastle/bcpkix-jdk15to18/1.71/bcpkix-jdk15to18-1.71.pom",
-      "sha256": "21dd861b2c84e7c488c0b9c84638f254b287fd4095e43cfaab96288c374232ed",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.71/bcpkix-jdk15to18-1.71.pom"
+    "org.bouncycastle:bcpkix-jdk15to18:pom:1.80": {
+      "layout": "org/bouncycastle/bcpkix-jdk15to18/1.80/bcpkix-jdk15to18-1.80.pom",
+      "sha256": "1ffb81a8fc08861b979481ef89b7370743335e90450cc8356ebad2b1e4e91453",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcpkix-jdk15to18/1.80/bcpkix-jdk15to18-1.80.pom"
     },
-    "org.bouncycastle:bcprov-jdk15to18:jar:1.71": {
-      "layout": "org/bouncycastle/bcprov-jdk15to18/1.71/bcprov-jdk15to18-1.71.jar",
-      "sha256": "143aaa4a40edd5fc2a18db7900059f6c16f4d931b94b94b20f7e2238e6662886",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk15to18/1.71/bcprov-jdk15to18-1.71.jar"
+    "org.bouncycastle:bcprov-jdk15to18:jar:1.80": {
+      "layout": "org/bouncycastle/bcprov-jdk15to18/1.80/bcprov-jdk15to18-1.80.jar",
+      "sha256": "380e17ed748c07487e6764e95618abb43cf0cf39bf364cd5dfaff75724e7da11",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk15to18/1.80/bcprov-jdk15to18-1.80.jar"
     },
-    "org.bouncycastle:bcprov-jdk15to18:pom:1.71": {
-      "layout": "org/bouncycastle/bcprov-jdk15to18/1.71/bcprov-jdk15to18-1.71.pom",
-      "sha256": "6f0c1dd6e645efaa2c21455e86ec8397451073470d5bc2b6f02c97bd2500d221",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk15to18/1.71/bcprov-jdk15to18-1.71.pom"
+    "org.bouncycastle:bcprov-jdk15to18:pom:1.80": {
+      "layout": "org/bouncycastle/bcprov-jdk15to18/1.80/bcprov-jdk15to18-1.80.pom",
+      "sha256": "9b55fec74fcdb3117ae7363a99818ad92b2c01b51e783f7e376c16e28b0d0c44",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcprov-jdk15to18/1.80/bcprov-jdk15to18-1.80.pom"
     },
-    "org.bouncycastle:bcutil-jdk15to18:jar:1.71": {
-      "layout": "org/bouncycastle/bcutil-jdk15to18/1.71/bcutil-jdk15to18-1.71.jar",
-      "sha256": "7641ea6088f4575262d72f9dd1110bfa48da063d785a7642edc417d6bf820403",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.71/bcutil-jdk15to18-1.71.jar"
+    "org.bouncycastle:bcutil-jdk15to18:jar:1.80": {
+      "layout": "org/bouncycastle/bcutil-jdk15to18/1.80/bcutil-jdk15to18-1.80.jar",
+      "sha256": "ae242cacd27df211c695a79d60ad1b1b0577f14922382d0e03fbe6dde1d0eb33",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.80/bcutil-jdk15to18-1.80.jar"
     },
-    "org.bouncycastle:bcutil-jdk15to18:pom:1.71": {
-      "layout": "org/bouncycastle/bcutil-jdk15to18/1.71/bcutil-jdk15to18-1.71.pom",
-      "sha256": "0ae36dd9e52bca4103fc8821481b2db5bbd1fa5c10ddc77b543a401f029ea9c1",
-      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.71/bcutil-jdk15to18-1.71.pom"
+    "org.bouncycastle:bcutil-jdk15to18:pom:1.80": {
+      "layout": "org/bouncycastle/bcutil-jdk15to18/1.80/bcutil-jdk15to18-1.80.pom",
+      "sha256": "de6d9067d4ad96cf8423184122711749614afc9fbff7c1e440567a5eb87e5639",
+      "url": "https://repo.maven.apache.org/maven2/org/bouncycastle/bcutil-jdk15to18/1.80/bcutil-jdk15to18-1.80.pom"
     },
     "org.camunda.feel:feel-engine:jar:scala-shaded:1.21.0": {
       "layout": "org/camunda/feel/feel-engine/1.21.0/feel-engine-1.21.0-scala-shaded.jar",

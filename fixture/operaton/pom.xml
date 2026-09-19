@@ -80,13 +80,13 @@
     <dependency>
       <groupId>org.bouncycastle</groupId>
       <artifactId>bcpkix-jdk15to18</artifactId>
-      <version>1.71</version>
+      <version>1.80</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>com.nimbusds</groupId>
       <artifactId>nimbus-jose-jwt</artifactId>
-      <version>9.31</version>
+      <version>10.3</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
