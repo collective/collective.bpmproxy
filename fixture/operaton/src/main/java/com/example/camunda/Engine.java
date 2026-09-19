@@ -43,6 +43,42 @@ public class Engine {
         defaultAuthorizations(processEngine.getAuthorizationService());
     }
 
+    /**
+     * Grants every authenticated principal READ + CREATE_INSTANCE on every
+     * process definition, and CREATE on every process instance -- global,
+     * not scoped to camunda-admin or any other group.
+     *
+     * This was investigated as a possible over-permissive default (a review
+     * finding: "any authenticated principal can start any process") and is
+     * being kept deliberately, not left unnoticed:
+     *
+     *   - Real access control here is Plone's, not the engine's. Every
+     *     request the engine sees was signed by collective.bpmproxy's own
+     *     JWTAuthenticationProvider (see that class), which only accepts
+     *     tokens Plone itself minted -- so "any authenticated principal"
+     *     means "reached a Plone view that decided to call the engine",
+     *     already gated by that view's own Plone permission (View/Add on the
+     *     Bpm Proxy content object, including the anonymous-visitor case
+     *     documented in docs/user/10-anonymous-and-tenancy.md).
+     *   - The anonymous requester flow depends on this: an anonymous
+     *     visitor's minted identity (client.py's get_authorization(),
+     *     "anonymous-<uuid>") carries an empty groups claim by design --
+     *     there is no Plone group to scope a narrower grant to. Restricting
+     *     PROCESS_DEFINITION/PROCESS_INSTANCE to a named group would have to
+     *     either exclude anonymous visitors (breaking the request-for-quote
+     *     scenario) or introduce a new per-process-to-Plone-group mapping
+     *     this add-on does not otherwise have.
+     *   - operaton.bpm.authorization.enabled=true still does real work: it
+     *     is what keeps deployment and admin-management resources
+     *     (Authorization/User/Group) row-level filtered by group, and it is
+     *     what makes camunda-admin-only actions like deployment actually
+     *     admin-only (see EngineTest, JWTIdentityServiceTest).
+     *
+     * If you are tightening this, the request-for-quote demo (an anonymous
+     * visitor starting a process with no named-user account, see
+     * docs/request-for-quote-scenario.md) is what breaks first -- run it
+     * end to end after any change here.
+     */
     protected void defaultAuthorizations(AuthorizationService authorizationService) {
         // Allow authorized users to read process definitions (for BPMN XML)
         if (authorizationService

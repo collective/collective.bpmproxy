@@ -378,6 +378,35 @@ by setting configuration registry key `collective.bpmproxy.tenant_ids`.
 Each Plone site will allow its users to access only those Camunda resources,
 which are deployed or related to its tenant ids or no tenant ids at all.
 
+### Engine authorization model
+
+`operaton.bpm.authorization.enabled: true` is set, but it does less than it
+looks like it does, and that is deliberate:
+
+- Every authenticated principal (including an anonymous Plone visitor -- see
+  `docs/user/10-anonymous-and-tenancy.md`) has a **global** grant to read
+  and start any process definition. This is not scoped to a group, because
+  the anonymous requester's identity carries no group at all to scope it to.
+  The real access control is Plone's: whether a visitor can reach a Bpm
+  Proxy's start form in the first place is a normal Plone View/Add
+  permission check, before the engine is ever called. Every request the
+  engine sees was signed by this add-on's own JWT, so "any authenticated
+  principal" means "reached a Plone view that decided to call the engine" --
+  narrowing the engine-side grant further would need a per-process-to-Plone-
+  group mapping this add-on does not have, and would break the
+  request-for-quote demo's anonymous requester in the process. See the
+  comment on `Engine.defaultAuthorizations()` in the fixture if you are
+  considering changing this.
+- Authorization is still real for the resources it *is* scoped to: the
+  `camunda-admin` group is what makes deployment and other admin-only
+  actions actually admin-only (see `JWTIdentityService`), and it is what
+  Cockpit's own admin-management views (Authorization/User/Group) filter by.
+  A **non-admin token still gets HTTP 200** from list/count endpoints on
+  those resources (e.g. `/authorization/count`) -- that is Camunda/Operaton's
+  normal REST behavior for query endpoints (row-level filtering to what the
+  caller is authorized to see, not a blanket 403) and was confirmed, not a
+  gap: an admin token sees the real count, a non-admin token sees `0`/`[]`.
+
 ## Troubleshooting
 
 A few of the installation errors that we have found and solved:

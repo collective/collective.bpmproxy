@@ -1,0 +1,17 @@
+Investigated the review's "any authenticated principal can start any
+process" finding rather than patching it. Confirmed live: the global
+PROCESS_DEFINITION/PROCESS_INSTANCE grants let any Plone-signed identity
+(including anonymous visitors) read and start any process definition.
+Decided to keep this rather than narrow it -- real access control is
+Plone's own View/Add permission on the Bpm Proxy content object, and the
+anonymous requester flow depends on a grant not scoped to any group (an
+anonymous visitor's identity carries no group at all). Documented the
+decision on ``Engine.defaultAuthorizations()`` and in
+``backend/README.md``'s new "Engine authorization model" section.
+
+Also confirmed the review's second piece of evidence (a non-admin token
+getting HTTP 200 from ``/engine-rest/authorization/count``) is not a gap:
+Camunda/Operaton's query/count endpoints for admin-management resources
+apply row-level authorization filtering rather than a blanket 403 -- an
+admin token sees the real count, a non-admin token sees an empty,
+correctly-filtered result.
