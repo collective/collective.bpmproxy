@@ -20,6 +20,11 @@ from collective.bpmproxy.client import delete_deployment
 from collective.bpmproxy.client import deploy_process
 from collective.bpmproxy.client import get_deployments
 from collective.bpmproxy.interfaces import CAMUNDA_ADMIN_GROUP
+from collective.bpmproxy.portlets.tasks import Assignment as TasksAssignment
+from collective.bpmproxy.portlets.tasks import Renderer as TasksRenderer
+from unittest import mock
+from unittest.mock import MagicMock
+import generic_camunda_client
 import os
 import pytest
 import requests
@@ -38,6 +43,25 @@ MINIMAL_BPMN = f"""<?xml version="1.0" encoding="UTF-8"?>
   <bpmn:process id="{PROCESS_KEY}" name="Live check" isExecutable="true"
       camunda:historyTimeToLive="P1D">
     <bpmn:startEvent id="StartEvent_1" />
+  </bpmn:process>
+</bpmn:definitions>
+"""
+
+
+def _one_user_task_bpmn(process_key):
+    return f"""<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:camunda="http://camunda.org/schema/1.0/bpmn"
+    id="Definitions_{process_key}" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="{process_key}" name="{process_key}" isExecutable="true"
+      camunda:historyTimeToLive="P1D">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_1</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:userTask id="Task_1" name="A task">
+      <bpmn:incoming>Flow_1</bpmn:incoming>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="Task_1" />
   </bpmn:process>
 </bpmn:definitions>
 """
@@ -102,3 +126,59 @@ def test_unprivileged_user_token_is_refused_engine_rights(
         with pytest.raises(requests.HTTPError) as caught:
             deploy_process(client, "refused.bpmn", MINIMAL_BPMN)
     assert caught.value.response.status_code in (401, 403)
+
+
+def test_tasks_portlet_filters_by_process_definition_key(
+    integration, engine_configured
+):
+    """L3: filtering now happens in the engine query, not by parsing IDs in
+    Python. Deploy two definitions, start one instance of each, and assert
+    the portlet configured for one key only ever lists that one's task.
+
+    The task carries no candidateGroups/assignee, so it is only visible to
+    a query the engine's authorization model treats as broad-read (the
+    camunda-admin group) -- unrelated to what this test is checking, so the
+    portlet's own camunda_client() (which signs for the current, unprivileged
+    integration-layer user) is patched to camunda_admin_client() here.
+    """
+    key_a = f"collective-bpmproxy-live-a-{uuid.uuid4().hex[:8]}"
+    key_b = f"collective-bpmproxy-live-b-{uuid.uuid4().hex[:8]}"
+
+    with camunda_admin_client(tenant_ids=[]) as client:
+        deployment_a = deploy_process(
+            client, f"{key_a}.bpmn", _one_user_task_bpmn(key_a)
+        )
+        deployment_b = deploy_process(
+            client, f"{key_b}.bpmn", _one_user_task_bpmn(key_b)
+        )
+        try:
+            definition_api = generic_camunda_client.ProcessDefinitionApi(client)
+            # Not necessarily "{key}:{version}:{uuid}" -- Operaton's default
+            # ID generator can also hand out a bare UUID, which is exactly
+            # why filtering happens through the engine's own
+            # processDefinitionKey query field now, not by parsing this
+            # string. Assert against the started instance's id instead of
+            # assuming a particular id shape.
+            pi_a = definition_api.start_process_instance_by_key(key_a)
+            definition_api.start_process_instance_by_key(key_b)
+
+            assignment = TasksAssignment(
+                header="Tasks",
+                use_context=False,
+                process_definition_key=key_a,
+            )
+            portal = integration["portal"]
+            renderer = TasksRenderer(
+                portal, portal.REQUEST, MagicMock(), MagicMock(), assignment
+            )
+            with mock.patch(
+                "collective.bpmproxy.portlets.tasks.camunda_client",
+                lambda: camunda_admin_client(tenant_ids=[]),
+            ):
+                tasks = renderer.tasks()
+
+            assert len(tasks) == 1
+            assert tasks[0].process_instance_id == pi_a.id
+        finally:
+            delete_deployment(client, deployment_a["id"])
+            delete_deployment(client, deployment_b["id"])

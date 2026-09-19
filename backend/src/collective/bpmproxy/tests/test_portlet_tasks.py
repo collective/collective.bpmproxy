@@ -56,17 +56,23 @@ def test_renderer():
 
         task1 = mock.Mock()
         task1.process_definition_id = "key:1:123"
-        task2 = mock.Mock()
-        task2.process_definition_id = "otherkey:1:123"
 
-        get_tasks_mock.return_value = [task1, task2]
+        # Filtering by process_definition_key is now the engine's job (see
+        # test_client_more.py for that), not this portlet's -- it just has
+        # to pass the value through.
+        get_tasks_mock.return_value = [task1]
 
         renderer = Renderer(context, request, mock.Mock(), mock.Mock(), assignment)
 
         # memoize wrapper means we call _data directly or access it through tasks()
         tasks = renderer.tasks()
-        assert len(tasks) == 1
-        assert tasks[0] == task1
+        assert tasks == [task1]
+        get_tasks_mock.assert_called_once_with(
+            mock.ANY,
+            context_key=mock.ANY,
+            for_display=True,
+            process_definition_key="key",
+        )
 
         assert renderer.available is True
 
@@ -80,7 +86,13 @@ def test_renderer():
         )
         renderer2 = Renderer(context, request, mock.Mock(), mock.Mock(), assignment2)
         tasks2 = renderer2.tasks()
-        assert len(tasks2) == 2
+        assert tasks2 == [task1]
+        get_tasks_mock.assert_called_with(
+            mock.ANY,
+            context_key=mock.ANY,
+            for_display=True,
+            process_definition_key=None,
+        )
 
 
 def test_redirect_view():

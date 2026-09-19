@@ -1,0 +1,6 @@
+The Tasks portlet's "single process type" filter now queries the engine by
+``processDefinitionKey`` directly instead of parsing
+``task.process_definition_id`` in Python. That parsing assumed the engine's
+generated process definition ids are always ``{key}:{version}:{uuid}``;
+Operaton's default id generator can also hand out a bare UUID with no key
+prefix at all, which silently made the filter match nothing.

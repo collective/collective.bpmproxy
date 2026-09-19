@@ -200,15 +200,27 @@ def business_key_needle(context_key=None, attachments_key=None):
 
 
 def get_available_tasks(
-    client, context_key=None, attachments_key=None, for_display=False
+    client,
+    context_key=None,
+    attachments_key=None,
+    for_display=False,
+    process_definition_key=None,
 ):
     # we assume that authentication is enough to filter tasks by tenants
     task_api = generic_camunda_client.TaskApi(client)
     needle = business_key_needle(context_key, attachments_key)
+    # Vocabulary tokens are "{key}:{tenant}" when a tenant is set (see
+    # AvailableProcessDefinitions), but the engine's own processDefinitionKey
+    # filter takes a bare key -- tenant scoping already happens through the
+    # JWT's tenant_ids claim, not a second query parameter here.
+    definition_key = (
+        process_definition_key.split(":", 1)[0] if process_definition_key else None
+    )
     tasks = (
         task_api.query_tasks(
             task_query_dto=TaskQueryDto(
                 process_instance_business_key_like=needle,
+                process_definition_key=definition_key,
                 sorting=[
                     TaskQueryDtoSorting(sort_by="dueDate", sort_order="asc"),
                     TaskQueryDtoSorting(sort_by="created", sort_order="desc"),
@@ -219,6 +231,7 @@ def get_available_tasks(
         else task_api.query_tasks(
             max_results=PENDING_TASKS_MAX_RESULTS,
             task_query_dto=TaskQueryDto(
+                process_definition_key=definition_key,
                 sorting=[
                     TaskQueryDtoSorting(sort_by="dueDate", sort_order="asc"),
                     TaskQueryDtoSorting(sort_by="created", sort_order="desc"),

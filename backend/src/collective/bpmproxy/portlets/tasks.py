@@ -109,23 +109,11 @@ class Renderer(base.Renderer):
     def _data(self):
         with camunda_client() as client:
             context_key = IUUID(self.context) if self.data.use_context else None
-            tasks = get_available_tasks(
-                client, context_key=context_key, for_display=True
-            )
-            # XXX: Being able to filter by process definition key relies on Camunda
-            # default ID generator, where generated unique IDs are prefixed with key
-            return (
-                [
-                    task
-                    for task in tasks
-                    if task.process_definition_id.split(":", 1)[0]
-                    in [
-                        self.data.process_definition_key,
-                        self.data.process_definition_key.rsplit(":", 1)[0],
-                    ]
-                ]
-                if self.data.process_definition_key
-                else tasks
+            return get_available_tasks(
+                client,
+                context_key=context_key,
+                for_display=True,
+                process_definition_key=self.data.process_definition_key,
             )
 
 

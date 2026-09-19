@@ -286,6 +286,35 @@ def test_get_available_tasks_with_keys(mock_api_cls):
     assert dto.process_instance_business_key_like == "ctx1:att1"
 
 
+@patch("collective.bpmproxy.client.generic_camunda_client.TaskApi")
+def test_get_available_tasks_filters_by_process_definition_key(mock_api_cls):
+    mock_api = MagicMock()
+    mock_api_cls.return_value = mock_api
+    mock_api.query_tasks.return_value = ["task1"]
+
+    get_available_tasks("client", process_definition_key="my-key")
+
+    dto = mock_api.query_tasks.call_args[1]["task_query_dto"]
+    assert dto.process_definition_key == "my-key"
+
+
+@patch("collective.bpmproxy.client.generic_camunda_client.TaskApi")
+def test_get_available_tasks_strips_the_tenant_suffix(mock_api_cls):
+    """Vocabulary tokens are "{key}:{tenant}" when a tenant is set -- the
+    engine's processDefinitionKey filter takes a bare key; tenant scoping
+    already happens through the JWT's tenant_ids claim."""
+    mock_api = MagicMock()
+    mock_api_cls.return_value = mock_api
+    mock_api.query_tasks.return_value = ["task1"]
+
+    get_available_tasks(
+        "client", context_key="ctx1", process_definition_key="my-key:tenant1"
+    )
+
+    dto = mock_api.query_tasks.call_args[1]["task_query_dto"]
+    assert dto.process_definition_key == "my-key"
+
+
 def test_business_key_needle_matches_the_stored_format():
     """The needle has to match what the form views actually write."""
     # Both halves known: an exact key, colon included.
