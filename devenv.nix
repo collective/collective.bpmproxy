@@ -110,7 +110,12 @@
     realms.plone = {
       path = "devenv/keycloak/realm-plone.json";
       import = true;
-      export = true;
+      # No `export = true`: that spawns a `keycloak-realm-export-all`
+      # process gated on the `keycloak` process exiting, which never
+      # happens under `devenv up`, so it just sits "waiting" forever.
+      # The generic `keycloak-realm-export plone <file>` script (via
+      # services.keycloak.scripts.exportRealm, default true) stays
+      # available in the shell for manual export when needed.
     };
   };
 
