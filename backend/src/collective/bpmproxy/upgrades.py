@@ -5,6 +5,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+# No upgrade step was added for the process_context behavior
+# (behaviors/process_context.py), even though it changed IBpmProxy to
+# compose (IProcessContext, IProcessContextBehavior) instead of declaring
+# its own fields. Investigated and confirmed unnecessary, not overlooked:
+# field storage is unchanged plain attributes under the same names, the
+# FTI's "schema" property string was already
+# "collective.bpmproxy.content.bpm_proxy.IBpmProxy" before and after, and
+# Dexterity computes providedBy() from the FTI's current schema at access
+# time rather than from a persisted marker. A site upgrading this
+# package's code gets IProcessContext support on existing Bpm Proxy
+# content on its next request, with nothing to migrate. See
+# tests/test_ct_bpm_proxy.py::test_existing_content_needs_no_upgrade_step_for_process_context.
+
 # Bundle records are named "<prefix>.<field>", where <field> is a single
 # IBundleRegistry field name ("enabled", "jscompilation", ...). Renamed bundles
 # nest under the old name -- "plone.bundles/collective.bpmproxy" is a prefix of
