@@ -356,8 +356,9 @@ If, for example, you selected the rule `BPMN signal: submitted any`
 your BPMN process needs to have a `Signal StartEvent` element
 with a `Signal` configured to `plone-content-submitted`.
 
-Open the [`examples/empire-insider/ReviewAssistant`](./examples/empire-insider/ReviewAssistant.bpmn) diagram
-with the [Modeler app](#processes-modeler) for such an example.
+Open the [`examples/published-lifecycle`](./examples/published-lifecycle/example-published-lifecycle.bpmn)
+diagram with the [Modeler app](#processes-modeler) for such an example: its
+start event listens for the `plone-content-published` signal.
 
 ## Advanced topics
 

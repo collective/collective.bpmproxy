@@ -178,9 +178,9 @@ collective.bpmproxy/                      # monorepo root -- NO Python package h
 │                                         #   e2e_renovation_project.py, uitest/ campaign
 │
 ├── examples/                             # BPMN/DMN/form examples + external-task bots
-│   ├── approval-process/ contact-form/ empire-insider/
-│   ├── published-lifecycle/ request-for-quote/ renovation-project/
-│   └── editor-bot/ plone-bot/ renovation-bot/   # purjo + uv task packages
+│   ├── simple-process/ published-lifecycle/ request-for-quote/
+│   ├── renovation-project/
+│   └── renovation-bot/                   # purjo + uv task package
 │
 └── docs/                                 # Scenario docs, user guide, recordings (untracked)
 ```
@@ -698,26 +698,17 @@ decode, a fetch missing its `Accept` header.
 
 ## Examples
 
-### Approval Process (`examples/approval-process/`)
-DMN-based reviewer selection, email notifications, daily reminders, multi-outcome review (approve/decline/request-changes with 7-day timeout).
-
-### Contact Form with ML Triage (`examples/contact-form/`)
-Parallel processing: visitor thank-you + backend ML classification (spam/mood/topic), DMN team routing, manual triage fallback, classifier retraining.
-
-### Empire Insider (`examples/empire-insider/`)
-Two processes: (1) GPT-powered article scaffolding with DALL-E images, iterative review, Plone content creation. (2) Signal-triggered review assistant with GPT revision support and lifecycle signal monitoring.
+### Simple Process (`examples/simple-process/`)
+The minimal deployable process: a start event with a form, straight to an end event. Onboarding example.
 
 ### Published Document Lifecycle (`examples/published-lifecycle/`)
-Post-publication management: social media sharing tasks, periodic content update prompts, daily status monitoring, automatic termination on unpublish.
+Post-publication management: social media sharing tasks, periodic content update prompts, daily status monitoring, automatic termination on unpublish. The only example with a signal start event, and the one the browser test suite uses to exercise content-rules.
 
 ### Request for Quote (`examples/request-for-quote/`)
-DMN-driven option calculation, session timeout, parallel visitor/admin flows, email notification.
+DMN-driven option calculation, session timeout, parallel visitor/admin flows, email notification. The richest single-process example; the browser test suite's main fixture.
 
-### Editor Bot (`examples/editor-bot/`)
-purjo RPA bot (Robot Framework task package): OpenAI article generation, title/keyword/description creation, DALL-E image generation.
-
-### Plone Bot (`examples/plone-bot/`)
-purjo RPA bot (Robot Framework task package): Plone REST API operations (get/create/update content, workflow transitions, image upload).
+### Renovation Project (`examples/renovation-project/`) + Renovation Bot (`examples/renovation-bot/`)
+Three chained processes (plan review, work & extra-work, final review) correlated by a project UUID via signal/message-started events, driving the Tasks and Message portlets. `renovation-bot`, a purjo RPA bot (Robot Framework task package), performs the Plone workflow transitions between phases. See `docs/renovation-project-scenario.md`.
 
 ---
 

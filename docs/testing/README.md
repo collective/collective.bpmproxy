@@ -89,8 +89,9 @@ Case ids are stable; they appear in the runner output and in the
 
 - **Operaton Cockpit and Keycloak's own UI.** Keycloak must be running —
   Operaton waits for its issuer metadata — but neither UI is under test.
-- **The RPA example bots** (`examples/editor-bot`, `examples/plone-bot`).
-  They need an `OPENAI_API_KEY` and egress to `api.openai.com`.
+- **The `renovation-bot` purjo worker** (`examples/renovation-bot/`). It has to
+  be started separately (`make serve`); `scripts/e2e_renovation_project.py`
+  documents this as a prerequisite rather than starting it itself.
 - **Mail delivery.** The fixture configures no mail connector; see
   [Limitations](../user/11-limitations.md).
 
