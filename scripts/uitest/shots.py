@@ -18,46 +18,66 @@ Shot = namedtuple("Shot", "name caption doc")
 
 SHOTS = [
     # --- 02 deploying processes -------------------------------------------
-    Shot("controlpanel-bpmn", "The BPMN modeler in the Plone control panel",
-         "02-deploying-processes.md"),
-    Shot("controlpanel-dmn", "The DMN modeler, for decision tables",
-         "02-deploying-processes.md"),
-    Shot("controlpanel-form", "The form playground",
-         "02-deploying-processes.md"),
-    Shot("controlpanel-deployments", "Deployments currently known to the engine",
-         "02-deploying-processes.md"),
-
+    Shot(
+        "controlpanel-bpmn",
+        "The BPMN modeler in the Plone control panel",
+        "02-deploying-processes.md",
+    ),
+    Shot(
+        "controlpanel-dmn",
+        "The DMN modeler, for decision tables",
+        "02-deploying-processes.md",
+    ),
+    Shot("controlpanel-form", "The form playground", "02-deploying-processes.md"),
+    Shot(
+        "controlpanel-deployments",
+        "Deployments currently known to the engine",
+        "02-deploying-processes.md",
+    ),
     # --- 03 publishing a process ------------------------------------------
-    Shot("bpm-proxy-add-form", "Adding a Bpm Proxy and choosing a process",
-         "03-publishing-a-process.md"),
-    Shot("bpm-proxy-start-form", "The deployed start form rendered in Plone",
-         "03-publishing-a-process.md"),
-    Shot("bpm-proxy-diagram", "The Process diagram tab",
-         "03-publishing-a-process.md"),
-    Shot("bpm-proxy-validation", "Server-side validation rejecting a submission",
-         "03-publishing-a-process.md"),
-
+    Shot(
+        "bpm-proxy-add-form",
+        "Adding a Bpm Proxy and choosing a process",
+        "03-publishing-a-process.md",
+    ),
+    Shot(
+        "bpm-proxy-start-form",
+        "The deployed start form rendered in Plone",
+        "03-publishing-a-process.md",
+    ),
+    Shot("bpm-proxy-diagram", "The Process diagram tab", "03-publishing-a-process.md"),
+    Shot(
+        "bpm-proxy-validation",
+        "Server-side validation rejecting a submission",
+        "03-publishing-a-process.md",
+    ),
     # --- 04 working with tasks --------------------------------------------
-    Shot("task-form", "A user task rendered as a sub-page of the proxy",
-         "04-working-with-tasks.md"),
-    Shot("task-list", "The Task list tab",
-         "04-working-with-tasks.md"),
-
+    Shot(
+        "task-form",
+        "A user task rendered as a sub-page of the proxy",
+        "04-working-with-tasks.md",
+    ),
+    Shot("task-list", "The Task list tab", "04-working-with-tasks.md"),
     # --- 05 attachments ----------------------------------------------------
-    Shot("attachments-task", "A task offering the Add attachment button",
-         "05-attachments.md"),
-    Shot("attachments-listing", "Files uploaded against one process instance",
-         "05-attachments.md"),
-
+    Shot(
+        "attachments-task",
+        "A task offering the Add attachment button",
+        "05-attachments.md",
+    ),
+    Shot(
+        "attachments-listing",
+        "Files uploaded against one process instance",
+        "05-attachments.md",
+    ),
     # --- 06 portlets -------------------------------------------------------
-    Shot("portlet-tasks", "The Task list portlet",
-         "06-portlets.md"),
-    Shot("portlet-message", "The Message dispatch portlet",
-         "06-portlets.md"),
-
+    Shot("portlet-tasks", "The Task list portlet", "06-portlets.md"),
+    Shot("portlet-message", "The Message dispatch portlet", "06-portlets.md"),
     # --- 07 content rules --------------------------------------------------
-    Shot("contentrules-list", "The BPMN signal rules installed by the add-on",
-         "07-content-rules.md"),
+    Shot(
+        "contentrules-list",
+        "The BPMN signal rules installed by the add-on",
+        "07-content-rules.md",
+    ),
 ]
 
 BY_NAME = {shot.name: shot for shot in SHOTS}
@@ -78,8 +98,7 @@ def check_docs(docs_dir):
     for shot in SHOTS:
         if shot.name not in referenced:
             problems.append(
-                f"{shot.name}: taken but referenced by no page "
-                f"(expected {shot.doc})"
+                f"{shot.name}: taken but referenced by no page (expected {shot.doc})"
             )
         elif shot.doc not in referenced[shot.name]:
             problems.append(

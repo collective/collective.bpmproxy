@@ -28,8 +28,12 @@ def run(session):
     # examples do not, so assert the routing rule directly on a proxy.
     proxy_url = getattr(session, "proxy_url", None)
     if not proxy_url:
-        check("H0", "a Bpm Proxy from scenario C is available", False,
-              "run the bpm_proxy scenario first")
+        check(
+            "H0",
+            "a Bpm Proxy from scenario C is available",
+            False,
+            "run the bpm_proxy scenario first",
+        )
         return
 
     # The add form for a Document inside the portal is what a "++add++Document"
@@ -37,18 +41,26 @@ def run(session):
     # exists.
     page.goto(f"{base}/++add++Document", wait_until="load")
     page.wait_for_timeout(1000)
-    check("D5", "++add++Document form is reachable as a redirect target",
-          title_field(page) is not None, page.url)
+    check(
+        "D5",
+        "++add++Document form is reachable as a redirect target",
+        title_field(page) is not None,
+        page.url,
+    )
 
     # The subscribers themselves are unit-tested; what a browser adds is the
     # confirmation that adding and editing content with the add-on installed
     # does not break the ordinary Plone flows the subscribers hook into.
     doc_id = fixtures.PREFIX + "subscriber-doc"
-    created = rest(page, base, "", "POST",
-                   {"@type": "Document", "id": doc_id, "title": doc_id})
-    check("H1", "adding content with the add-on installed succeeds",
-          created["status"] in (200, 201),
-          f"{created['status']} {created['body'][:160]}")
+    created = rest(
+        page, base, "", "POST", {"@type": "Document", "id": doc_id, "title": doc_id}
+    )
+    check(
+        "H1",
+        "adding content with the add-on installed succeeds",
+        created["status"] in (200, 201),
+        f"{created['status']} {created['body'][:160]}",
+    )
 
     if created["status"] in (200, 201):
         page.goto(f"{base}/{doc_id}/edit", wait_until="load")
@@ -59,5 +71,9 @@ def run(session):
             page.click("#form-buttons-save")
             page.wait_for_load_state("load")
             page.wait_for_timeout(1500)
-        check("H2", "editing content with the add-on installed succeeds",
-              "Internal Server Error" not in page.content(), page.url)
+        check(
+            "H2",
+            "editing content with the add-on installed succeeds",
+            "Internal Server Error" not in page.content(),
+            page.url,
+        )

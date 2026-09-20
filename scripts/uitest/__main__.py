@@ -79,19 +79,24 @@ def main(argv=None):
     parser.add_argument("--images", default=IMAGES_DIR)
     parser.add_argument("--docs", default=DOCS_DIR)
     parser.add_argument(
-        "--no-shots", action="store_true",
+        "--no-shots",
+        action="store_true",
         help="assert only; do not write screenshots",
     )
     parser.add_argument(
-        "--check-docs", action="store_true",
+        "--check-docs",
+        action="store_true",
         help="fail if docs/user and the shot registry have drifted apart",
     )
     parser.add_argument(
-        "--scenario", action="append", default=None,
+        "--scenario",
+        action="append",
+        default=None,
         help="run only this scenario (repeatable)",
     )
     parser.add_argument(
-        "--keep", action="store_true",
+        "--keep",
+        action="store_true",
         help="leave the created content and deployments in place",
     )
     parser.add_argument("--headed", action="store_true")
@@ -149,11 +154,13 @@ def main(argv=None):
     if args.check_docs:
         problems = registry.check_docs(args.docs)
         missing = [
-            shot.name for shot in registry.SHOTS
+            shot.name
+            for shot in registry.SHOTS
             if shot.name not in taken and (args.scenario is None)
         ]
-        problems += [f"{name}: declared but never taken in this run"
-                     for name in missing]
+        problems += [
+            f"{name}: declared but never taken in this run" for name in missing
+        ]
         for problem in problems:
             print(f"DOC DRIFT  {problem}")
 

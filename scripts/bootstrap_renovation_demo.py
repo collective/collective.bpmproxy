@@ -36,9 +36,7 @@ DEMO_USERS = {
 # The profile creates "renovation-bot" with a random password (it's a
 # service account, never meant to be typed in). Reset it here to a known
 # value so examples/renovation-bot/secrets.json can authenticate as it.
-RENOVATION_BOT_PASSWORD = os.environ.get(
-    "RENOVATION_BOT_PASSWORD", "renovation-bot"
-)
+RENOVATION_BOT_PASSWORD = os.environ.get("RENOVATION_BOT_PASSWORD", "renovation-bot")
 
 
 def main(app):

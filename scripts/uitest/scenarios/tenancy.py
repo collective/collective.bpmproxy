@@ -16,7 +16,8 @@ def definition_options(page, base_url):
     if not field.count():
         return []
     return field.locator("option").evaluate_all(
-        "options => options.map((o) => o.value)")
+        "options => options.map((o) => o.value)"
+    )
 
 
 def run(session):
@@ -26,30 +27,54 @@ def run(session):
     page.goto(base, wait_until="load")
 
     before = definition_options(page, base)
-    check("K1", "untenanted definitions are offered by default",
-          fixtures.RFQ in before, "; ".join(before)[:200])
+    check(
+        "K1",
+        "untenanted definitions are offered by default",
+        fixtures.RFQ in before,
+        "; ".join(before)[:200],
+    )
 
     # Restrict the site to a tenant nothing is deployed under.
     original = rest(page, base, RECORD)
-    set_result = rest(page, base, "/@registry", "PATCH",
-                      {"collective.bpmproxy.tenant_ids": ["uitest-tenant"]})
-    check("K1", "tenant_ids is writable through the registry",
-          set_result["status"] in (200, 204),
-          f"{set_result['status']} {set_result['body'][:160]}")
+    set_result = rest(
+        page,
+        base,
+        "/@registry",
+        "PATCH",
+        {"collective.bpmproxy.tenant_ids": ["uitest-tenant"]},
+    )
+    check(
+        "K1",
+        "tenant_ids is writable through the registry",
+        set_result["status"] in (200, 204),
+        f"{set_result['status']} {set_result['body'][:160]}",
+    )
 
     try:
         after = definition_options(page, base)
         # Definitions deployed without a tenant stay visible by design; what
         # must not appear is a definition belonging to another tenant. With
         # nothing deployed under "uitest-tenant" the list must not grow.
-        check("K2", "restricting tenants does not widen the vocabulary",
-              set(after) <= set(before),
-              f"gained: {sorted(set(after) - set(before))}")
+        check(
+            "K2",
+            "restricting tenants does not widen the vocabulary",
+            set(after) <= set(before),
+            f"gained: {sorted(set(after) - set(before))}",
+        )
     finally:
         restore = (original["json"] or {}).get("value", [])
-        rest(page, base, "/@registry", "PATCH",
-             {"collective.bpmproxy.tenant_ids": restore})
+        rest(
+            page,
+            base,
+            "/@registry",
+            "PATCH",
+            {"collective.bpmproxy.tenant_ids": restore},
+        )
 
     restored = definition_options(page, base)
-    check("K1", "vocabulary restored after clearing tenant_ids",
-          fixtures.RFQ in restored, "; ".join(restored)[:200])
+    check(
+        "K1",
+        "vocabulary restored after clearing tenant_ids",
+        fixtures.RFQ in restored,
+        "; ".join(restored)[:200],
+    )

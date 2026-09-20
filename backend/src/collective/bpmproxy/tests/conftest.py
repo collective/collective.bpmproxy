@@ -3,7 +3,7 @@
 The classic zope.testrunner layers from ``collective.bpmproxy.testing`` are
 exposed twice:
 
-* ``gocept.pytestlayer`` (installed via the ``test`` extra) lets pytest run
+* ``zope.pytestlayer`` (installed via the ``test`` extra) lets pytest run
   the existing ``unittest``-style tests with their ``layer`` attributes.
 * ``pytest_plone.fixtures_factory`` provides pytest fixtures (``portal``,
   ``integration``, ``functional``, ...) for new pytest-style tests.

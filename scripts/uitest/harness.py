@@ -194,8 +194,10 @@ class Session:
 
     def no_problems(self, case, watcher, what):
         return self.checks.check(
-            case, f"{what}: no console/network errors",
-            not watcher.problems, "; ".join(watcher.problems)[:300],
+            case,
+            f"{what}: no console/network errors",
+            not watcher.problems,
+            "; ".join(watcher.problems)[:300],
         )
 
 

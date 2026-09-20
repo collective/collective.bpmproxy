@@ -339,7 +339,9 @@ def compose_recording(cockpit_video, clips, output=None):
         else:
             # No meaningful gap before the next turn -- skip straight to it,
             # rather than build a near-zero-length segment concat chokes on.
-            filters.append(f"[t{index}main]fps=25,trim=start=0:end=0.04[seg{index + 1}]")
+            filters.append(
+                f"[t{index}main]fps=25,trim=start=0:end=0.04[seg{index + 1}]"
+            )
         segment_labels.append(f"seg{index + 1}")
 
     concat_inputs = "".join(f"[{label}]" for label in segment_labels)
@@ -405,7 +407,10 @@ def main():
         for deployment in deployments:
             setup_page.request.delete(
                 f"{BASE}/@bpmproxy-deployments",
-                headers={"Accept": "application/json", "Content-Type": "application/json"},
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
                 data=json.dumps({"id": deployment["id"]}),
             )
 
@@ -485,7 +490,9 @@ def main():
                 cockpit_page.get_by_role("link", name="Processes", exact=True).first,
             )
             cockpit_page.wait_for_timeout(1000)
-            human_click(cockpit_page, cockpit_page.get_by_role("link", name=process_key))
+            human_click(
+                cockpit_page, cockpit_page.get_by_role("link", name=process_key)
+            )
             cockpit_page.wait_for_timeout(1200)
             instance_link = cockpit_page.locator('a[href*="/process-instance/"]').last
             instance_link.wait_for(state="visible", timeout=30000)
@@ -558,7 +565,8 @@ def main():
         # Owner/Inspector review tasks before either persona acts.
         follow_process(PROCESS_KEYS[0])
         cockpit_page.screenshot(
-            path=str(DOCS / "renovation-project-cockpit-plan-review.png"), full_page=True
+            path=str(DOCS / "renovation-project-cockpit-plan-review.png"),
+            full_page=True,
         )
 
         # --- Owner turn 1: approve the plan -------------------------------------

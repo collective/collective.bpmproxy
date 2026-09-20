@@ -886,13 +886,13 @@ dependencies = [
 
 [package.optional-dependencies]
 test = [
-    { name = "gocept-pytestlayer" },
     { name = "plone-app-contenttypes" },
     { name = "plone-app-testing" },
     { name = "plone-testing" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "pytest-plone" },
+    { name = "zope-pytestlayer" },
 ]
 
 [package.dev-dependencies]
@@ -906,7 +906,6 @@ requires-dist = [
     { name = "borg-localrole" },
     { name = "cryptography" },
     { name = "generic-camunda-client" },
-    { name = "gocept-pytestlayer", marker = "extra == 'test'" },
     { name = "plone-api", specifier = ">=1.8.4" },
     { name = "plone-app-caching" },
     { name = "plone-app-contentrules" },
@@ -927,6 +926,7 @@ requires-dist = [
     { name = "pytz" },
     { name = "requests" },
     { name = "z3c-jbot" },
+    { name = "zope-pytestlayer", marker = "extra == 'test'" },
 ]
 provides-extras = ["test"]
 
@@ -1339,18 +1339,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/01/ee/09445da8eb7bc8ae2627d2ff1c65ea90771bdfa6c45ce012dc58b87ca942/generic-camunda-client-7.18.0.tar.gz", hash = "sha256:4c45096dfafeb7b95d0f3a35eda164614e6a13958c2973ae73ec254fa82b70dd", size = 439212, upload-time = "2022-10-26T22:07:08.437Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a1/29/f2ecff0fa13dff104ac597d9fceeb25f6429e0de51c9f116d40a9bc5bf5b/generic_camunda_client-7.18.0-py3-none-any.whl", hash = "sha256:14ce1d8db100f6fd575e6b69ce77d1f443115a665f614bd5742c2849d1327c5f", size = 740430, upload-time = "2022-10-26T22:07:07.17Z" },
-]
-
-[[package]]
-name = "gocept-pytestlayer"
-version = "8.1.1"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "setuptools" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/86/6c/302895d16033f2c0fc0aa43f9575e98f1e4897f6d22a9520dbec923a6a34/gocept.pytestlayer-8.1.1.tar.gz", hash = "sha256:95f42615b59b50d5c6636b2a7d3ca21a388fbf0a83a9a7e7a1288873561bfcc8", size = 3910, upload-time = "2024-05-17T06:37:58.259Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/4a/d0/0062a02df0a7cc8e1974ff8defd1b01d44c5ba5e547e29c4347ef688e8cf/gocept.pytestlayer-8.1.1-py3-none-any.whl", hash = "sha256:0411e75268e4a6151449c5ae29d4b0122ca4bb912145dfd1af4cfc43b996368a", size = 5430, upload-time = "2024-05-17T06:37:56.979Z" },
 ]
 
 [[package]]

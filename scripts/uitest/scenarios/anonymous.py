@@ -24,9 +24,12 @@ def run(session):
     anon_page, anon_watcher = session.page()
     anon_page.goto(proxy_url, wait_until="load")
     anon_page.wait_for_timeout(2000)
-    check("J1", "anonymous visitor can load the start form",
-          anon_page.locator("#collective-bpmproxy-form .fjs-container").count() > 0,
-          anon_page.url)
+    check(
+        "J1",
+        "anonymous visitor can load the start form",
+        anon_page.locator("#collective-bpmproxy-form .fjs-container").count() > 0,
+        anon_page.url,
+    )
     session.no_problems("J1", anon_watcher, "anonymous start form")
 
     # J1/J2 -- starting a process as anonymous gets a pseudo-identity, and the
@@ -45,14 +48,24 @@ def run(session):
         anon_page.wait_for_load_state("load")
         anon_page.wait_for_timeout(2500)
         url = anon_page.url
-        check("J1", "anonymous submit starts a process",
-              "Submit successful" in anon_page.content() or
-              "/@@bpm-task/" in url, url)
-        check("J2", "the anonymous redirect carries a token",
-              "token=" in url or "/@@bpm-task/" in url, url)
+        check(
+            "J1",
+            "anonymous submit starts a process",
+            "Submit successful" in anon_page.content() or "/@@bpm-task/" in url,
+            url,
+        )
+        check(
+            "J2",
+            "the anonymous redirect carries a token",
+            "token=" in url or "/@@bpm-task/" in url,
+            url,
+        )
 
         if "/@@bpm-task/" in url:
-            check("J2", "anonymous visitor can open its own task",
-                  anon_page.locator(
-                      "#collective-bpmproxy-form .fjs-container").count() > 0,
-                  url)
+            check(
+                "J2",
+                "anonymous visitor can open its own task",
+                anon_page.locator("#collective-bpmproxy-form .fjs-container").count()
+                > 0,
+                url,
+            )

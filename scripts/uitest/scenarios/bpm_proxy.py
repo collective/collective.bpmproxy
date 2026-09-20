@@ -31,16 +31,28 @@ def run(session):
     values = definition.locator("option").evaluate_all(
         "options => options.map((o) => o.value)"
     )
-    check("C1", "vocabulary lists the deployed process",
-          fixtures.RFQ in values, "; ".join(values)[:200])
+    check(
+        "C1",
+        "vocabulary lists the deployed process",
+        fixtures.RFQ in values,
+        "; ".join(values)[:200],
+    )
 
     # C3 -- the JSON fields get the code editor widget.
-    check("C3", "process_variables uses pat-code-editor",
-          "pat-code-editor" in (page.locator(
-              "#form-widgets-process_variables").get_attribute("class") or ""))
-    check("C3", "default_values uses pat-code-editor",
-          "pat-code-editor" in (page.locator(
-              "#form-widgets-default_values").get_attribute("class") or ""))
+    check(
+        "C3",
+        "process_variables uses pat-code-editor",
+        "pat-code-editor"
+        in (
+            page.locator("#form-widgets-process_variables").get_attribute("class") or ""
+        ),
+    )
+    check(
+        "C3",
+        "default_values uses pat-code-editor",
+        "pat-code-editor"
+        in (page.locator("#form-widgets-default_values").get_attribute("class") or ""),
+    )
 
     page.fill("#form-widgets-IBasic-title", TITLE_TEXT)
     definition.select_option(fixtures.RFQ)
@@ -63,26 +75,37 @@ def run(session):
     page.wait_for_timeout(2500)
 
     # C4 -- the deployed start form renders client-side.
-    check("C4", "start form rendered by form-js",
-          page.locator("#collective-bpmproxy-form .fjs-container").count() > 0)
+    check(
+        "C4",
+        "start form rendered by form-js",
+        page.locator("#collective-bpmproxy-form .fjs-container").count() > 0,
+    )
     session.no_problems("C4", watcher, "Bpm Proxy view")
     shot(session, page, "bpm-proxy-start-form", "C4")
 
     # C5 -- interpolation reached the form data.
     data = fixtures.form_data(page)
-    check("C5", "default_values interpolated into the form data",
-          isinstance(data, dict), str(data)[:200])
+    check(
+        "C5",
+        "default_values interpolated into the form data",
+        isinstance(data, dict),
+        str(data)[:200],
+    )
 
     # C8 -- the diagram tab renders, and only once it is visible.
     hidden_before = page.locator(
-        "#collective-bpmproxy-diagram .bjs-container svg").count()
+        "#collective-bpmproxy-diagram .bjs-container svg"
+    ).count()
     tab = page.locator("a[href='#autotoc-item-autotoc-1'], #autotoc-item-autotoc-1")
     if tab.count():
         tab.first.click()
         page.wait_for_timeout(2000)
-    check("C8", "diagram renders once its tab is selected",
-          page.locator("#collective-bpmproxy-diagram .bjs-container svg").count() > 0,
-          f"hidden-tab render count was {hidden_before}")
+    check(
+        "C8",
+        "diagram renders once its tab is selected",
+        page.locator("#collective-bpmproxy-diagram .bjs-container svg").count() > 0,
+        f"hidden-tab render count was {hidden_before}",
+    )
     shot(session, page, "bpm-proxy-diagram", "C8")
 
     # C6 -- the start form is required, so an empty submit must be refused.
@@ -104,9 +127,12 @@ def run(session):
     page.wait_for_load_state("load")
     page.wait_for_timeout(2000)
     body = page.content()
-    check("C6", "empty submit is rejected server-side",
-          "Invalid or missing data" in body or "Submit successful" not in body,
-          f"{submitted}; {('Invalid' in body)=}")
+    check(
+        "C6",
+        "empty submit is rejected server-side",
+        "Invalid or missing data" in body or "Submit successful" not in body,
+        f"{submitted}; {('Invalid' in body)=}",
+    )
     shot(session, page, "bpm-proxy-validation", "C6")
 
     # A8 -- a page whose process definition has been removed from the engine
@@ -114,27 +140,40 @@ def run(session):
     # control panel cascades, so this is an ordinary operational state.
     # Use a throwaway deployment so the rest of the suite keeps its fixtures.
     orphan_key = PREFIX + "orphan-process"
-    deployed = rest(page, base, "/@bpmproxy-deploy", "POST",
-                    {"name": f"{orphan_key}.bpmn",
-                     "xml": fixtures.minimal_bpmn(orphan_key)})
-    check("A8", "throwaway process deployed", deployed["status"] == 200,
-          f"{deployed['status']} {deployed['body'][:160]}")
+    deployed = rest(
+        page,
+        base,
+        "/@bpmproxy-deploy",
+        "POST",
+        {"name": f"{orphan_key}.bpmn", "xml": fixtures.minimal_bpmn(orphan_key)},
+    )
+    check(
+        "A8",
+        "throwaway process deployed",
+        deployed["status"] == 200,
+        f"{deployed['status']} {deployed['body'][:160]}",
+    )
 
     if deployed["status"] == 200:
-        orphan_url = fixtures.create_proxy(
-            page, base, PREFIX + "orphan", orphan_key
-        )
+        orphan_url = fixtures.create_proxy(page, base, PREFIX + "orphan", orphan_key)
         deployment_id = (deployed["json"] or {}).get("result", {}).get("id")
-        removed = rest(page, base, "/@bpmproxy-deployments", "DELETE",
-                       {"id": deployment_id})
-        check("A8", "throwaway deployment deleted",
-              removed["status"] in (200, 204), str(removed["status"]))
+        removed = rest(
+            page, base, "/@bpmproxy-deployments", "DELETE", {"id": deployment_id}
+        )
+        check(
+            "A8",
+            "throwaway deployment deleted",
+            removed["status"] in (200, 204),
+            str(removed["status"]),
+        )
 
         watcher.reset()
         page.goto(orphan_url, wait_until="load")
         page.wait_for_timeout(2000)
         body = page.content()
-        check("A8",
-              "a page whose process is gone renders a message, not a traceback",
-              "Traceback" not in body and "not available" in body,
-              f"{page.url}; traceback={'Traceback' in body}")
+        check(
+            "A8",
+            "a page whose process is gone renders a message, not a traceback",
+            "Traceback" not in body and "not available" in body,
+            f"{page.url}; traceback={'Traceback' in body}",
+        )

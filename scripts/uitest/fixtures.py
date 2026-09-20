@@ -48,6 +48,8 @@ RENOVATION_PROJECT_ASSETS = [
     "renovation-work-and-extra-work.bpmn",
     "renovation-final-review.bpmn",
 ]
+
+
 def minimal_bpmn(key):
     """The smallest deployable process: one start event, nothing else."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>
@@ -143,7 +145,10 @@ def deploy_example(page, base_url, example, assets):
         if transform:
             content = transform(content)
         result = rest(
-            page, base_url, "/@bpmproxy-deploy", "POST",
+            page,
+            base_url,
+            "/@bpmproxy-deploy",
+            "POST",
             {"name": asset, "xml": content},
         )
         results.append((asset, result["status"], result["body"][:200]))
@@ -179,7 +184,8 @@ def sweep(page, base_url):
     removed = {"content": [], "deployments": []}
 
     search = rest(
-        page, base_url,
+        page,
+        base_url,
         f"/@search?SearchableText={PREFIX}&metadata_fields=_all&b_size=200",
     )
     for item in (search["json"] or {}).get("items", []):
@@ -190,7 +196,10 @@ def sweep(page, base_url):
 
     for deployment in list_deployments(page, base_url):
         res = rest(
-            page, base_url, "/@bpmproxy-deployments", "DELETE",
+            page,
+            base_url,
+            "/@bpmproxy-deployments",
+            "DELETE",
             {"id": deployment["id"]},
         )
         removed["deployments"].append((deployment.get("name"), res["status"]))
@@ -198,8 +207,15 @@ def sweep(page, base_url):
     return removed
 
 
-def create_proxy(page, base_url, title, definition_key,
-                 diagram=False, attachments=False, portal_type="Bpm Proxy"):
+def create_proxy(
+    page,
+    base_url,
+    title,
+    definition_key,
+    diagram=False,
+    attachments=False,
+    portal_type="Bpm Proxy",
+):
     """Create a Bpm Proxy (or behavior-enabled type) through its add form."""
     page.goto(f"{base_url}/++add++{portal_type}", wait_until="load")
     page.wait_for_timeout(500)
