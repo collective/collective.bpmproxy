@@ -81,7 +81,7 @@
   '';
 
   # The documented runner for the recording scripts (docs/AGENTS.md), e.g.
-  # `playwright-python scripts/e2e_request_for_quote.py`. Same nixpkgs
+  # `playwright-python scripts/e2e_renovation_project.py`. Same nixpkgs
   # playwright as e2e-smoke, and runs from the repo root because those scripts
   # resolve examples/ and docs/ relatively.
   scripts.playwright-python.exec = ''

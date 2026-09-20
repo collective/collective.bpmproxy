@@ -15,9 +15,8 @@ mail through ordinary SMTP.
 
 ## No scripting engine
 
-`camunda:script` and script-valued input parameters (for example the Python
-snippet in `examples/request-for-quote`) have no engine to run in. Use an
-expression instead, or precompute the value.
+`camunda:script` and script-valued input parameters have no engine to run in.
+Use an expression instead, or precompute the value.
 
 ## Candidate groups must exist in Plone
 

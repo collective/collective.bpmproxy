@@ -1,0 +1,6 @@
+[project]
+name = "bpmproxy-contact-form-bot-py"
+version = "0.1.0"
+description = "operaton-tasks worker for the BPM proxy contact-form example"
+requires-python = ">=3.10"
+dependencies = []

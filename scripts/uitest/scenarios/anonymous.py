@@ -16,7 +16,9 @@ def run(session):
 
     # A published proxy is what an anonymous visitor can reach at all.
     page.goto(base, wait_until="load")
-    proxy_url = fixtures.create_proxy(page, base, PROXY_TITLE, fixtures.RFQ)
+    proxy_url = fixtures.create_proxy(
+        page, base, PROXY_TITLE, fixtures.CONTACT_FORM
+    )
     published = fixtures.publish(page, proxy_url)
     check("J0", "public proxy published", published, proxy_url)
 
@@ -43,7 +45,14 @@ def run(session):
                     '[name="collective-bpmproxy-form-data"]').value = payload;
                 form.submit();
             }""",
-            json.dumps({"category": "a"}),
+            json.dumps(
+                {
+                    "senderName": "Jane Visitor",
+                    "senderEmail": "jane@example.com",
+                    "subject": "Hello",
+                    "message": "Inquiry message",
+                }
+            ),
         )
         anon_page.wait_for_load_state("load")
         anon_page.wait_for_timeout(2500)

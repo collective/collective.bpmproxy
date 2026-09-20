@@ -1,0 +1,52 @@
+{
+  "components": [
+    {
+      "text": "# Delegated Contact Inquiry\n\n**From:** ${senderName} (${senderEmail})\n\n**Subject:** ${subject}\n\n**Message:**\n${message}",
+      "type": "text",
+      "id": "Field_header"
+    },
+    {
+      "values": [
+        {
+          "label": "Reply to inquirer by email",
+          "value": "reply"
+        },
+        {
+          "label": "Abandon inquiry",
+          "value": "abandon"
+        }
+      ],
+      "label": "Action",
+      "type": "radio",
+      "id": "Field_action",
+      "key": "action",
+      "defaultValue": "reply",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Reply message",
+      "type": "textarea",
+      "id": "Field_replyMessage",
+      "key": "replyMessage",
+      "description": "Required if replying"
+    },
+    {
+      "action": "submit",
+      "label": "Submit decision",
+      "type": "button",
+      "id": "Field_submit",
+      "key": "field_submit"
+    }
+  ],
+  "type": "default",
+  "id": "contact-form-delegated",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 5
+}

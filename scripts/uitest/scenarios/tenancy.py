@@ -30,7 +30,7 @@ def run(session):
     check(
         "K1",
         "untenanted definitions are offered by default",
-        fixtures.RFQ in before,
+        fixtures.CONTACT_FORM in before,
         "; ".join(before)[:200],
     )
 
@@ -75,6 +75,6 @@ def run(session):
     check(
         "K1",
         "vocabulary restored after clearing tenant_ids",
-        fixtures.RFQ in restored,
+        fixtures.CONTACT_FORM in restored,
         "; ".join(restored)[:200],
     )

@@ -174,13 +174,13 @@ collective.bpmproxy/                      # monorepo root -- NO Python package h
 │           └── META-INF/resources/webjars/operaton/app/...  # The servable copy
 │
 ├── scripts/                              # bootstrap_site.py, bootstrap_renovation_demo.py,
-│   └── uitest/                           #   e2e_smoke.py, e2e_request_for_quote.py,
-│                                         #   e2e_renovation_project.py, uitest/ campaign
+│   └── uitest/                           #   e2e_smoke.py, e2e_renovation_project.py,
+│                                         #   uitest/ campaign
 │
 ├── examples/                             # BPMN/DMN/form examples + external-task bots
-│   ├── simple-process/ published-lifecycle/ request-for-quote/
+│   ├── simple-process/ published-lifecycle/ contact-form/ contact-form-bot-py/
 │   ├── renovation-project/
-│   └── renovation-bot/                   # purjo + uv task package
+│   └── renovation-bot/ renovation-bot-py/ # purjo / operaton-tasks packages
 │
 └── docs/                                 # Scenario docs, user guide, recordings (untracked)
 ```
@@ -706,8 +706,8 @@ The minimal deployable process: a start event with a form, straight to an end ev
 ### Published Document Lifecycle (`examples/published-lifecycle/`)
 Post-publication management: social media sharing tasks, periodic content update prompts, daily status monitoring, automatic termination on unpublish. The only example with a signal start event, and the one the browser test suite uses to exercise content-rules.
 
-### Request for Quote (`examples/request-for-quote/`)
-DMN-driven option calculation, session timeout, parallel visitor/admin flows, email notification. The richest single-process example; the browser test suite's main fixture.
+### Contact Form (`examples/contact-form/`) + Contact Form Bot (`examples/contact-form-bot-py/`)
+Start form capturing visitor inquiry, reviewer user task for Plone `Administrators` to either reply, triage/delegate to a specific Plone user, or abandon. An `operaton-tasks` Python worker delivers reply emails via Mailpit SMTP (`127.0.0.1:1025`). The browser test suite's main fixture.
 
 ### Renovation Project (`examples/renovation-project/`) + Renovation Bot (`examples/renovation-bot/`)
 Three chained processes (plan review, work & extra-work, final review) correlated by a project UUID via signal/message-started events, driving the Tasks and Message portlets. `renovation-bot`, a purjo RPA bot (Robot Framework task package), performs the Plone workflow transitions between phases. See `docs/renovation-project-scenario.md`.

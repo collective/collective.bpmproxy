@@ -23,7 +23,7 @@ def run(session):
         page,
         base,
         PROXY_TITLE,
-        fixtures.RFQ,
+        fixtures.CONTACT_FORM,
         diagram=False,
         attachments=True,
     )
@@ -43,7 +43,14 @@ def run(session):
             form.querySelector('[name="collective-bpmproxy-form-data"]').value = payload;
             form.submit();
         }""",
-        json.dumps({"category": "a"}),
+        json.dumps(
+            {
+                "senderName": "Site Manager",
+                "senderEmail": "manager@example.com",
+                "subject": "Attachments Demo",
+                "message": "Attachment demo message",
+            }
+        ),
     )
     page.wait_for_load_state("load")
     page.wait_for_timeout(2500)

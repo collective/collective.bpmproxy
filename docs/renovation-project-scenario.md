@@ -4,20 +4,16 @@ This is the reproducible demo scenario for the `collective.bpmproxy:renovation_d
 profile: a folderish `Renovation Project` type driven by a real five-state
 Plone workflow and three chained Operaton processes (Plan Review, Work &
 Extra-Work, Final Review), correlated by the project's UUID and closed back
-to Plone by the `renovation-bot` purjo worker. It follows the same recording
-architecture as [request-for-quote-scenario.md](request-for-quote-scenario.md)
-and [AGENTS.md](AGENTS.md): isolated Playwright contexts per actor, a Cockpit
-observer spanning the whole run, human-paced cursor and clicks, and a
-picture-in-picture composite aligned to real wall-clock offsets.
+to Plone by the `renovation-bot` purjo worker. It follows the recording
+architecture documented in [AGENTS.md](AGENTS.md): isolated Playwright contexts
+per actor, a Cockpit observer spanning the whole run, human-paced cursor and
+clicks, and a picture-in-picture composite aligned to real wall-clock offsets.
 
-Unlike request-for-quote's two actors, this scenario has **three named
-personas** (Owner, Contractor, Inspector) who each act at more than one point
-in the story, separated by other actors' turns. Each turn is therefore its
-own short recorded context — reusing request-for-quote's "one context per
-actor" pattern per *turn* rather than per *persona* — which is why the PIP
-composer here (`compose_recording()` in `scripts/e2e_renovation_project.py`)
-generalizes to placing an arbitrary list of clips onto the Cockpit timeline,
-not a hardcoded two.
+This scenario has **three named personas** (Owner, Contractor, Inspector) who
+each act at more than one point in the story, separated by other actors' turns.
+Each turn is therefore its own short recorded context, and the PIP composer here
+(`compose_recording()` in `scripts/e2e_renovation_project.py`) places this list
+of clips onto the Cockpit timeline.
 
 ## Prerequisites
 
@@ -106,26 +102,22 @@ playwright-python scripts/e2e_renovation_project.py
 
 ## Fixture adaptations
 
-None expected: unlike request-for-quote, this example targets Plone groups
+None expected: this example targets Plone groups
 (`Renovation Owners`/`Contractors`/`Inspectors`) that the profile itself
 creates, and its one external topic (`Plone Workflow Transition`) needs no
 Camunda connector or scripting-engine feature the local Operaton fixture
-lacks. If any prove necessary during recording, apply them in the runner the
-same way `e2e_request_for_quote.py` does — the checked-in
-`examples/renovation-project/*.bpmn` and `examples/renovation-bot/` stay
-unmodified.
+lacks. The checked-in `examples/renovation-project/*.bpmn` and
+`examples/renovation-bot/` stay unmodified.
 
 ## Cockpit observation
 
-Three process definitions run in sequence rather than request-for-quote's
-one, so Cockpit's flow is: follow Plan Review from the moment the Contractor
+Three process definitions run in sequence, so Cockpit's flow is: follow Plan Review from the moment the Contractor
 submits the plan; once `renovation-bot` closes that instance and the Work &
 Extra-Work signal fires, re-enter the processes list and follow the new
 instance the same way; repeat once more for Final Review. Each re-entry uses
-the same "click Processes, then the definition again" in-app navigation as
-request-for-quote's runner — a `page.reload()` re-bootstraps Cockpit's Angular
-SPA and puts a blank flash in the middle of the recording; an in-app route
-change re-queries the table without one.
+in-app navigation (“click Processes, then the definition again”) — a `page.reload()`
+re-bootstraps Cockpit's Angular SPA and puts a blank flash in the middle of
+the recording; an in-app route change re-queries the table without one.
 
 ## Artifacts
 
@@ -145,8 +137,8 @@ Filled in after recording:
 
 ## Verifying a take
 
-Same discipline as request-for-quote: the runner exits 0 on a badly broken
-recording, so check the artifact, not the exit status.
+The runner exits 0 even on a broken recording, so always check the artifact,
+not just the exit status.
 
 ```sh
 ffprobe -v error -show_entries format=duration \

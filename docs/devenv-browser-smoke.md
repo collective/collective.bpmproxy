@@ -32,12 +32,12 @@ passed** against a clean temporary Plone instance:
 ## Headless recording
 
 A headless Chromium walkthrough of the Plone modeler tabs, deployment view, and
-site front page is available as [request-for-quote-demo.webm](request-for-quote-demo.webm).
+site front page is available as [renovation-project-pip.webm](renovation-project-pip.webm).
 
-The reproducible request-for-quote scenario is documented in
-[request-for-quote-scenario.md](request-for-quote-scenario.md). It records three
-isolated contexts — requester, reviewer, and Cockpit — and composes them into a
-single picture-in-picture walkthrough.
+The reproducible end-to-end scenario is documented in
+[renovation-project-scenario.md](renovation-project-scenario.md). It records three
+personas and Cockpit, composing them into a single focus-flipping picture-in-picture
+walkthrough.
 
 ## Environment notes
 

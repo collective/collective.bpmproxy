@@ -1,9 +1,6 @@
 """Deploying example processes and creating/removing the content under test.
 
-Nothing here mutates the checked-in examples/ assets: the request-for-quote
-transforms are applied to the deployed copy only, so the originals stay
-suitable for a Camunda installation that has the scripting engine and mail
-connector this local Operaton fixture does not.
+Handles example deployment, site content setup, and cleanup for uitest scenarios.
 """
 
 from .harness import PREFIX
@@ -18,16 +15,14 @@ import re
 
 EXAMPLES = pathlib.Path("examples")
 
-# examples/request-for-quote, the richest example: start form, a DMN business
-# rule task, a candidate-group review task and a gateway.
-RFQ = "example-request-for-quote"
-RFQ_ASSETS = [
-    "request-for-quote-options.dmn",
-    "request-for-quote-options.form",
-    "request-for-quote-review.form",
-    "request-for-quote-start.form",
-    "request-for-quote-thanks.form",
-    "request-for-quote.bpmn",
+# examples/contact-form: start form, candidate-group review & triage,
+# delegation, abandon route, and external email service task.
+CONTACT_FORM = "example-contact-form"
+CONTACT_FORM_ASSETS = [
+    "contact-form-start.form",
+    "contact-form-review.form",
+    "contact-form-delegated.form",
+    "contact-form.bpmn",
 ]
 
 # examples/published-lifecycle: a signal start event, the only way to exercise
@@ -80,45 +75,8 @@ LIFECYCLE_ASSETS = [
 ]
 
 
-def adapt_request_for_quote(xml):
-    """Make the checked-in example runnable on the local Operaton fixture.
-
-    Three runtime-only substitutions, the same ones
-    scripts/e2e_request_for_quote.py applies and docs/AGENTS.md explains:
-
-    1. "Site Administrators" -> "Administrators", the group bootstrap_site.py
-       actually creates.
-    2. The Python inputParameter building optionsChosenString is dropped and
-       ${options} used directly -- the fixture installs no scripting engine.
-    3. The mail connector on the accepted branch is removed and its sendTask
-       becomes a plain task -- the fixture configures no connector, and leaving
-       it in place rolls back reviewer completion.
-    """
-    xml = xml.replace(
-        'camunda:candidateGroups="Site Administrators"',
-        'camunda:candidateGroups="Administrators"',
-    )
-    xml = re.sub(
-        r"<camunda:inputOutput>.*?</camunda:inputOutput>",
-        "",
-        xml,
-        flags=re.DOTALL,
-    )
-    xml = xml.replace("${optionsChosenString}", "${options}")
-    xml = re.sub(
-        r'<bpmn:sendTask([^>]*id="Activity_1njb1hw"[^>]*)>.*?</bpmn:sendTask>',
-        r"<bpmn:task\1></bpmn:task>",
-        xml,
-        flags=re.DOTALL,
-    )
-    return xml
-
-
 def ensure_history_ttl(xml):
-    """Operaton refuses definitions without a history time to live.
-
-    The request-for-quote example predates that requirement and carries none.
-    """
+    """Operaton refuses definitions without a history time to live."""
     if "historyTimeToLive" in xml:
         return xml
     return re.sub(
@@ -129,11 +87,7 @@ def ensure_history_ttl(xml):
     )
 
 
-TRANSFORMS = {
-    "request-for-quote.bpmn": lambda xml: ensure_history_ttl(
-        adapt_request_for_quote(xml)
-    ),
-}
+TRANSFORMS = {}
 
 
 def deploy_example(page, base_url, example, assets):

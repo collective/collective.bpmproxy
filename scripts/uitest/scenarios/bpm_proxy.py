@@ -8,7 +8,7 @@ from ..harness import shot
 
 TITLE = "C. Bpm Proxy content type"
 
-TITLE_TEXT = f"{PREFIX}quote"
+TITLE_TEXT = f"{PREFIX}contact"
 
 
 def run(session):
@@ -19,7 +19,7 @@ def run(session):
     # Deploy the example this and the following scenarios drive.
     page.goto(base, wait_until="load")
     deployed = fixtures.deploy_example(
-        page, base, "request-for-quote", fixtures.RFQ_ASSETS
+        page, base, "contact-form", fixtures.CONTACT_FORM_ASSETS
     )
     for name, status, body in deployed:
         check("C0", f"deployed {name}", status == 200, f"{status} {body}")
@@ -34,7 +34,7 @@ def run(session):
     check(
         "C1",
         "vocabulary lists the deployed process",
-        fixtures.RFQ in values,
+        fixtures.CONTACT_FORM in values,
         "; ".join(values)[:200],
     )
 
@@ -55,7 +55,7 @@ def run(session):
     )
 
     page.fill("#form-widgets-IBasic-title", TITLE_TEXT)
-    definition.select_option(fixtures.RFQ)
+    definition.select_option(fixtures.CONTACT_FORM)
     page.check("#form-widgets-diagram_enabled-0")
     shot(session, page, "bpm-proxy-add-form", "C1")
 

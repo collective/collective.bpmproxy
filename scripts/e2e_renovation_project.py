@@ -9,11 +9,10 @@ The script assumes the devenv services, a Plone site bootstrapped with
 renovation-bot purjo worker (`examples/renovation-bot/`, `make serve`) are
 all running. See docs/renovation-project-scenario.md for the full sequence.
 
-Unlike scripts/e2e_request_for_quote.py's two actors (one turn each), this
-scenario has three named personas who each act more than once, separated by
+This scenario has three named personas who each act more than once, separated by
 other actors' turns -- so each turn gets its own short recorded context, and
 compose_recording() below places an arbitrary list of them onto the Cockpit
-timeline rather than a hardcoded two.
+timeline.
 """
 
 from pathlib import Path
@@ -215,10 +214,10 @@ def compose_recording(cockpit_video, clips, output=None):
     (`time.monotonic() - started`, measured right when that turn's context
     was created).
 
-    Unlike scripts/e2e_request_for_quote.py's *static* small-corner PIP
-    (Cockpit always main, Plone always a small inset), every segment here is
-    independently composited at full 1920x1080 and the segments are then
-    concatenated -- there is no time-gated `overlay(enable=...)` and no
+    Rather than a static small-corner PIP (where Cockpit is always main and
+    Plone always a small inset), every segment here is independently composited
+    at full 1920x1080 and the segments are then concatenated -- there is no
+    time-gated `overlay(enable=...)` and no alpha channel involved, which keeps
     alpha channel involved, which keeps the filter graph simple enough to
     reason about and to test against synthetic clips (see
     `scripts/uitest/` -- err, see the __main__ smoke test at the bottom of

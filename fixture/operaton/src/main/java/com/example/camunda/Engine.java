@@ -65,7 +65,7 @@ public class Engine {
      *     "anonymous-<uuid>") carries an empty groups claim by design --
      *     there is no Plone group to scope a narrower grant to. Restricting
      *     PROCESS_DEFINITION/PROCESS_INSTANCE to a named group would have to
-     *     either exclude anonymous visitors (breaking the request-for-quote
+     *     either exclude anonymous visitors (breaking the contact-form
      *     scenario) or introduce a new per-process-to-Plone-group mapping
      *     this add-on does not otherwise have.
      *   - operaton.bpm.authorization.enabled=true still does real work: it
@@ -74,10 +74,10 @@ public class Engine {
      *     what makes camunda-admin-only actions like deployment actually
      *     admin-only (see EngineTest, JWTIdentityServiceTest).
      *
-     * If you are tightening this, the request-for-quote demo (an anonymous
-     * visitor starting a process with no named-user account, see
-     * docs/request-for-quote-scenario.md) is what breaks first -- run it
-     * end to end after any change here.
+     * If you are tightening this, anonymous visitor interactions (such as an
+     * anonymous user submitting a contact form with no named-user account)
+     * are what breaks first -- test the anonymous flow end to end after any
+     * change here.
      */
     protected void defaultAuthorizations(AuthorizationService authorizationService) {
         // Allow authorized users to read process definitions (for BPMN XML)

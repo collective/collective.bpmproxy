@@ -440,7 +440,7 @@ looks like it does, and that is deliberate:
   principal" means "reached a Plone view that decided to call the engine" --
   narrowing the engine-side grant further would need a per-process-to-Plone-
   group mapping this add-on does not have, and would break the
-  request-for-quote demo's anonymous requester in the process. See the
+  contact-form demo's anonymous requester in the process. See the
   comment on `Engine.defaultAuthorizations()` in the fixture if you are
   considering changing this.
 - Authorization is still real for the resources it *is* scoped to: the
