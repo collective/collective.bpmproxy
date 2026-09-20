@@ -4,8 +4,8 @@
     <bpmn:startEvent id="StartEvent_contact_form" name="Contact form submitted" camunda:formRef="contact-form-start" camunda:formRefBinding="latest" camunda:initiator="author">
       <bpmn:outgoing>Flow_start_to_review</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="Flow_start_to_review" sourceRef="StartEvent_contact_form" targetRef="Activity_review_inquiry" />
-    <bpmn:userTask id="Activity_review_inquiry" name="Review inquiry" camunda:formRef="contact-form-review" camunda:formRefBinding="latest" camunda:candidateGroups="Administrators">
+    <bpmn:sequenceFlow id="Flow_start_to_review" sourceRef="StartEvent_contact_form" targetRef="Activity_review_contact_form" />
+    <bpmn:userTask id="Activity_review_contact_form" name="Review contact form" camunda:formRef="contact-form-review" camunda:formRefBinding="latest" camunda:candidateGroups="Administrators">
       <bpmn:incoming>Flow_start_to_review</bpmn:incoming>
       <bpmn:outgoing>Flow_review_to_gateway</bpmn:outgoing>
     </bpmn:userTask>
@@ -15,15 +15,15 @@
       <bpmn:outgoing>Flow_review_to_delegate</bpmn:outgoing>
       <bpmn:outgoing>Flow_review_to_abandon</bpmn:outgoing>
     </bpmn:exclusiveGateway>
-    <bpmn:sequenceFlow id="Flow_review_to_gateway" sourceRef="Activity_review_inquiry" targetRef="Gateway_review_action" />
+    <bpmn:sequenceFlow id="Flow_review_to_gateway" sourceRef="Activity_review_contact_form" targetRef="Gateway_review_action" />
     <bpmn:sequenceFlow id="Flow_review_to_email" name="Reply" sourceRef="Gateway_review_action" targetRef="Activity_send_email">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "reply"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="Flow_review_to_delegate" name="Delegate" sourceRef="Gateway_review_action" targetRef="Activity_delegated_review">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "delegate"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_review_to_abandon" name="Abandon" sourceRef="Gateway_review_action" targetRef="Event_inquiry_abandoned" />
-    <bpmn:userTask id="Activity_delegated_review" name="Handle delegated inquiry" camunda:formRef="contact-form-delegated" camunda:formRefBinding="latest" camunda:assignee="${assignedUser}">
+    <bpmn:sequenceFlow id="Flow_review_to_abandon" name="Abandon" sourceRef="Gateway_review_action" targetRef="Event_contact_form_abandoned" />
+    <bpmn:userTask id="Activity_delegated_review" name="Handle delegated contact form" camunda:formRef="contact-form-delegated" camunda:formRefBinding="latest" camunda:assignee="${assignedUser}">
       <bpmn:incoming>Flow_review_to_delegate</bpmn:incoming>
       <bpmn:outgoing>Flow_delegate_to_gateway</bpmn:outgoing>
     </bpmn:userTask>
@@ -36,7 +36,7 @@
     <bpmn:sequenceFlow id="Flow_delegate_to_email" name="Reply" sourceRef="Gateway_delegated_action" targetRef="Activity_send_email">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "reply"}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_delegate_to_abandon" name="Abandon" sourceRef="Gateway_delegated_action" targetRef="Event_inquiry_abandoned" />
+    <bpmn:sequenceFlow id="Flow_delegate_to_abandon" name="Abandon" sourceRef="Gateway_delegated_action" targetRef="Event_contact_form_abandoned" />
     <bpmn:serviceTask id="Activity_send_email" name="Send reply email" camunda:type="external" camunda:topic="contact-form-email">
       <bpmn:incoming>Flow_review_to_email</bpmn:incoming>
       <bpmn:incoming>Flow_delegate_to_email</bpmn:incoming>
@@ -46,7 +46,7 @@
       <bpmn:incoming>Flow_email_to_end</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="Flow_email_to_end" sourceRef="Activity_send_email" targetRef="Event_reply_sent" />
-    <bpmn:endEvent id="Event_inquiry_abandoned" name="Inquiry abandoned">
+    <bpmn:endEvent id="Event_contact_form_abandoned" name="Contact form abandoned">
       <bpmn:incoming>Flow_review_to_abandon</bpmn:incoming>
       <bpmn:incoming>Flow_delegate_to_abandon</bpmn:incoming>
     </bpmn:endEvent>
@@ -59,7 +59,7 @@
           <dc:Bounds x="146" y="243" width="65" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Activity_review_inquiry_di" bpmnElement="Activity_review_inquiry">
+      <bpmndi:BPMNShape id="Activity_review_contact_form_di" bpmnElement="Activity_review_contact_form">
         <dc:Bounds x="250" y="178" width="100" height="80" />
         <bpmndi:BPMNLabel />
       </bpmndi:BPMNShape>
@@ -89,7 +89,7 @@
           <dc:Bounds x="904" y="243" width="52" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_inquiry_abandoned_di" bpmnElement="Event_inquiry_abandoned">
+      <bpmndi:BPMNShape id="Event_contact_form_abandoned_di" bpmnElement="Event_contact_form_abandoned">
         <dc:Bounds x="912" y="302" width="36" height="36" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="886" y="345" width="89" height="14" />

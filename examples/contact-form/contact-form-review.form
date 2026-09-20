@@ -1,14 +1,14 @@
 {
   "components": [
     {
-      "text": "# Review Contact Inquiry\n\n**From:** ${senderName} (${senderEmail})\n\n**Subject:** ${subject}\n\n**Message:**\n${message}",
+      "text": "# Review Contact Form\n\n**From:** ${senderName} (${senderEmail})\n\n**Subject:** ${subject}\n\n**Message:**\n${message}",
       "type": "text",
       "id": "Field_header"
     },
     {
       "values": [
         {
-          "label": "Reply to inquirer by email",
+          "label": "Reply to sender by email",
           "value": "reply"
         },
         {
@@ -16,7 +16,7 @@
           "value": "delegate"
         },
         {
-          "label": "Abandon inquiry",
+          "label": "Abandon contact form",
           "value": "abandon"
         }
       ],

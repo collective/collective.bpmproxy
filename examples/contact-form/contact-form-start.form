@@ -1,7 +1,7 @@
 {
   "components": [
     {
-      "text": "# Contact Us\n\nPlease fill in your contact information and inquiry.",
+      "text": "# Contact Us\n\nPlease fill in your contact information and message.",
       "type": "text",
       "id": "Field_header"
     },
@@ -43,7 +43,7 @@
     },
     {
       "action": "submit",
-      "label": "Send inquiry",
+      "label": "Send message",
       "type": "button",
       "id": "Field_submit",
       "key": "field_submit"
