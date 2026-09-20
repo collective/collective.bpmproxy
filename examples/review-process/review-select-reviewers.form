@@ -1,0 +1,64 @@
+{
+  "components": [
+    {
+      "text": "# Delegate Review: ${title}\n\n**Author:** ${author}\n\n**Content UUID:** ${uuid}\n\nPlease choose multiple reviewers to evaluate this submission in parallel.",
+      "type": "text",
+      "id": "Field_header"
+    },
+    {
+      "values": [
+        {
+          "label": "Reviewer 1 (reviewer1)",
+          "value": "reviewer1"
+        },
+        {
+          "label": "Reviewer 2 (reviewer2)",
+          "value": "reviewer2"
+        },
+        {
+          "label": "Reviewer 3 (reviewer3)",
+          "value": "reviewer3"
+        },
+        {
+          "label": "Editor (editor)",
+          "value": "editor"
+        },
+        {
+          "label": "Administrator (admin)",
+          "value": "admin"
+        }
+      ],
+      "label": "Select Reviewers",
+      "type": "taglist",
+      "id": "Field_reviewers",
+      "key": "reviewers",
+      "description": "Select users who will receive a parallel review task.",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Instructions for reviewers",
+      "type": "textarea",
+      "id": "Field_instructions",
+      "key": "instructions",
+      "description": "Optional notes or guidance for the reviewers."
+    },
+    {
+      "action": "submit",
+      "label": "Assign Reviewers",
+      "type": "button",
+      "id": "Field_submit",
+      "key": "field_submit"
+    }
+  ],
+  "type": "default",
+  "id": "review-select-reviewers",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 5
+}

@@ -62,6 +62,15 @@
       post_handler=".renovation_demo.install"
       />
 
+  <genericsetup:registerProfile
+      name="review_demo"
+      title="collective.bpmproxy review-process demo"
+      directory="profiles/review_demo"
+      description="Installs content rules and demo configuration for the parallel review process."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      post_handler=".review_demo.install"
+      />
+
   <utility
       factory=".setuphandlers.HiddenProfiles"
       name="collective.bpmproxy-hiddenprofiles"
