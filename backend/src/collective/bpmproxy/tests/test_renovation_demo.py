@@ -29,6 +29,15 @@ class RenovationDemoProfileTest(unittest.TestCase):
         self.assertNotIn("collective.bpmproxy.process_context", fti.behaviors)
         self.assertIn("collective.bpmproxy.renovation_project", fti.behaviors)
 
+    def test_renovation_project_type_has_folder_icon(self):
+        fti = queryUtility(IDexterityFTI, name="Renovation Project")
+        self.assertEqual(fti.icon_expr, "string:contenttype/folder")
+
+    def test_renovation_project_only_allows_documents(self):
+        fti = queryUtility(IDexterityFTI, name="Renovation Project")
+        self.assertTrue(fti.filter_content_types)
+        self.assertEqual(tuple(fti.allowed_content_types), ("Document",))
+
     def test_demo_groups_created(self):
         for group_id in (
             "Renovation Owners",

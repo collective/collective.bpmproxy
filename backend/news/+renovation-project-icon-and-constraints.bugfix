@@ -1,0 +1,2 @@
+Give the ``Renovation Project`` demo type a folder icon and restrict what can be
+added inside it to ``Document``, the only type the scenario ever adds directly.
