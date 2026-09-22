@@ -15,6 +15,7 @@ from .. import fixtures
 from ..harness import rest
 from ..harness import shot
 
+
 TITLE = "F. Portlets"
 
 PROFILE = "collective.bpmproxy:renovation_demo"
