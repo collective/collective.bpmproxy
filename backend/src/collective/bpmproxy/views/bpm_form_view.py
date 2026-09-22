@@ -43,6 +43,10 @@ import plone.api
 logger = logging.getLogger(__name__)
 
 
+def can_show_diagram(process_context):
+    return process_context.diagram_enabled and not plone.api.user.is_anonymous()
+
+
 @implementer(INavigationBreadcrumbs)
 class BpmProxyNavigationBreadcrumbs(PhysicalNavigationBreadcrumbs):
     def breadcrumbs(self):
@@ -108,7 +112,7 @@ class BpmProxyStartFormView(BrowserView):
         with camunda_client() as client:
             try:
                 # Get diagram
-                if self.process_context.diagram_enabled:
+                if can_show_diagram(self.process_context):
                     self.diagram_xml = get_diagram_xml(
                         client,
                         definition_key=self.process_context.process_definition_key,
@@ -143,7 +147,7 @@ class BpmProxyStartFormView(BrowserView):
                 )
                 self.data = self.schema = "{}"
 
-        if self.process_context.diagram_enabled or self.tasks:
+        if can_show_diagram(self.process_context) or self.tasks:
             self.tabs = True
         return self.index()
 
@@ -214,20 +218,20 @@ class BpmProxyStartFormView(BrowserView):
                     )
                     if token:
                         url += "?token=" + token
-                    if self.process_context.diagram_enabled:
+                    if can_show_diagram(self.process_context):
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
                     break
             except ApiException:
                 pass  # process may have already ended
 
-        if self.process_context.diagram_enabled or self.tasks:
+        if can_show_diagram(self.process_context) or self.tasks:
             self.tabs = True
         return self.index()
 
     def __call__(self):
         self.request.set("bpmproxy_form_required", True)
-        if self.process_context.diagram_enabled:
+        if can_show_diagram(self.process_context):
             self.request.set("bpmproxy_diagram_required", True)
 
         doNotCache(self, self.request, self.request.response)
@@ -297,7 +301,7 @@ class BpmProxyTaskFormView(BrowserView):
                 current_values = get_task_variables(client, self.task_id)
 
                 # Get diagram
-                if self.process_context.diagram_enabled:
+                if can_show_diagram(self.process_context):
                     self.diagram_xml = get_diagram_xml(
                         client, task.process_definition_id, task.tenant_id
                     )
@@ -323,7 +327,7 @@ class BpmProxyTaskFormView(BrowserView):
                 logger.warning(e)
                 raise NotFound(self, self.task_id, self.request) from e
 
-        if self.process_context.diagram_enabled:
+        if can_show_diagram(self.process_context):
             self.tabs = True
         return self.index()
 
@@ -385,20 +389,20 @@ class BpmProxyTaskFormView(BrowserView):
                     )
                     if token:
                         url += "?token=" + token
-                    if self.process_context.diagram_enabled:
+                    if can_show_diagram(self.process_context):
                         url += "#autotoc-item-autotoc-0"
                     self.request.response.redirect(url)
                     break
             except ApiException:
                 pass  # process may have already ended
 
-        if self.process_context.diagram_enabled:
+        if can_show_diagram(self.process_context):
             self.tabs = True
         return self.index()
 
     def __call__(self):
         self.request.set("bpmproxy_form_required", True)
-        if self.process_context.diagram_enabled:
+        if can_show_diagram(self.process_context):
             self.request.set("bpmproxy_diagram_required", True)
 
         doNotCache(self, self.request, self.request.response)

@@ -549,9 +549,10 @@ include = [
 
 [tool.pytest.ini_options]
 testpaths = ["src/collective/bpmproxy/tests"]
-addopts = "--strict-markers -m \"not operaton\""
+addopts = "--strict-markers -m \"not operaton and not renovation\""
 markers = [
     "operaton: marks tests that require a live Operaton engine",
+    "renovation: marks renovation demo integration tests",
 ]
 
 [tool.ruff]

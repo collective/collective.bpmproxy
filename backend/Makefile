@@ -1,4 +1,4 @@
-.PHONY: all install lock test test-offline test-live lint format i18n start reset-site clean
+.PHONY: all install lock test test-offline test-live test-renovation lint format i18n start reset-site clean
 
 all: install
 
@@ -28,11 +28,16 @@ lock:
 test: install
 	uv run pytest
 
-# The default addopts in pyproject.toml already exclude the "operaton" marker,
-# so this is what `test` does. It exists because the root Makefile offers
-# `test-offline` as the explicit counterpart to `test-live`.
+# The default addopts in pyproject.toml exclude the "operaton" and
+# "renovation" markers, so this is what `test` does. It exists because the
+# root Makefile offers `test-offline` as the explicit counterpart to
+# `test-live`.
 test-offline: install
-	uv run pytest -m "not operaton"
+	uv run pytest -m "not operaton and not renovation"
+
+# Needs the engine: `devenv up -d` first.
+test-renovation: install
+	uv run pytest -m "renovation"
 
 # Needs the engine: `devenv up -d` first. Exits 5 ("no tests ran") if nothing
 # carries the marker, which is not a failure -- say so rather than looking

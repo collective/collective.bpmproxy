@@ -60,6 +60,13 @@ class TestBpmProxyNavigationBreadcrumbs(unittest.TestCase):
 
 class TestBpmProxyStartFormView(unittest.TestCase):
     def setUp(self):
+        anonymous = patch(
+            "collective.bpmproxy.views.bpm_form_view.plone.api.user.is_anonymous",
+            return_value=False,
+        )
+        anonymous.start()
+        self.addCleanup(anonymous.stop)
+
         self.context = MagicMock()
         self.context.process_definition_key = "test_process"
         self.context.default_values = {}
@@ -126,6 +133,36 @@ class TestBpmProxyStartFormView(unittest.TestCase):
         self.assertEqual(result, "rendered_html")
         self.assertEqual(self.view.diagram_xml, "<xml>")
         self.assertTrue(self.view.tabs)
+
+    @patch("collective.bpmproxy.views.bpm_form_view.plone.api.user.is_anonymous")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_diagram_xml")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_available_tasks")
+    @patch("collective.bpmproxy.views.bpm_form_view.get_start_form")
+    @patch("collective.bpmproxy.views.bpm_form_view.camunda_client")
+    @patch("collective.bpmproxy.views.bpm_form_view.doNotCache")
+    def test_view_get_hides_diagram_for_anonymous_user(
+        self,
+        mock_doNotCache,
+        mock_client,
+        mock_get_form,
+        mock_get_tasks,
+        mock_get_diagram,
+        mock_is_anonymous,
+    ):
+        self.context.diagram_enabled = True
+        mock_is_anonymous.return_value = True
+        mock_get_form.return_value = ("{}", "{}", "{}")
+        mock_get_tasks.return_value = []
+
+        self.view()
+
+        mock_get_diagram.assert_not_called()
+        self.assertFalse(
+            any(
+                call.args[0] == "bpmproxy_diagram_required"
+                for call in self.request.set.call_args_list
+            )
+        )
 
     @patch("collective.bpmproxy.views.bpm_form_view.camunda_client")
     @patch("collective.bpmproxy.views.bpm_form_view.get_start_form")
@@ -290,6 +327,13 @@ class TestBpmProxyStartFormView(unittest.TestCase):
 
 class TestBpmProxyTaskFormView(unittest.TestCase):
     def setUp(self):
+        anonymous = patch(
+            "collective.bpmproxy.views.bpm_form_view.plone.api.user.is_anonymous",
+            return_value=False,
+        )
+        anonymous.start()
+        self.addCleanup(anonymous.stop)
+
         self.context = MagicMock()
         self.context.default_values = {}
         self.context.diagram_enabled = False
@@ -641,6 +685,13 @@ class BpmProxyStartFormViewMissingProcessTest(unittest.TestCase):
     """
 
     def setUp(self):
+        anonymous = patch(
+            "collective.bpmproxy.views.bpm_form_view.plone.api.user.is_anonymous",
+            return_value=False,
+        )
+        anonymous.start()
+        self.addCleanup(anonymous.stop)
+
         self.context = MagicMock()
         self.context.process_definition_key = "gone-from-the-engine"
         self.context.default_values = {}
@@ -700,6 +751,13 @@ class BpmProxyStartFormViewNoInteractiveStartTest(unittest.TestCase):
     """
 
     def setUp(self):
+        anonymous = patch(
+            "collective.bpmproxy.views.bpm_form_view.plone.api.user.is_anonymous",
+            return_value=False,
+        )
+        anonymous.start()
+        self.addCleanup(anonymous.stop)
+
         self.context = MagicMock()
         self.context.process_definition_key = "renovation-plan-review"
         self.context.default_values = {}
