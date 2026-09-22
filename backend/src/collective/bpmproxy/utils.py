@@ -41,6 +41,14 @@ def get_tenant_ids():
     )
 
 
+def is_review_state_allowed(context, review_states):
+    """Return whether a portlet is allowed for the context's review state."""
+    if not review_states:
+        return True
+    state = plone.api.content.get_state(context)
+    return bool(state and state in review_states)
+
+
 def datetime_to_c7(dt):
     iso = dt.isoformat()
     if len(iso) < 25:

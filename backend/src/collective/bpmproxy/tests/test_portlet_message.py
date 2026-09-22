@@ -1,6 +1,7 @@
 from collective.bpmproxy.portlets.message import AddForm
 from collective.bpmproxy.portlets.message import Assignment
 from collective.bpmproxy.portlets.message import EditForm
+from collective.bpmproxy.portlets.message import IMessagePortlet
 from collective.bpmproxy.portlets.message import MessageForm
 from collective.bpmproxy.portlets.message import Renderer
 from unittest import mock
@@ -127,15 +128,43 @@ def test_add_form():
             "businessKey": "bk",
             "correlationKeys": {},
             "payload": "P",
+            "review_states": ["pending"],
         }
     )
     assert isinstance(assignment, Assignment)
     assert assignment.header == "H"
+    assert assignment.review_states == ["pending"]
 
 
 def test_edit_form():
     form = EditForm(mock.Mock(), mock.Mock())
     assert form.label == "Edit Message dispatch"
+
+
+def test_review_states_uses_workflow_states_vocabulary():
+    field = IMessagePortlet["review_states"]
+    assert field.value_type.vocabularyName == "plone.app.vocabularies.WorkflowStates"
+
+
+def test_renderer_unavailable_for_non_matching_review_state():
+    context = mock.Mock()
+    request = TestRequest()
+    assignment = Assignment(review_states=["published"])
+
+    with (
+        mock.patch("collective.bpmproxy.portlets.message.getMultiAdapter") as gma,
+        mock.patch(
+            "collective.bpmproxy.portlets.message.plone.api.content.get_state",
+            return_value="private",
+        ),
+    ):
+        portal_state_mock = mock.Mock()
+        portal_state_mock.anonymous.return_value = False
+        gma.return_value = portal_state_mock
+
+        renderer = Renderer(context, request, mock.Mock(), mock.Mock(), assignment)
+
+        assert renderer.available is False
 
 
 def test_renderer():

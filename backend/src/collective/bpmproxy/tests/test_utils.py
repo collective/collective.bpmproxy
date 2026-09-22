@@ -3,9 +3,11 @@ from collective.bpmproxy.utils import flatten_variables
 from collective.bpmproxy.utils import infer_variable
 from collective.bpmproxy.utils import infer_variables
 from collective.bpmproxy.utils import interpolate
+from collective.bpmproxy.utils import is_review_state_allowed
 from collective.bpmproxy.utils import is_valid_uuid
 from collective.bpmproxy.utils import validate_camunda_form
 from dateutil.tz import tzutc
+from unittest import mock
 import datetime
 import json
 import pytest
@@ -19,6 +21,27 @@ def test_datetime_to_c7():
     # test with timezone (length >= 25)
     dt2 = datetime.datetime(2023, 1, 1, 12, 0, 0, tzinfo=tzutc())
     assert datetime_to_c7(dt2) == "2023-01-01T12:00:00.0+0000"
+
+
+def test_is_review_state_allowed():
+    context = object()
+
+    assert is_review_state_allowed(context, []) is True
+
+    with mock.patch(
+        "collective.bpmproxy.utils.plone.api.content.get_state",
+        return_value="pending",
+    ):
+        assert is_review_state_allowed(context, ["pending"]) is True
+        assert is_review_state_allowed(context, ["published"]) is False
+
+
+def test_is_review_state_allowed_without_workflow():
+    with mock.patch(
+        "collective.bpmproxy.utils.plone.api.content.get_state",
+        return_value=None,
+    ):
+        assert is_review_state_allowed(object(), ["pending"]) is False
 
 
 def test_infer_variable():

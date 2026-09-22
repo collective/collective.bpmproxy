@@ -69,4 +69,5 @@ def install(context):
         name="renovation-extra-work-requested",
         correlationKeys={"uuid": "${uuid}"},
         payload={"uuid": "${uuid}"},
+        review_states=["in_progress"],
     )

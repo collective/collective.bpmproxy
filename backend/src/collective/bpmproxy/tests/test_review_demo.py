@@ -20,6 +20,20 @@ class ReviewDemoProfileTest(unittest.TestCase):
     def test_reviewers_group_created(self):
         self.assertIsNotNone(api.group.get("Reviewers"))
 
+    def test_reviewers_group_can_review(self):
+        group = api.group.get("Reviewers")
+        self.assertIn("Reviewer", api.group.get_roles(group=group))
+
+    def test_tasks_portlet_on_site_root(self):
+        from plone.portlets.interfaces import IPortletAssignmentMapping
+        from plone.portlets.interfaces import IPortletManager
+        from zope.component import getMultiAdapter
+        from zope.component import getUtility
+
+        manager = getUtility(IPortletManager, name="plone.rightcolumn")
+        mapping = getMultiAdapter((self.portal, manager), IPortletAssignmentMapping)
+        self.assertIn("review-tasks", mapping)
+
     def test_review_bot_user_created(self):
         bot = api.user.get("review-bot")
         self.assertIsNotNone(bot)

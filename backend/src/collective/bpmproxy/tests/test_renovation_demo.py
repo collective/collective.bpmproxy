@@ -11,7 +11,11 @@ from Products.CMFCore.WorkflowCore import WorkflowException
 from unittest.mock import MagicMock
 from unittest.mock import patch
 from zope.component import queryUtility
+import pytest
 import unittest
+
+
+pytestmark = pytest.mark.renovation
 
 
 class RenovationDemoProfileTest(unittest.TestCase):
@@ -68,6 +72,7 @@ class RenovationDemoProfileTest(unittest.TestCase):
         assignment = mapping["renovation-extra-work-message"]
         self.assertIsInstance(assignment, MessageAssignment)
         self.assertEqual(assignment.correlationKeys, {"uuid": "${uuid}"})
+        self.assertEqual(assignment.review_states, ["in_progress"])
 
     def test_workflow_bound_to_renovation_project(self):
         chain = self.workflow_tool.getChainFor("Renovation Project")

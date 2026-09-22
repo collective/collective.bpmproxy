@@ -4,6 +4,7 @@ from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.client import get_task_variables
 from collective.bpmproxy.interfaces import PLONE_TASK_VIEW
+from collective.bpmproxy.utils import is_review_state_allowed
 from collective.bpmproxy.utils import is_valid_uuid
 from generic_camunda_client.rest import ApiException
 from plone.app.portlets.portlets import base
@@ -40,6 +41,15 @@ class ITasksPortlet(IPortletDataProvider):
         vocabulary="collective.bpmproxy.AvailableProcessDefinitions",
     )
 
+    review_states = schema.List(
+        title=_("Display for review states"),
+        description=_("Leave empty to display for all review states."),
+        value_type=schema.Choice(vocabulary="plone.app.vocabularies.WorkflowStates"),
+        required=False,
+        missing_value=[],
+        defaultFactory=list,
+    )
+
 
 @implementer(ITasksPortlet)
 class Assignment(base.Assignment):
@@ -47,11 +57,19 @@ class Assignment(base.Assignment):
     header = None
     use_context = False
     process_definition_key = None
+    review_states = []
 
-    def __init__(self, header=None, use_context=False, process_definition_key=None):
+    def __init__(
+        self,
+        header=None,
+        use_context=False,
+        process_definition_key=None,
+        review_states=None,
+    ):
         self.header = header
         self.use_context = use_context
         self.process_definition_key = process_definition_key
+        self.review_states = review_states or []
 
     @property
     def title(self):
@@ -69,6 +87,7 @@ class AddForm(base.AddForm):
             header=data["header"],
             use_context=data["use_context"],
             process_definition_key=data["process_definition_key"],
+            review_states=data.get("review_states", []),
         )
 
 
@@ -100,7 +119,11 @@ class Renderer(base.Renderer):
     @property
     def available(self):
         """Show the portlet only if there are one or more elements."""
-        return not self.anonymous and bool(self._data())
+        return (
+            not self.anonymous
+            and is_review_state_allowed(self.context, self.data.review_states)
+            and bool(self._data())
+        )
 
     def tasks(self):
         return self._data()

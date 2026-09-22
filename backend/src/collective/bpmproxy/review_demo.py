@@ -7,6 +7,11 @@ dedicated demo content. Only apply it to a throwaway or dedicated demo
 site.
 """
 
+from collective.bpmproxy.portlets.tasks import Assignment as TasksAssignment
+from plone.portlets.interfaces import IPortletAssignmentMapping
+from plone.portlets.interfaces import IPortletManager
+from zope.component import getMultiAdapter
+from zope.component import getUtility
 import plone.api
 
 
@@ -29,3 +34,17 @@ def install(context):
         )
         plone.api.group.add_user(groupname="Site Administrators", user=bot)
         plone.api.group.add_user(groupname=REVIEWERS_GROUP, user=bot)
+
+    # Reviewers must be able to view content that is pending review
+    plone.api.group.grant_roles(groupname=REVIEWERS_GROUP, roles=["Reviewer"])
+
+    # Tasks are bound to Plone content by business key, but nothing lists
+    # them unless a Tasks portlet is shown: put one on the site root, where
+    # all content inherits it.
+    portal = plone.api.portal.get()
+    manager = getUtility(IPortletManager, name="plone.rightcolumn")
+    mapping = getMultiAdapter((portal, manager), IPortletAssignmentMapping)
+    if "review-tasks" not in mapping:
+        mapping["review-tasks"] = TasksAssignment(
+            header="Review tasks", use_context=False
+        )

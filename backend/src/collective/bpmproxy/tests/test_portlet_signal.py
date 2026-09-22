@@ -1,6 +1,7 @@
 from collective.bpmproxy.portlets.signal import AddForm
 from collective.bpmproxy.portlets.signal import Assignment
 from collective.bpmproxy.portlets.signal import EditForm
+from collective.bpmproxy.portlets.signal import ISignalPortlet
 from collective.bpmproxy.portlets.signal import Renderer
 from collective.bpmproxy.portlets.signal import SignalForm
 from unittest import mock
@@ -105,14 +106,48 @@ def test_assignment():
 
 def test_add_form():
     form = AddForm(mock.Mock(), mock.Mock())
-    assignment = form.create({"header": "H", "name": "N", "payload": "P"})
+    assignment = form.create(
+        {
+            "header": "H",
+            "name": "N",
+            "payload": "P",
+            "review_states": ["pending"],
+        }
+    )
     assert isinstance(assignment, Assignment)
     assert assignment.header == "H"
+    assert assignment.review_states == ["pending"]
 
 
 def test_edit_form():
     form = EditForm(mock.Mock(), mock.Mock())
     assert form.label == "Edit Signal dispatch"
+
+
+def test_review_states_uses_workflow_states_vocabulary():
+    field = ISignalPortlet["review_states"]
+    assert field.value_type.vocabularyName == "plone.app.vocabularies.WorkflowStates"
+
+
+def test_renderer_unavailable_for_non_matching_review_state():
+    context = mock.Mock()
+    request = TestRequest()
+    assignment = Assignment(review_states=["published"])
+
+    with (
+        mock.patch("collective.bpmproxy.portlets.signal.getMultiAdapter") as gma,
+        mock.patch(
+            "collective.bpmproxy.portlets.signal.plone.api.content.get_state",
+            return_value="private",
+        ),
+    ):
+        portal_state_mock = mock.Mock()
+        portal_state_mock.anonymous.return_value = False
+        gma.return_value = portal_state_mock
+
+        renderer = Renderer(context, request, mock.Mock(), mock.Mock(), assignment)
+
+        assert renderer.available is False
 
 
 def test_renderer():

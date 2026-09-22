@@ -7,6 +7,7 @@ from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.interfaces import ANONYMOUS_USER_ANNOTATION_KEY
 from collective.bpmproxy.interfaces import PLONE_TASK_VIEW
 from collective.bpmproxy.utils import get_tenant_ids
+from collective.bpmproxy.utils import is_review_state_allowed
 from generic_camunda_client import ApiException
 from plone.app.portlets.portlets import base
 from plone.autoform import directives as form
@@ -92,6 +93,15 @@ class ISignalPortlet(IPortletDataProvider):
         },
     )
 
+    review_states = schema.List(
+        title=_("Display for review states"),
+        description=_("Leave empty to display for all review states."),
+        value_type=schema.Choice(vocabulary="plone.app.vocabularies.WorkflowStates"),
+        required=False,
+        missing_value=[],
+        defaultFactory=list,
+    )
+
 
 @implementer(ISignalPortlet)
 class Assignment(base.Assignment):
@@ -99,11 +109,13 @@ class Assignment(base.Assignment):
     header = None
     name = False
     payload = None
+    review_states = []
 
-    def __init__(self, header=None, name=False, payload=None):
+    def __init__(self, header=None, name=False, payload=None, review_states=None):
         self.header = header
         self.name = name
         self.payload = payload
+        self.review_states = review_states or []
 
     @property
     def title(self):
@@ -121,6 +133,7 @@ class AddForm(base.AddForm):
             header=data["header"],
             name=data["name"],
             payload=data["payload"],
+            review_states=data.get("review_states", []),
         )
 
 
@@ -145,7 +158,9 @@ class Renderer(base.Renderer):
     @property
     def available(self):
         """Show the portlet only if there are one or more elements."""
-        return not self.anonymous
+        return not self.anonymous and is_review_state_allowed(
+            self.context, self.data.review_states
+        )
 
     def render(self):
         prefix = f"{hashlib.md5(self.data.name.encode('utf-8')).hexdigest()}."

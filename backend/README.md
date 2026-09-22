@@ -337,6 +337,7 @@ You can run the automated tests with:
 ```shell
 make test         # Runs the offline tests
 make test-live    # Runs the tests requiring a live Operaton instance
+make test-renovation  # Runs the renovation demo integration tests
 ```
 
 Create a Plone (Classic UI) instance and install the `collective.bpmproxy` add-on.
@@ -382,6 +383,15 @@ see `examples/renovation-project/` and `docs/renovation-project-scenario.md`
 for a richer example where a plain Dexterity Container relies entirely on
 the Task list and Message dispatch portlets, with every process
 signal/message-started from Plone workflow transitions.
+
+All BPM Proxy portlets can optionally be restricted to selected Plone review
+states. The `Display for review states` field uses Plone's
+`plone.app.vocabularies.WorkflowStates` vocabulary, so it includes states from
+installed workflows, including custom workflow states. Leave the selection
+empty to display the portlet for every review state. Visibility is evaluated
+against the content item where the portlet is rendered; for an unfiltered Task
+list (`Show only tasks for the current context` disabled), this is the current
+page rather than the state of each individual task's linked content.
 
 #### Content rules integration
 
