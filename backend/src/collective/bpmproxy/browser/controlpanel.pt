@@ -105,6 +105,29 @@
     document.addEventListener("DOMContentLoaded", function() {
       const refreshBtn = document.getElementById('refresh-deployments-btn');
       const tbody = document.querySelector('#deployments-table tbody');
+      const tabButtons = document.querySelectorAll('#bpmproxyTabs [data-bs-target]');
+      const tabPanes = document.querySelectorAll('#bpmproxyTabsContent > .tab-pane');
+
+      function activateTab(button) {
+        const target = button.dataset.bsTarget;
+        if (!target) return;
+        tabButtons.forEach(function(item) {
+          const active = item === button;
+          item.classList.toggle('active', active);
+          item.setAttribute('aria-selected', active ? 'true' : 'false');
+        });
+        tabPanes.forEach(function(pane) {
+          const active = '#' + pane.id === target;
+          pane.classList.toggle('show', active);
+          pane.classList.toggle('active', active);
+        });
+      }
+
+      tabButtons.forEach(function(button) {
+        button.addEventListener('click', function() {
+          activateTab(button);
+        });
+      });
 
       function portalUrl() {
         return document.body.dataset.portalUrl || '';
@@ -138,6 +161,34 @@
         cell(tr, deployment.deploymentTime || '-');
 
         const actions = document.createElement('td');
+        (deployment.resources || []).forEach(function(resource) {
+          const button = document.createElement('button');
+          button.className = 'btn btn-secondary btn-sm me-1';
+          button.textContent = 'Load ' + resource.name;
+          button.addEventListener('click', function() {
+            const params = new URLSearchParams({
+              deployment_id: deployment.id,
+              resource_id: resource.id || resource.name
+            });
+            return fetch(portalUrl() + '/@bpmproxy-deployment-resource?' + params, {
+              headers: { 'Accept': 'application/json' }
+            })
+              .then(function(res) {
+                if (!res.ok) throw new Error('Resource request failed: ' + res.status);
+                return res.json();
+              })
+              .then(data => {
+                if (!data.content) throw new Error('Resource response has no content');
+                window.dispatchEvent(new CustomEvent('bpmproxy:load-resource', {
+                  detail: { name: resource.name, content: data.content }
+                }));
+              })
+              .catch(function(error) {
+                console.error('Failed to load deployment resource', error);
+              });
+          });
+          actions.appendChild(button);
+        });
         const button = document.createElement('button');
         button.className = 'btn btn-danger btn-sm';
         button.textContent = 'Delete';

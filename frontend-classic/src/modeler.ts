@@ -60,6 +60,20 @@ function init() {
   // Expose modeler to window for external interactions (e.g. from the Plone template)
   (window as any).bpmnModeler = modeler;
 
+  window.addEventListener('bpmproxy:load-resource', async (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (!detail?.name?.toLowerCase().endsWith('.bpmn')) return;
+    try {
+      await modeler.importXML(detail.content);
+      const xmlEditor = document.getElementById('bpmn-xml-editor') as HTMLTextAreaElement | null;
+      if (xmlEditor) xmlEditor.value = detail.content;
+      document.getElementById('bpmn-tab')?.click();
+      document.getElementById('bpmn-design-btn')?.click();
+    } catch (err) {
+      console.error('Failed to load BPMN resource', err);
+    }
+  });
+
   // UI logic for XML toggle and Deploy
   const designBtn = document.getElementById('bpmn-design-btn');
   const xmlBtn = document.getElementById('bpmn-xml-btn');

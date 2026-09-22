@@ -19,6 +19,14 @@
       />
 
   <plone:service
+      method="GET"
+      name="@bpmproxy-deployment-resource"
+      for="Products.CMFPlone.interfaces.IPloneSiteRoot"
+      factory=".deployments.DeploymentResourceGet"
+      permission="cmf.ManagePortal"
+      />
+
+  <plone:service
       method="DELETE"
       name="@bpmproxy-deployments"
       for="Products.CMFPlone.interfaces.IPloneSiteRoot"

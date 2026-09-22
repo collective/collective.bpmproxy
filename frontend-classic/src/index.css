@@ -1,5 +1,10 @@
 .bpmproxy.autotabs section { display: none; }
 
+/* The modeler is embedded in Plone, which does not load Bootstrap's tab CSS. */
+#bpmproxyTabsContent > .tab-pane { display: none; }
+#bpmproxyTabsContent > .tab-pane.show.active { display: block; }
+#bpmproxy-deployments-app .tab-content { min-height: 600px; }
+
 .gutter {
   background-color: #eee;
   background-repeat: no-repeat;

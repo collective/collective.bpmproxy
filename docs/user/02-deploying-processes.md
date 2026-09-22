@@ -40,5 +40,9 @@ on the **Manage Deployments** tab:
 
 ![Deployments currently known to the engine](images/controlpanel-deployments.png)
 
+Each deployment lists its engine resources. Use **Load …** beside a BPMN,
+DMN, or form resource to open that definition in the matching editor, make
+changes, and redeploy it without copying XML or JSON manually.
+
 Deleting a deployment cascades into its running process instances, so a
 deployment cannot be removed while leaving orphaned work behind.

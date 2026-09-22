@@ -93,6 +93,20 @@ function init() {
 
   (window as any).formPlayground = playground;
 
+  window.addEventListener('bpmproxy:load-resource', async (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (!detail?.name?.toLowerCase().endsWith('.form')) return;
+    try {
+      await playground.getEditor().importSchema(JSON.parse(detail.content));
+      const jsonEditor = document.getElementById('form-json-editor') as HTMLTextAreaElement | null;
+      if (jsonEditor) jsonEditor.value = detail.content;
+      document.getElementById('form-tab')?.click();
+      document.getElementById('form-design-btn')?.click();
+    } catch (err) {
+      console.error('Failed to load form resource', err);
+    }
+  });
+
   // UI logic for JSON toggle and Deploy
   const designBtn = document.getElementById('form-design-btn');
   const jsonBtn = document.getElementById('form-json-btn');

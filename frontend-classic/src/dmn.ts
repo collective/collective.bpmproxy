@@ -70,6 +70,20 @@ function init() {
 
   (window as any).dmnModeler = modeler;
 
+  window.addEventListener('bpmproxy:load-resource', async (event: Event) => {
+    const detail = (event as CustomEvent).detail;
+    if (!detail?.name?.toLowerCase().endsWith('.dmn')) return;
+    try {
+      await modeler.importXML(detail.content);
+      const xmlEditor = document.getElementById('dmn-xml-editor') as HTMLTextAreaElement | null;
+      if (xmlEditor) xmlEditor.value = detail.content;
+      document.getElementById('dmn-tab')?.click();
+      document.getElementById('dmn-design-btn')?.click();
+    } catch (err) {
+      console.error('Failed to load DMN resource', err);
+    }
+  });
+
   // UI logic for XML toggle and Deploy
   const designBtn = document.getElementById('dmn-design-btn');
   const xmlBtn = document.getElementById('dmn-xml-btn');
