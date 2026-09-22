@@ -12,6 +12,7 @@ ${transition}       ${EMPTY}
 
 *** Tasks ***
 Transition content
+    Sleep    2s
     Should not be empty    ${uuid}
     Should not be empty    ${transition}
 

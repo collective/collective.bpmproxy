@@ -15,6 +15,13 @@ Each turn is therefore its own short recorded context, and the PIP composer here
 (`compose_recording()` in `scripts/e2e_renovation_project.py`) places this list
 of clips onto the Cockpit timeline.
 
+Each turn begins with a 3.6-second persona interlude, the long form bodies are
+pasted at clipboard speed, and the observer holds the active process instance
+for six seconds after every persona turn. The final Cockpit segment opens the
+completed process instance's **History** view, collapses the left information
+panel while keeping the audit panel visible, enables the time heatmap, and
+remains there for five seconds.
+
 ## Prerequisites
 
 Run the following from the repository root. Start the services, wait for
@@ -29,6 +36,10 @@ make bootstrap-renovation-demo
 make start
 until curl -sf http://127.0.0.1:8080/Plone >/dev/null; do sleep 3; done
 ```
+
+The recording runner also clears every existing Operaton deployment before
+deploying this scenario's assets, so each take starts with clean Plone and
+clean Operaton state.
 
 `devenv up -d` often prints `Daemon failed to start within 120s` even when
 everything comes up — trust the `curl` gate, not that message; see
@@ -78,6 +89,12 @@ make serve &
 cd ../..
 ```
 
+`examples/renovation-bot-py/` is a pure-Python alternative worker against
+the same `Plone Workflow Transition` topic -- interchangeable with the purjo
+one above, so only one needs to run at a time. See its README for setup;
+`make deploy` above still applies since both workers share the same
+deployed BPMN.
+
 Run the recording with the browser skill's headless Playwright wrapper:
 
 ```sh
@@ -88,10 +105,10 @@ playwright-python scripts/e2e_renovation_project.py
 
 | Persona | Story | Expected result |
 | --- | --- | --- |
-| Contractor | Drafts the plan (fills site address, adds a plan Document), then clicks **Submit plan**. | Project state moves to *Plan under review*; a Plan Review process instance starts, correlated to the project's UUID. |
+| Contractor | Drafts the plan (adds a plan Document with a short remodel description), then clicks **Submit plan**. | Project state moves to *Plan under review*; a Plan Review process instance starts, correlated to the project's UUID. |
 | Owner | Opens **Owner reviews plan** and approves. | The Owner branch of the parallel review completes. |
 | Inspector | Opens **Inspector reviews plan** and approves. | Both branches join; `renovation-bot` transitions the project to *Work in progress*. |
-| Contractor | Adds a `Document` tagged "Work Log" directly into the project (not into a sub-folder). | The **Document completed work** Camunda task auto-completes with no task form ever submitted — `collective.bpmproxy.subscribers.tasks.completeAddTask` matches the add event against the project's own UUID. |
+| Contractor | Adds a `Document` with a short work-log entry directly into the project (not into a sub-folder; not tagged "Work Log" -- see *Fixture adaptations*). | The **Document completed work** Camunda task auto-completes with no task form ever submitted — `collective.bpmproxy.subscribers.tasks.completeAddTask` matches the add event against the project's own UUID. |
 | Contractor | Dispatches the **Request extra work** signal portlet. | The Work & Extra-Work process's non-interrupting event subprocess starts an **Approve extra work** task. |
 | Owner | Approves the extra-work request. | The extra-work subprocess instance ends; the main flow is unaffected and still open (demonstrating the loop can repeat). |
 | Contractor | Opens and completes **Submit for final review**. | `renovation-bot` transitions the project to *Final review*; the Work & Extra-Work instance ends via its terminate event and a Final Review instance starts. |
@@ -109,6 +126,27 @@ Camunda connector or scripting-engine feature the local Operaton fixture
 lacks. The checked-in `examples/renovation-project/*.bpmn` and
 `examples/renovation-bot/` stay unmodified.
 
+Two known gaps between this doc/the demo profile's own README.rst and what
+the recording actually shows, left as-is rather than guessed at blind:
+
+- **Site address / budget**: `IRenovationProjectBehavior` (site address,
+  budget) is set once by `renovation_demo.py` when the demo project is
+  created and never edited on camera by any persona -- the scenario never
+  demonstrates the Renovation Project type's own defining custom fields.
+  Having the Contractor edit them during the plan-drafting turn would be
+  more realistic, but wiring that into the recording script needs the
+  actual `#form-widgets-...` widget ids confirmed against a running
+  instance first.
+- **"Work Log" tag**: the profile's `README.rst` and (until this pass) this
+  doc both described the work-log Document as tagged "Work Log", but the
+  Tags widget is `allowNewItems: false` and no such term is seeded anywhere
+  in the profile, so it was never actually selectable -- the recording
+  script has always skipped it (see its comment in
+  `scripts/e2e_renovation_project.py`). Making the claim true would mean
+  seeding the keyword in the profile and then selecting it the way
+  `scripts/e2e_review_process.py`'s `lead_assigns_reviewers()` drives its
+  own tag-like `.fjs-taglist-input`.
+
 ## Cockpit observation
 
 Three process definitions run in sequence, so Cockpit's flow is: follow Plan Review from the moment the Contractor
@@ -121,7 +159,9 @@ the recording; an in-app route change re-queries the table without one.
 
 ## Artifacts
 
-Filled in after recording:
+Filled in after recording (the `.webm` files are gitignored -- see
+`docs/.gitignore` equivalent rule in the repo root `.gitignore` -- so they
+are not committed, only regenerated by re-running the script):
 
 | Artifact | Description |
 | --- | --- |
@@ -133,7 +173,7 @@ Filled in after recording:
 | `renovation-project-cockpit-plan-review.png` | Cockpit: Plan Review instance |
 | `renovation-project-cockpit-work-and-extra-work.png` | Cockpit: Work & Extra-Work instance |
 | `renovation-project-cockpit-final-review.png` | Cockpit: Final Review instance |
-| `renovation-project-cockpit-completed.png` | Cockpit: all three process instances completed |
+| `renovation-project-cockpit-completed.png` | Cockpit: the final completed process instance opened in History with the time heatmap enabled |
 
 ## Verifying a take
 
@@ -154,6 +194,18 @@ timeline — no long runs of an identical tile (dead air), and no tile where the
 inset is simply missing (a clip placed at the wrong offset, or a negative
 hold that `compose_recording()` should have refused to build).
 
+The `fps=0.3,tile=6x5` values above predate this session's additions (nine
+`show_actor_slide()` interludes at 3.6s each, a 6s Cockpit hold after every
+turn, and a longer History/heatmap ending) -- the committed
+`renovation-project-*.webm` files are still an older, shorter take, so these
+values haven't been reverified against the current script's actual output
+yet. `tile=6x5` (30 cells) only covers the first `30 / 0.3 = 100s` of
+whatever the next take's real duration turns out to be (see
+review-process-scenario.md's own *Verifying a take*, which just hit exactly
+this: its clip grew past what its old `fps` covered). Recompute `fps` as
+`(rows * cols) / duration` from the next real take's `ffprobe` output before
+trusting the resulting contact sheet.
+
 ## Cleanup
 
 Project state resets live in `scripts/bootstrap_renovation_demo.py`, not the
@@ -161,10 +213,10 @@ recording script: re-running `make bootstrap-renovation-demo` (Plone stopped)
 deletes and recreates `renovation-project-demo` via the same profile
 `install()` code path used the first time, so it comes back at *Drafting
 plan* with its groups, roles and portlets intact even after a previous run
-closed it. The recording script itself only clears stale Operaton
-deployments and any Work Log content the previous run added, then deploys
-the current `examples/renovation-project/*.bpmn`/`.form` files; it does not
-delete Plone users, groups, or the `renovation-bot` account. To remove
+closed it. The recording script itself clears all existing Operaton deployments and any Work
+Log content the previous run added, then deploys the current
+`examples/renovation-project/*.bpmn`/`.form` files; it does not delete
+Plone users, groups, or the `renovation-bot` account. To remove
 generated recordings and screenshots, delete only the `renovation-project-*`
 artifacts in `docs/`. Playwright names a recording `page@<hash>.webm` until
 the runner renames it — delete any stray

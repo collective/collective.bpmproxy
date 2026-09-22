@@ -1,12 +1,20 @@
 # Recording-specific guidance
 
-This directory contains browser scenario recordings and documentation. The primary recording runner is
-`scripts/e2e_renovation_project.py`; run it from the repository root with the
-browser skill wrapper:
+This directory contains browser scenario recordings and documentation. Each
+scenario has its own runner script in `scripts/` and its own `*-scenario.md`
+here; the architecture below is shared by all of them. Run a runner from the
+repository root with the browser skill wrapper, e.g.:
 
 ```sh
 playwright-python scripts/e2e_renovation_project.py
+playwright-python scripts/e2e_review_process.py
+playwright-python scripts/e2e_contact_form.py
 ```
+
+See [renovation-project-scenario.md](renovation-project-scenario.md) and
+[review-process-scenario.md](review-process-scenario.md) and
+[contact-form-scenario.md](contact-form-scenario.md) for each one's
+prerequisites, personas, and artifacts.
 
 ## Recording architecture
 
@@ -55,6 +63,19 @@ The recording helpers deliberately move to the target with
 the pointer again after navigation because a new document recreates the
 injected cursor at its centered default position.
 
+Recording runners also call `show_actor_slide()` at the start of each persona
+turn: a full-frame overlay naming the persona and the turn's place in the
+sequence (e.g. "Renovation project · 4 / 9"), held for 3.6s via
+`page.evaluate()` before the turn's own clicks begin. This matters more the
+more turns and personas a scenario has -- worth adding to any new scenario
+with more than one or two personas.
+
+For a body of text longer than a short label (e.g. a document's rich-text
+body), use `paste_text()` (`locator.fill(value)`) instead of
+`human_fill()`/`press_sequentially()` -- typing hundreds of characters at
+75ms/keystroke would stretch a turn's recording by tens of seconds for no
+benefit.
+
 ## Picture-in-picture composition
 
 `compose_recording()` assembles role recordings onto the Cockpit timeline
@@ -75,6 +96,16 @@ ffprobe -v error -show_entries format=duration \
   -show_entries stream=width,height,r_frame_rate -of default=noprint_wrappers=1 \
   docs/renovation-project-pip.webm
 ```
+
+Each scenario doc's own *Verifying a take* then builds a contact sheet with
+`ffmpeg -vf 'fps=F,scale=480:-1,tile=RxC' -frames:v 1`. `tile=RxC` buffers
+`R*C` sampled frames before `-frames:v 1` emits the one composite image, so
+those samples must span the *whole* clip: `F` needs to be at least
+`(R*C) / duration`, recomputed from the real take's own `ffprobe` duration,
+not carried over from a previous take -- adding a turn, a `show_actor_slide()`
+interlude, or an end-of-recording hold lengthens the clip and can silently
+push real coverage below what the tile grid was tuned for, without the
+`ffmpeg`/`ffprobe` commands themselves failing.
 
 ## BPMN diagram flashes
 

@@ -33,6 +33,18 @@ PROCESS_KEYS = (
     "renovation-work-and-extra-work",
     "renovation-final-review",
 )
+PLAN_BODY = (
+    "Full kitchen and bathroom remodel: replace the kitchen cabinetry and "
+    "countertops, retile the bathroom floor and shower surround, and "
+    "upgrade the plumbing fixtures in both rooms. Work is scheduled to "
+    "begin once the plan is approved by the owner and reviewed for code "
+    "compliance by the inspector."
+)
+WORK_LOG_BODY = (
+    "Week 1: demolished the old kitchen cabinetry and removed the bathroom "
+    "floor tile. Rough plumbing was inspected and approved. Next week: "
+    "install the new cabinetry and begin bathroom tiling."
+)
 VIDEO_SIZE = {"width": 1920, "height": 1080}
 
 # Every recording opens on a blank frame while the first document paints.
@@ -45,6 +57,7 @@ PIP_BORDER_COLOR = "0x1f2937"
 
 CURSOR_SCRIPT = """
 (() => {
+  if (window.top !== window) return;
   const install = () => {
     const style = document.createElement('style');
     style.textContent = `
@@ -132,6 +145,73 @@ def human_fill(page, locator, value):
     locator.fill("")
     locator.press_sequentially(value, delay=75)
     page.wait_for_timeout(650)
+
+
+def paste_text(page, locator, value):
+    # Long body text via press_sequentially's per-keystroke delay would take
+    # unreasonably long (see scripts/e2e_review_process.py) -- fill() pastes
+    # it in one step instead.
+    human_click(page, locator)
+    locator.fill(value)
+    page.wait_for_timeout(650)
+
+
+def show_actor_slide(page, eyebrow, title, subtitle):
+    """Overlay a full-frame title card naming the persona and turn, ported
+    from scripts/e2e_review_process.py -- this scenario has three personas
+    acting across nine turns (more than review's four across five), so
+    identifying whose turn it is matters at least as much here.
+    """
+    page.evaluate(
+        """({eyebrow, title, subtitle}) => {
+          document.getElementById('bpmproxy-recording-slide')?.remove();
+          const style = document.createElement('style');
+          style.id = 'bpmproxy-recording-slide-style';
+          style.textContent = `
+            #bpmproxy-recording-slide {
+              position: fixed; inset: 0; z-index: 2147483645;
+              display: grid; place-items: center; pointer-events: none;
+              background: rgba(15, 23, 42, .72);
+              color: white; font-family: system-ui, sans-serif;
+            }
+            #bpmproxy-recording-slide > div {
+              width: min(980px, 80vw); padding: 58px 72px;
+              border-left: 10px solid #0ea5e9; background: rgba(15, 23, 42, .96);
+              box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
+            }
+            #bpmproxy-recording-slide .eyebrow {
+              color: #7dd3fc; font-size: 24px; letter-spacing: .12em;
+              text-transform: uppercase; margin-bottom: 22px;
+            }
+            #bpmproxy-recording-slide .title {
+              font-size: 58px; font-weight: 700; line-height: 1.08;
+            }
+            #bpmproxy-recording-slide .subtitle {
+              margin-top: 24px; color: #cbd5e1; font-size: 30px;
+            }
+          `;
+          document.head.appendChild(style);
+          const slide = document.createElement('div');
+          slide.id = 'bpmproxy-recording-slide';
+          slide.innerHTML = `<div>
+            <div class="eyebrow"></div>
+            <div class="title"></div>
+            <div class="subtitle"></div>
+          </div>`;
+          slide.querySelector('.eyebrow').textContent = eyebrow;
+          slide.querySelector('.title').textContent = title;
+          slide.querySelector('.subtitle').textContent = subtitle;
+          document.documentElement.appendChild(slide);
+        }""",
+        {"eyebrow": eyebrow, "title": title, "subtitle": subtitle},
+    )
+    page.wait_for_timeout(3600)
+    page.evaluate(
+        """() => {
+          document.getElementById('bpmproxy-recording-slide')?.remove();
+          document.getElementById('bpmproxy-recording-slide-style')?.remove();
+        }"""
+    )
 
 
 def nix_ffmpeg(tool, *args, capture=True):
@@ -397,6 +477,18 @@ def main():
         # "Drafting plan" state (including after a previous run closed it, which
         # has no transition back) -- this script only clears deployments and any
         # Work Log content a previous run left behind.
+        #
+        # Start with a clean Operaton engine so the process list and history
+        # belong only to this recording.
+        own_asset_names = (
+            "renovation-owner-approval.form",
+            "renovation-inspector-approval.form",
+            "renovation-extra-work-approval.form",
+            "renovation-confirm.form",
+            "renovation-plan-review.bpmn",
+            "renovation-work-and-extra-work.bpmn",
+            "renovation-final-review.bpmn",
+        )
         deployments = setup_page.evaluate(
             """async base => (await (await fetch(base + '/@bpmproxy-deployments', {
               headers: {'Accept': 'application/json'}
@@ -426,15 +518,7 @@ def main():
             )
 
         assets = {path.name: path.read_text() for path in ASSETS.iterdir()}
-        for name in (
-            "renovation-owner-approval.form",
-            "renovation-inspector-approval.form",
-            "renovation-extra-work-approval.form",
-            "renovation-confirm.form",
-            "renovation-plan-review.bpmn",
-            "renovation-work-and-extra-work.bpmn",
-            "renovation-final-review.bpmn",
-        ):
+        for name in own_asset_names:
             result = deploy(setup_page, name, assets[name])
             assert result["status"] == 200, (name, result)
 
@@ -504,6 +588,10 @@ def main():
             if sequence_flow.count():
                 human_click(cockpit_page, sequence_flow)
 
+        def focus_instance_view():
+            cockpit_page.bring_to_front()
+            cockpit_page.wait_for_timeout(6000)
+
         def record_turn(username, password, action):
             """Open a short recorded context for one persona turn and run `action`.
 
@@ -537,6 +625,12 @@ def main():
         def contractor_submits_plan(page):
             page.goto(project_url, wait_until="load")
             page.wait_for_timeout(600)
+            show_actor_slide(
+                page,
+                "Renovation project · 1 / 9",
+                "Contractor",
+                "Drafting the remodel plan",
+            )
             human_click(page, page.get_by_role("link", name="Add new…"))
             human_click(page, page.get_by_role("link", name="Page", exact=True))
             human_fill(
@@ -544,10 +638,25 @@ def main():
                 page.locator("#form-widgets-IDublinCore-title"),
                 "Plan: kitchen and bathroom remodel",
             )
+            editor = page.frame_locator("iframe").locator("body").first
+            paste_text(page, editor, PLAN_BODY)
             human_click(page, page.get_by_role("button", name="Save"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
             page.goto(project_url, wait_until="load")
+            # Plone's workflow-menu dropdown toggle starts with
+            # pointer-events: none until Patternslib's dropdown pattern
+            # initializes on it, which wait_for_load_state alone can race --
+            # the same race review_process.py's author_submits() guards
+            # against on Simple Publication Workflow's own menu; this
+            # project's custom renovation_project_workflow uses the same
+            # generic #plone-contentmenu-workflow menu.
+            page.wait_for_function(
+                """() => {
+                  const a = document.querySelector('#plone-contentmenu-workflow a');
+                  return a && getComputedStyle(a).pointerEvents !== 'none';
+                }"""
+            )
             human_click(page, page.get_by_role("link", name="State: Drafting plan"))
             human_click(page, page.get_by_role("link", name="Submit plan"))
             page.wait_for_load_state("load")
@@ -563,6 +672,7 @@ def main():
         # Cockpit: the instance now exists -- re-enter to show the parallel
         # Owner/Inspector review tasks before either persona acts.
         follow_process(PROCESS_KEYS[0])
+        focus_instance_view()
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-plan-review.png"),
             full_page=True,
@@ -574,12 +684,16 @@ def main():
             task = wait_for_task(page, "Owner reviews plan")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page, "Renovation project · 2 / 9", "Owner", "Reviewing the plan"
+            )
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("owner", "owner", owner_approves_plan)
+        focus_instance_view()
 
         # --- Inspector turn 1: approve the plan --------------------------------
         def inspector_approves_plan(page):
@@ -587,12 +701,19 @@ def main():
             task = wait_for_task(page, "Inspector reviews plan")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page,
+                "Renovation project · 3 / 9",
+                "Inspector",
+                "Reviewing the plan for compliance",
+            )
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("inspector", "inspector", inspector_approves_plan)
+        focus_instance_view()
 
         # Both reviews are in -- renovation-bot transitions the project once it
         # picks up the "Plone Workflow Transition" external task. Wait for it in
@@ -600,6 +721,7 @@ def main():
         # process definition.
         wait_for_state(poll_page, project_url, "Work in progress")
         follow_process(PROCESS_KEYS[1])
+        focus_instance_view()
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-work-and-extra-work.png"),
             full_page=True,
@@ -609,6 +731,12 @@ def main():
         def contractor_documents_work(page):
             page.goto(project_url, wait_until="load")
             page.wait_for_timeout(600)
+            show_actor_slide(
+                page,
+                "Renovation project · 4 / 9",
+                "Contractor",
+                "Logging a week of completed work",
+            )
             human_click(page, page.get_by_role("link", name="Add new…"))
             human_click(page, page.get_by_role("link", name="Page", exact=True))
             human_fill(
@@ -616,12 +744,20 @@ def main():
                 page.locator("#form-widgets-IDublinCore-title"),
                 "Week 1 progress",
             )
+            editor = page.frame_locator("iframe").locator("body").first
+            paste_text(page, editor, WORK_LOG_BODY)
             # Not tagging this "Work Log" -- the pat-select2 Tags widget is
             # configured with allowNewItems: false (only existing vocabulary
-            # terms are selectable), and completeAddTask() only matches on
-            # portal_type/parent UUID, never on Subject, so the tag is purely
-            # a display convenience for the scenario doc's Collection-based
-            # "Work Log" view, not load-bearing for the auto-complete itself.
+            # terms are selectable) and the profile seeds no such term, so
+            # there is nothing to pick, even though the profile's own
+            # README.rst still describes this content as tagged that way
+            # (docs/renovation-project-scenario.md's persona table used to
+            # make the same claim; it now describes this actual behavior
+            # instead -- see that doc's *Fixture adaptations* section). See
+            # completeAddTask() in subscribers/tasks.py: it matches on
+            # portal_type/parent UUID, never on Subject, so this only affects
+            # discoverability (e.g. a future "Work Log" Collection), never
+            # the task auto-complete itself.
             human_click(page, page.get_by_role("button", name="Save"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(900)
@@ -630,17 +766,25 @@ def main():
             )
 
         record_turn("contractor", "contractor", contractor_documents_work)
+        focus_instance_view()
 
         # --- Contractor turn 3: request extra work ------------------------------
         def contractor_requests_extra_work(page):
             page.goto(project_url, wait_until="load")
             page.wait_for_timeout(600)
+            show_actor_slide(
+                page,
+                "Renovation project · 5 / 9",
+                "Contractor",
+                "Requesting extra work approval",
+            )
             button = page.get_by_role("button", name="Request extra work")
             human_click(page, button)
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("contractor", "contractor", contractor_requests_extra_work)
+        focus_instance_view()
 
         # --- Owner turn 2: approve the extra-work request ------------------------
         def owner_approves_extra_work(page):
@@ -648,12 +792,19 @@ def main():
             task = wait_for_task(page, "Approve extra work")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page,
+                "Renovation project · 6 / 9",
+                "Owner",
+                "Approving the extra-work request",
+            )
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("owner", "owner", owner_approves_extra_work)
+        focus_instance_view()
 
         # --- Contractor turn 4: submit for final review -------------------------
         def contractor_submits_for_final_review(page):
@@ -661,14 +812,22 @@ def main():
             task = wait_for_task(page, "Submit for final review")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page,
+                "Renovation project · 7 / 9",
+                "Contractor",
+                "Submitting the completed work for final review",
+            )
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("contractor", "contractor", contractor_submits_for_final_review)
+        focus_instance_view()
 
         wait_for_state(poll_page, project_url, "Final review")
         follow_process(PROCESS_KEYS[2])
+        focus_instance_view()
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-final-review.png"),
             full_page=True,
@@ -680,12 +839,19 @@ def main():
             task = wait_for_task(page, "Owner reviews final result")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page,
+                "Renovation project · 8 / 9",
+                "Owner",
+                "Reviewing the final result",
+            )
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("owner", "owner", owner_approves_final)
+        focus_instance_view()
 
         # --- Inspector turn 2: approve the final result -------------------------
         def inspector_approves_final(page):
@@ -693,15 +859,45 @@ def main():
             task = wait_for_task(page, "Inspector reviews final result")
             human_click(page, task)
             page.wait_for_load_state("load")
+            show_actor_slide(
+                page,
+                "Renovation project · 9 / 9",
+                "Inspector",
+                "Reviewing the final result for compliance",
+            )
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(700)
 
         record_turn("inspector", "inspector", inspector_approves_final)
+        focus_instance_view()
 
         wait_for_state(poll_page, project_url, "Closed")
         cockpit_page.wait_for_timeout(2500)
+        cockpit_page.get_by_role("link", name="More", exact=True).first.evaluate(
+            "(element) => element.click()"
+        )
+        history_link = cockpit_page.get_by_text("History", exact=True).last
+        history_link.wait_for(state="visible", timeout=10000)
+        history_link.evaluate("(element) => element.click()")
+        cockpit_page.wait_for_timeout(5000)
+        history_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
+        history_instance.wait_for(state="visible", timeout=30000)
+        human_click(cockpit_page, history_instance)
+        cockpit_page.wait_for_timeout(1500)
+        info_panel = cockpit_page.get_by_role(
+            "button", name="Minimize info panel", exact=True
+        )
+        if info_panel.count() and info_panel.first.is_visible():
+            human_click(cockpit_page, info_panel.first)
+        heatmap = cockpit_page.locator("button.toggle-heatmap-button")
+        heatmap.wait_for(state="visible", timeout=10000)
+        if heatmap.get_attribute("aria-label", timeout=10000).startswith(
+            "Show time heatmap"
+        ):
+            human_click(cockpit_page, heatmap)
+        cockpit_page.wait_for_timeout(5000)
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-completed.png"), full_page=True
         )
