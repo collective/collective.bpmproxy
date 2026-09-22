@@ -1,7 +1,9 @@
+from collective.bpmproxy.services.deployments import DeploymentResourceGet
 from collective.bpmproxy.services.deployments import DeploymentsDelete
 from collective.bpmproxy.services.deployments import DeploymentsGet
 from unittest import mock
 import json
+import tempfile
 import unittest
 
 
@@ -11,6 +13,17 @@ class MockDeployment:
     source = "Plone Proxy"
     deployment_time = "2023-01-01T12:00:00"
     tenant_id = "tenant-1"
+
+
+class TrackingClient:
+    def __init__(self):
+        self.closed = False
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        self.closed = True
 
 
 def make_service(factory, method, body=None):
@@ -26,14 +39,80 @@ def make_service(factory, method, body=None):
 class TestServicesDeployments(unittest.TestCase):
     @mock.patch("collective.bpmproxy.services.deployments.get_deployments")
     @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
-    def test_get_deployments(self, _mock_client, mock_get_deployments):
+    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    def test_get_deployments(
+        self, mock_deployment_api, _mock_client, mock_get_deployments
+    ):
+        client = TrackingClient()
+        _mock_client.return_value = client
         mock_get_deployments.return_value = [MockDeployment()]
+        resource = mock.MagicMock()
+        resource.name = "contact-form.bpmn"
+        resource.id = "resource-1"
+        mock_deployment_api.return_value.get_deployment_resources.return_value = [
+            resource
+        ]
+        mock_deployment_api.return_value.get_deployment_resources.side_effect = (
+            lambda **_kwargs: self.assertFalse(client.closed)
+            or [resource]
+        )
 
         result = make_service(DeploymentsGet, "GET").reply()
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "dep-123")
         self.assertEqual(result[0]["name"], "Test Deployment")
+        self.assertEqual(
+            result[0]["resources"],
+            [{"name": "contact-form.bpmn", "id": "resource-1"}],
+        )
+        self.assertTrue(client.closed)
+
+    @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
+    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    def test_get_deployment_resource_bytes(self, mock_deployment_api, _mock_client):
+        mock_deployment_api.return_value.get_deployment_resource_data.return_value = (
+            b"<bpmn:definitions />"
+        )
+        service = make_service(DeploymentResourceGet, "GET")
+        service.request.form = {"deployment_id": "dep-123", "resource_id": "resource-1"}
+
+        result = service.reply()
+
+        self.assertEqual(result["deploymentId"], "dep-123")
+        self.assertEqual(result["resourceId"], "resource-1")
+        self.assertEqual(result["content"], "<bpmn:definitions />")
+
+    @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
+    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    def test_get_deployment_resource_temporary_file(
+        self, mock_deployment_api, _mock_client
+    ):
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as resource:
+            resource.write("resource content")
+            resource.flush()
+            mock_deployment_api.return_value.get_deployment_resource_data.return_value = (
+                resource.name
+            )
+            service = make_service(DeploymentResourceGet, "GET")
+            service.request.form = {
+                "deployment_id": "dep-123",
+                "resource_id": "resource-1",
+            }
+
+            result = service.reply()
+
+        self.assertEqual(result["content"], "resource content")
+
+    @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
+    def test_get_deployment_resource_without_ids(self, _mock_client):
+        service = make_service(DeploymentResourceGet, "GET")
+        service.request.form = {}
+
+        result = service.reply()
+
+        self.assertIn("error", result)
+        service.request.response.setStatus.assert_called_with(400)
 
     @mock.patch(
         "collective.bpmproxy.services.deployments.camunda_client",
