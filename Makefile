@@ -1,4 +1,4 @@
-.PHONY: all install shell services test lint format i18n start reset-site clean backend-build frontend-build frontend-watch test-offline test-live bootstrap-site bootstrap-renovation-demo e2e ui-test screenshots services-reset
+.PHONY: all install shell services test lint format i18n start reset-site clean backend-build frontend-build frontend-watch test-offline test-live bootstrap-site bootstrap-renovation-demo bootstrap-review-demo bootstrap-contact-form-demo e2e ui-test screenshots services-reset
 
 all: install
 
@@ -79,11 +79,20 @@ frontend-watch:
 bootstrap-site:
 	cd backend && uv run zconsole run instance/etc/zope.conf ../scripts/bootstrap_site.py
 
+reset-site:
+	$(MAKE) -C backend reset-site
+
 # Install the renovation-project demo profile and its recording-only demo
 # users (owner/contractor/inspector). Run after bootstrap-site, with Plone
 # stopped: it opens the ZODB.
 bootstrap-renovation-demo:
 	cd backend && uv run zconsole run instance/etc/zope.conf ../scripts/bootstrap_renovation_demo.py
+
+bootstrap-review-demo:
+	cd backend && uv run zconsole run instance/etc/zope.conf ../scripts/bootstrap_review_demo.py
+
+bootstrap-contact-form-demo:
+	cd backend && uv run zconsole run instance/etc/zope.conf ../scripts/bootstrap_contact_form_demo.py
 
 # Browser smoke test against a running stack: `make services`, `make start`.
 e2e:

@@ -9,20 +9,20 @@ or via `make serve` in this directory.
 """
 
 from email.message import EmailMessage
-import os
-import smtplib
-
-import operaton.tasks
 from operaton.tasks.types import CompleteExternalTaskDto
 from operaton.tasks.types import ExternalTaskComplete
 from operaton.tasks.types import LockedExternalTaskDto
+import operaton.tasks
+import os
+import smtplib
+
 
 MAILPIT_SMTP_HOST = os.environ.get("MAILPIT_SMTP_HOST", "127.0.0.1")
 MAILPIT_SMTP_PORT = int(os.environ.get("MAILPIT_SMTP_PORT", "1025"))
 MAILPIT_FROM_ADDRESS = os.environ.get("MAILPIT_FROM_ADDRESS", "support@example.com")
 
 
-@operaton.tasks.task("contact-form-email")
+@operaton.tasks.task("contact-form-email", localVariables=False)
 async def send_contact_email(task: LockedExternalTaskDto) -> ExternalTaskComplete:
     """Read inquiry details and reply message from process variables, then send via SMTP."""
     variables = task.variables or {}

@@ -53,7 +53,7 @@ def main(app):
         site = addPloneSite(
             app,
             SITE_ID,
-            title="BPM Proxy",
+            title="Plone",
             # The same extensions @@plone-addsite installs: without the theme
             # the site has neither styling nor Plone's own JavaScript.
             extension_ids=AddPloneSite(app, app.REQUEST).default_extension_profiles,

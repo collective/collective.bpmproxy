@@ -11,17 +11,15 @@ or:
     make serve
 """
 
-import json
-import os
+from operaton.tasks.types import CompleteExternalTaskDto
+from operaton.tasks.types import ExternalTaskComplete
+from operaton.tasks.types import LockedExternalTaskDto
 from typing import Any
-
 import aiohttp
+import json
 import operaton.tasks
-from operaton.tasks.types import (
-    CompleteExternalTaskDto,
-    ExternalTaskComplete,
-    LockedExternalTaskDto,
-)
+import os
+
 
 PLONE_URL = os.environ.get("PLONE_URL", "http://localhost:8080/Plone")
 PLONE_AUTHORIZATION = os.environ.get("PLONE_AUTHORIZATION", "")
@@ -64,7 +62,7 @@ def format_review_comment(variables: dict[str, Any]) -> str:
     return "\n\n".join(sections).strip()
 
 
-@operaton.tasks.task("Plone Workflow Transition")
+@operaton.tasks.task("Plone Workflow Transition", localVariables=False)
 async def transition_content(task: LockedExternalTaskDto) -> ExternalTaskComplete:
     """Resolve Plone content UUID and execute the requested workflow transition with review comment."""
     variables = task.variables or {}

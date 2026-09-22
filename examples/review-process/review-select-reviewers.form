@@ -22,10 +22,6 @@
         {
           "label": "Editor (editor)",
           "value": "editor"
-        },
-        {
-          "label": "Administrator (admin)",
-          "value": "admin"
         }
       ],
       "label": "Select Reviewers",

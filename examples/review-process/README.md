@@ -72,6 +72,17 @@ If configuring manually instead of using the profile:
        ```
 3. Assign the content rule to your Plone site root.
 
+### Demo users
+
+`make bootstrap-review-demo` (run from the repository root with Plone
+**stopped**, after `make bootstrap-site`) applies the profile and creates the
+users the reviewer picker offers, all with their username as password:
+`reviewer1`, `reviewer2`, `reviewer3` and `editor` (all in `Reviewers`), plus
+`author`, who creates and submits content. It also sets the `review-bot`
+password to `review-bot`. The profile grants `Reviewers` the `Reviewer` role
+(so they can open content that is pending review) and puts a Tasks portlet on
+the site root, which is where reviewers find their tasks.
+
 ## Deploying to Operaton
 
 Deploy all assets using `pur` or the BPM Proxy modeler:
@@ -86,3 +97,29 @@ Next, run the Python external task worker in `../review-bot-py`:
 cd ../review-bot-py
 make serve
 ```
+
+Copy `../review-bot-py/secrets.example.env` to `secrets.env` first; the
+example already holds the `review-bot` credentials.
+
+## Walkthrough
+
+1. `author` adds a Page and submits it for review.
+2. `reviewer3` opens **Choose reviewers** from the *Review tasks* portlet and
+   assigns `reviewer1` and `reviewer2`.
+3. Each of them opens their own **Submit review** task.
+4. `reviewer3` opens **Consolidate review & decide**, sees both reviews and
+   publishes or rejects. The worker applies the transition with the reviews as
+   the workflow comment.
+
+## Implementation notes
+
+- The external task's variables are declared as input parameters in the BPMN,
+  because `operaton-tasks` fetches only local variables.
+- The Operaton fixture has no scripting engine (JUEL only), so reviews are
+  accumulated in a plain string variable, in completion order, by an
+  `asyncBefore` script task: the engine retries it on optimistic-locking
+  conflicts instead of failing the reviewer's form submit.
+- The reviewer's `recommendation` and `comment` are declared as local input
+  parameters, so parallel reviewers do not overwrite each other's values.
+- Two reviewers completing at the very same instant can still make one submit
+  fail with an optimistic-locking error; resubmitting works.
