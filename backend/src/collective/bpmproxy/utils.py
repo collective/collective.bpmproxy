@@ -292,7 +292,16 @@ def parents(context, iface=None):
             context = aq_parent(context)
 
 
-SIDE_EFFECT_WORKER = ThreadPoolExecutor(max_workers=1)
+# Shared site-wide by every SideEffectDataManager, so a single worker thread
+# would serialize completely unrelated deferred side effects behind one
+# another. That used to be a fast, non-retrying REST call either way, so it
+# went unnoticed -- but client.complete_task now retries an optimistic-locking
+# conflict with a short sleep()ed backoff between attempts (up to ~1.8s
+# across its default 3 retries), and a single worker thread would spend that
+# whole time blocked, queuing every other BPM action/subscriber's side effect
+# behind it. A small bounded pool keeps these deferred calls off the
+# request-handling threads without serializing them behind each other.
+SIDE_EFFECT_WORKER = ThreadPoolExecutor(max_workers=4)
 
 
 @implementer(IDataManager)

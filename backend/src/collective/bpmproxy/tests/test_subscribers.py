@@ -1,3 +1,4 @@
+from collective.bpmproxy.client import complete_task
 from collective.bpmproxy.subscribers.tasks import completeAddTask
 from collective.bpmproxy.subscribers.tasks import completeEditTask
 from unittest.mock import MagicMock
@@ -40,11 +41,16 @@ class TestTasksSubscribers(unittest.TestCase):
                 "collective.bpmproxy.subscribers.tasks.generic_camunda_client.TaskApi"
             ),
             patch("collective.bpmproxy.subscribers.tasks.CompleteTaskDto"),
-            patch("collective.bpmproxy.subscribers.tasks.transaction.get"),
-            patch("collective.bpmproxy.subscribers.tasks.SideEffectDataManager"),
+            patch(
+                "collective.bpmproxy.subscribers.tasks.join_side_effect"
+            ) as mock_join_side_effect,
             patch("collective.bpmproxy.subscribers.tasks.IUUID", return_value="uuid"),
         ):
             completeEditTask(obj, event)
+
+        mock_join_side_effect.assert_called_once()
+        assert mock_join_side_effect.call_args[0][0] is complete_task
+        assert mock_join_side_effect.call_args[1]["args"][1] == "task_id"
 
     def test_completeAddTask_no_layer(self):
         with (
@@ -81,8 +87,13 @@ class TestTasksSubscribers(unittest.TestCase):
                 "collective.bpmproxy.subscribers.tasks.generic_camunda_client.TaskApi"
             ),
             patch("collective.bpmproxy.subscribers.tasks.CompleteTaskDto"),
-            patch("collective.bpmproxy.subscribers.tasks.transaction.get"),
-            patch("collective.bpmproxy.subscribers.tasks.SideEffectDataManager"),
+            patch(
+                "collective.bpmproxy.subscribers.tasks.join_side_effect"
+            ) as mock_join_side_effect,
             patch("collective.bpmproxy.subscribers.tasks.IUUID", return_value="uuid"),
         ):
             completeAddTask(obj, event)
+
+        mock_join_side_effect.assert_called_once()
+        assert mock_join_side_effect.call_args[0][0] is complete_task
+        assert mock_join_side_effect.call_args[1]["args"][1] == "task_id"

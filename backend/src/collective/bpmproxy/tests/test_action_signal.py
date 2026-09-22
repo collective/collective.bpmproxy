@@ -63,13 +63,12 @@ def test_throw_signal_exception(
     assert mock_logger.warning.call_count == 2
 
 
-@patch("collective.bpmproxy.actions.signal.transaction")
 @patch("collective.bpmproxy.actions.signal.plone.api.user")
 @patch("collective.bpmproxy.actions.signal.IStringInterpolator")
 @patch("collective.bpmproxy.actions.signal.get_tenant_ids")
-@patch("collective.bpmproxy.actions.signal.SideEffectDataManager")
+@patch("collective.bpmproxy.actions.signal.join_side_effect")
 def test_executor_authenticated(
-    mock_data_mgr, mock_get_tenant_ids, mock_interpolator, mock_user, mock_transaction
+    mock_join_side_effect, mock_get_tenant_ids, mock_interpolator, mock_user
 ):
     context = MagicMock()
     element = MagicMock()
@@ -82,27 +81,21 @@ def test_executor_authenticated(
     mock_user.get_current().getUserName.return_value = "user1"
     mock_get_tenant_ids.return_value = ["t1"]
 
-    mock_txn = MagicMock()
-    mock_transaction.get.return_value = mock_txn
-
     executor = BpmSignalActionExecutor(context, element, event)
     res = executor()
 
     assert res is True
-    mock_txn.join.assert_called_once()
-    mock_data_mgr.assert_called_once()
-    func = mock_data_mgr.call_args[0][0]
-    assert func.func.__name__ == "_throwSignal"
-    assert func.args == ("my_signal", {"k": "v"}, "user1", ["t1"])
+    mock_join_side_effect.assert_called_once_with(
+        _throwSignal, args=("my_signal", {"k": "v"}, "user1", ["t1"])
+    )
 
 
-@patch("collective.bpmproxy.actions.signal.transaction")
 @patch("collective.bpmproxy.actions.signal.plone.api.user")
 @patch("collective.bpmproxy.actions.signal.IStringInterpolator")
 @patch("collective.bpmproxy.actions.signal.get_tenant_ids")
-@patch("collective.bpmproxy.actions.signal.SideEffectDataManager")
+@patch("collective.bpmproxy.actions.signal.join_side_effect")
 def test_executor_anonymous(
-    mock_data_mgr, mock_get_tenant_ids, mock_interpolator, mock_user, mock_transaction
+    mock_join_side_effect, mock_get_tenant_ids, mock_interpolator, mock_user
 ):
     context = MagicMock()
     element = MagicMock()
@@ -114,17 +107,13 @@ def test_executor_anonymous(
     mock_user.is_anonymous.return_value = True
     mock_get_tenant_ids.return_value = ["t1"]
 
-    mock_txn = MagicMock()
-    mock_transaction.get.return_value = mock_txn
-
     executor = BpmSignalActionExecutor(context, element, event)
     res = executor()
 
     assert res is True
-    mock_txn.join.assert_called_once()
-    mock_data_mgr.assert_called_once()
-    func = mock_data_mgr.call_args[0][0]
-    assert func.args == ("my_signal", {"k": "v"}, None, ["t1"])
+    mock_join_side_effect.assert_called_once_with(
+        _throwSignal, args=("my_signal", {"k": "v"}, None, ["t1"])
+    )
 
 
 def test_forms():

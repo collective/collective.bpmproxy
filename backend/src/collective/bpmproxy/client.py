@@ -11,6 +11,7 @@ from collective.bpmproxy.utils import flatten_variables
 from collective.bpmproxy.utils import get_tenant_ids
 from collective.bpmproxy.utils import infer_variables
 from collective.bpmproxy.utils import prepare_camunda_form
+from collective.bpmproxy.utils import SideEffectDataManager
 from collective.bpmproxy.utils import sign_anonymous_token
 from collective.bpmproxy.utils import verify_anonymous_token
 from contextlib import contextmanager
@@ -20,6 +21,7 @@ from generic_camunda_client import StartProcessInstanceDto
 from generic_camunda_client import TaskQueryDto
 from generic_camunda_client import TaskQueryDtoSorting
 from plone.stringinterp.interfaces import IStringInterpolator
+from weakref import WeakKeyDictionary
 from zope.annotation import IAnnotations
 import datetime
 import generic_camunda_client
@@ -28,7 +30,11 @@ import jwt
 import logging
 import os
 import plone.api
+import random
 import requests
+import threading
+import time
+import transaction
 import uuid
 
 
@@ -42,6 +48,87 @@ DEPLOYMENT_TIMEOUT = 60
 
 def get_api_url():
     return os.environ.get(CAMUNDA_API_URL_ENV) or CAMUNDA_API_URL_DEFAULT
+
+
+# A quick, unauthenticated health check any of engine-rest's profiles answer
+# (see docs/devenv-browser-smoke.md's own use of it to tell a real outage
+# from the engine still booting through Maven).
+ENGINE_REACHABILITY_TIMEOUT = 3
+
+# tpc_vote runs synchronously, in the same thread that is finishing the
+# Plone request -- so when several SideEffectDataManagers join the same
+# transaction (e.g. an edit that both auto-completes a task and fires a BPM
+# content-rule action), each voting to check_engine_reachable would
+# otherwise cost its own GET and its own timeout budget for what is really
+# the same question asked twice. Cache the outcome per transaction: a
+# WeakKeyDictionary keyed by the transaction itself needs no explicit
+# cleanup (the entry disappears once the transaction is committed or
+# aborted and nothing else references it) and, unlike a wall-clock TTL,
+# never risks reusing a stale result across unrelated transactions.
+_engine_reachability_cache = WeakKeyDictionary()
+_engine_reachability_lock = threading.Lock()
+
+
+def check_engine_reachable(*_args, **_kwargs):
+    """Vote callable for a ``SideEffectDataManager``: refuse to commit the
+    Plone transaction when the engine its deferred side effect depends on
+    is not even reachable right now.
+
+    Without this, an unreachable engine only surfaces after the ZODB
+    transaction has already committed: the side effect runs in
+    ``tpc_finish``, in a background thread, after commit, so its failure is
+    only logged (see ``SideEffectDataManager``) -- Plone state (e.g. a
+    workflow transition) and Operaton state silently drift apart. Voting
+    here aborts the whole transaction instead, so a submit/retract/etc.
+    that cannot possibly reach the engine never appears to have "worked".
+
+    Accepts and ignores whatever positional/keyword arguments the callable
+    it stands in for would have received -- ``SideEffectDataManager.tpc_vote``
+    calls ``self.vote(*self.args)``, and this check needs none of them.
+
+    Memoized per transaction (see ``_engine_reachability_cache`` above), so
+    joining more than one side effect to the same transaction only ever
+    probes the engine once.
+    """
+    txn = transaction.get()
+    with _engine_reachability_lock:
+        if txn in _engine_reachability_cache:
+            cached_error = _engine_reachability_cache[txn]
+            if cached_error is not None:
+                raise cached_error
+            return
+
+    url = f"{get_api_url()}/engine"
+    error = None
+    try:
+        response = requests.get(url, timeout=ENGINE_REACHABILITY_TIMEOUT)
+        if response.status_code >= 500:
+            error = RuntimeError(
+                f"Operaton engine at {url} returned HTTP {response.status_code}"
+            )
+    except requests.exceptions.RequestException as e:
+        error = RuntimeError(f"Operaton engine not reachable at {url}: {e}")
+        error.__cause__ = e
+
+    with _engine_reachability_lock:
+        _engine_reachability_cache[txn] = error
+    if error is not None:
+        raise error
+
+
+def join_side_effect(callable, args=(), vote=check_engine_reachable, onAbort=None):
+    """Join a ``SideEffectDataManager`` running ``callable(*args)`` to the
+    current transaction.
+
+    Every call site that defers a BPM side effect this way (the Message and
+    Signal content-rule actions, the ``completeEditTask``/``completeAddTask``
+    subscribers) wants the same ``check_engine_reachable`` vote wired in, so
+    it is the default here rather than something each call site repeats and
+    could forget. Pass ``vote=None`` to join without a vote.
+    """
+    transaction.get().join(
+        SideEffectDataManager(callable, args=args, vote=vote, onAbort=onAbort)
+    )
 
 
 def get_token(username, groups, tenant_ids=None):
@@ -306,6 +393,60 @@ def submit_start_form(
         raise
 
 
+# Operaton's own async job executor already retries an OptimisticLockingException
+# on an *async* continuation (see camunda:asyncBefore in
+# examples/review-process/review-process.bpmn). A synchronous task completion
+# gets none of that: two parallel multi-instance branches (e.g. two
+# reviewers submitting within the same instant) can each try to write to the
+# same execution's variable scope and one loses the race, with the conflict
+# surfacing straight back as this REST call's error.
+OPTIMISTIC_LOCKING_MARKERS = (
+    "OptimisticLockingException",
+    "was updated by another transaction concurrently",
+)
+DEFAULT_OPTIMISTIC_LOCKING_RETRIES = 3
+
+
+def is_optimistic_locking_conflict(exc):
+    """True when an ApiException's response body names Operaton's own
+    optimistic-locking conflict, rather than some other failure (validation,
+    a missing task, auth) that retrying would not fix."""
+    body = exc.body
+    if isinstance(body, bytes):
+        body = body.decode("utf-8", "replace")
+    return bool(body) and any(marker in body for marker in OPTIMISTIC_LOCKING_MARKERS)
+
+
+def complete_task(api, task_id, dto, retries=DEFAULT_OPTIMISTIC_LOCKING_RETRIES):
+    """``TaskApi.complete()``, retried immediately a few times when Operaton
+    reports an optimistic-locking conflict -- e.g. two parallel
+    multi-instance reviewers submitting their forms at almost the same
+    instant (examples/review-process).
+
+    A short, randomized backoff separates the retries: two callers that
+    collided on attempt 1 have no reason to retry in lockstep and collide
+    again on attempt 2, and a zero-delay retry loop between two genuinely
+    concurrent callers does exactly that -- it stays "immediate" from a
+    person's point of view (well under what they would notice), but breaks
+    the tie the second time around."""
+    for attempt in range(retries + 1):
+        try:
+            return api.complete(task_id, complete_task_dto=dto)
+        except ApiException as e:
+            if attempt < retries and is_optimistic_locking_conflict(e):
+                logger.warning(
+                    "Optimistic locking conflict completing task %s, "
+                    "retrying (%s/%s): %s",
+                    task_id,
+                    attempt + 1,
+                    retries,
+                    e,
+                )
+                time.sleep(random.uniform(0.05, 0.2) * (attempt + 1))
+                continue
+            raise
+
+
 def submit_task_form(
     client,
     task_id,
@@ -316,7 +457,7 @@ def submit_task_form(
         variables=infer_variables(form_variables), with_variables_in_return=True
     )
     try:
-        return api.complete(task_id, complete_task_dto=dto)
+        return complete_task(api, task_id, dto)
     except ApiException as e:
         logger.error("Exception when calling TaskApi->complete: %s\n%s", e, dto)
         raise

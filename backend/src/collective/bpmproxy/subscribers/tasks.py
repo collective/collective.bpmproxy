@@ -1,7 +1,8 @@
 from collective.bpmproxy.client import camunda_client
+from collective.bpmproxy.client import complete_task
 from collective.bpmproxy.client import get_available_tasks
+from collective.bpmproxy.client import join_side_effect
 from collective.bpmproxy.interfaces import ICollectiveBpmproxyLayer
-from collective.bpmproxy.utils import SideEffectDataManager
 from generic_camunda_client import ApiException
 from generic_camunda_client import CompleteTaskDto
 from plone.uuid.interfaces import IUUID
@@ -9,9 +10,7 @@ from zope.globalrequest import getRequest
 from zope.interface import implementer
 from zope.lifecycleevent import IObjectAddedEvent
 from zope.lifecycleevent import IObjectModifiedEvent
-import functools
 import generic_camunda_client
-import transaction
 import urllib3.exceptions
 
 
@@ -27,13 +26,7 @@ def completeEditTask(obj, event):
                 if task.form_key and task.form_key == "@@edit":
                     api = generic_camunda_client.TaskApi(client)
                     dto = CompleteTaskDto(variables={}, with_variables_in_return=False)
-                    transaction.get().join(
-                        SideEffectDataManager(
-                            functools.partial(
-                                api.complete, task.id, complete_task_dto=dto
-                            )
-                        )
-                    )
+                    join_side_effect(complete_task, args=(api, task.id, dto))
         except (ApiException, urllib3.exceptions.HTTPError):
             pass
 
@@ -55,12 +48,6 @@ def completeAddTask(obj, event):
                 ):
                     api = generic_camunda_client.TaskApi(client)
                     dto = CompleteTaskDto(variables={}, with_variables_in_return=False)
-                    transaction.get().join(
-                        SideEffectDataManager(
-                            functools.partial(
-                                api.complete, task.id, complete_task_dto=dto
-                            )
-                        )
-                    )
+                    join_side_effect(complete_task, args=(api, task.id, dto))
         except (ApiException, urllib3.exceptions.HTTPError):
             pass

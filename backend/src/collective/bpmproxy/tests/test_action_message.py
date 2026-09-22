@@ -77,13 +77,12 @@ def test_throw_message_omits_empty_correlation_fields(
     )
 
 
-@patch("collective.bpmproxy.actions.message.transaction")
 @patch("collective.bpmproxy.actions.message.plone.api.user")
 @patch("collective.bpmproxy.actions.message.IStringInterpolator")
 @patch("collective.bpmproxy.actions.message.get_tenant_ids")
-@patch("collective.bpmproxy.actions.message.SideEffectDataManager")
+@patch("collective.bpmproxy.actions.message.join_side_effect")
 def test_executor_authenticated(
-    mock_data_mgr, mock_get_tenant_ids, mock_interpolator, mock_user, mock_transaction
+    mock_join_side_effect, mock_get_tenant_ids, mock_interpolator, mock_user
 ):
     context = MagicMock()
     element = MagicMock()
@@ -98,34 +97,22 @@ def test_executor_authenticated(
     mock_user.get_current().getUserName.return_value = "user1"
     mock_get_tenant_ids.return_value = ["t1"]
 
-    mock_txn = MagicMock()
-    mock_transaction.get.return_value = mock_txn
-
     executor = BpmMessageActionExecutor(context, element, event)
     res = executor()
 
     assert res is True
-    mock_txn.join.assert_called_once()
-    mock_data_mgr.assert_called_once()
-    func = mock_data_mgr.call_args[0][0]
-    assert func.func.__name__ == "_throwMessage"
-    assert func.args == (
-        "my_message",
-        "bk",
-        {"uuid": "abc"},
-        {"k": "v"},
-        "user1",
-        ["t1"],
+    mock_join_side_effect.assert_called_once_with(
+        _throwMessage,
+        args=("my_message", "bk", {"uuid": "abc"}, {"k": "v"}, "user1", ["t1"]),
     )
 
 
-@patch("collective.bpmproxy.actions.message.transaction")
 @patch("collective.bpmproxy.actions.message.plone.api.user")
 @patch("collective.bpmproxy.actions.message.IStringInterpolator")
 @patch("collective.bpmproxy.actions.message.get_tenant_ids")
-@patch("collective.bpmproxy.actions.message.SideEffectDataManager")
+@patch("collective.bpmproxy.actions.message.join_side_effect")
 def test_executor_anonymous(
-    mock_data_mgr, mock_get_tenant_ids, mock_interpolator, mock_user, mock_transaction
+    mock_join_side_effect, mock_get_tenant_ids, mock_interpolator, mock_user
 ):
     context = MagicMock()
     element = MagicMock()
@@ -139,17 +126,13 @@ def test_executor_anonymous(
     mock_user.is_anonymous.return_value = True
     mock_get_tenant_ids.return_value = ["t1"]
 
-    mock_txn = MagicMock()
-    mock_transaction.get.return_value = mock_txn
-
     executor = BpmMessageActionExecutor(context, element, event)
     res = executor()
 
     assert res is True
-    mock_txn.join.assert_called_once()
-    mock_data_mgr.assert_called_once()
-    func = mock_data_mgr.call_args[0][0]
-    assert func.args == ("my_message", "", {}, {"k": "v"}, None, ["t1"])
+    mock_join_side_effect.assert_called_once_with(
+        _throwMessage, args=("my_message", "", {}, {"k": "v"}, None, ["t1"])
+    )
 
 
 def test_forms():

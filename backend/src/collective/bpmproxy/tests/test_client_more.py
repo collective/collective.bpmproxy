@@ -1,6 +1,8 @@
 from collective.bpmproxy.client import business_key_needle
 from collective.bpmproxy.client import camunda_admin_client
 from collective.bpmproxy.client import camunda_client
+from collective.bpmproxy.client import check_engine_reachable
+from collective.bpmproxy.client import complete_task
 from collective.bpmproxy.client import get_api_url
 from collective.bpmproxy.client import get_authorization
 from collective.bpmproxy.client import get_available_tasks
@@ -10,6 +12,8 @@ from collective.bpmproxy.client import get_start_form
 from collective.bpmproxy.client import get_task_form
 from collective.bpmproxy.client import get_task_variables
 from collective.bpmproxy.client import get_token
+from collective.bpmproxy.client import is_optimistic_locking_conflict
+from collective.bpmproxy.client import join_side_effect
 from collective.bpmproxy.client import submit_start_form
 from collective.bpmproxy.client import submit_task_form
 from collective.bpmproxy.interfaces import ANONYMOUS_USER_ANNOTATION_KEY
@@ -25,6 +29,7 @@ from unittest.mock import patch
 import generic_camunda_client
 import os
 import pytest
+import transaction
 
 
 @patch.dict(os.environ, {}, clear=True)
@@ -537,4 +542,196 @@ def test_get_diagram_xml_by_key_and_tenant(mock_api_cls):
     assert res2 == "<xml/>"
     mock_api.get_process_definition_bpmn20_xml_by_key_and_tenant_id.assert_called_with(
         "key2", "t2"
+    )
+
+
+@pytest.fixture(autouse=True)
+def _isolated_transaction():
+    """``check_engine_reachable``'s result is memoized per transaction (see
+    client.py), so tests calling it directly -- rather than through a
+    ``SideEffectDataManager``'s vote -- each need their own transaction, the
+    same way a real request would only ever ask it once."""
+    transaction.abort()
+    yield
+    transaction.abort()
+
+
+@patch("collective.bpmproxy.client.requests.get")
+@patch("collective.bpmproxy.client.get_api_url", return_value="http://fake")
+def test_check_engine_reachable_ok(mock_get_api_url, mock_get):
+    mock_get.return_value = MagicMock(status_code=200)
+    check_engine_reachable()  # does not raise
+    mock_get.assert_called_once_with("http://fake/engine", timeout=3)
+
+    # accepts and ignores the same *args a real callable's would carry, and
+    # (still within the same transaction) reuses the cached result instead
+    # of asking the engine again.
+    check_engine_reachable("signal", {"k": "v"}, "user1", ["t1"])
+    mock_get.assert_called_once()
+
+
+@patch("collective.bpmproxy.client.requests.get")
+@patch("collective.bpmproxy.client.get_api_url", return_value="http://fake")
+def test_check_engine_reachable_memoizes_per_transaction(mock_get_api_url, mock_get):
+    mock_get.return_value = MagicMock(status_code=200)
+
+    check_engine_reachable()
+    check_engine_reachable()
+    mock_get.assert_called_once()
+
+    # A new transaction (a new request/vote cycle) probes again.
+    transaction.abort()
+    check_engine_reachable()
+    assert mock_get.call_count == 2
+
+
+@patch("collective.bpmproxy.client.requests.get")
+@patch("collective.bpmproxy.client.get_api_url", return_value="http://fake")
+def test_check_engine_reachable_caches_the_failure_too(mock_get_api_url, mock_get):
+    import requests
+
+    mock_get.side_effect = requests.exceptions.ConnectionError("refused")
+
+    with pytest.raises(RuntimeError, match="not reachable"):
+        check_engine_reachable()
+    # A second vote in the same transaction re-raises the cached failure
+    # rather than probing the (still unreachable) engine again.
+    with pytest.raises(RuntimeError, match="not reachable"):
+        check_engine_reachable()
+    mock_get.assert_called_once()
+
+
+@patch("collective.bpmproxy.client.requests.get")
+@patch("collective.bpmproxy.client.get_api_url", return_value="http://fake")
+def test_check_engine_reachable_connection_error(mock_get_api_url, mock_get):
+    import requests
+
+    mock_get.side_effect = requests.exceptions.ConnectionError("refused")
+
+    with pytest.raises(RuntimeError, match="not reachable"):
+        check_engine_reachable()
+
+
+@patch("collective.bpmproxy.client.requests.get")
+@patch("collective.bpmproxy.client.get_api_url", return_value="http://fake")
+def test_check_engine_reachable_server_error(mock_get_api_url, mock_get):
+    mock_get.return_value = MagicMock(status_code=503)
+
+    with pytest.raises(RuntimeError, match="503"):
+        check_engine_reachable()
+
+
+def test_is_optimistic_locking_conflict():
+    conflict = ApiException(
+        http_resp=MagicMock(
+            status=500,
+            data=(
+                b'{"type":"RestException","message":"Cannot complete task t1: '
+                b"ENGINE-03005 Execution of 'INSERT ...' failed. Entity was "
+                b'updated by another transaction concurrently.","code":1}'
+            ),
+            getheaders=lambda: {},
+        )
+    )
+    assert is_optimistic_locking_conflict(conflict) is True
+
+    not_found = ApiException(status=404, reason="Not Found")
+    assert is_optimistic_locking_conflict(not_found) is False
+
+    validation = ApiException(
+        http_resp=MagicMock(
+            status=400,
+            data=b'{"message": "unexpected null value"}',
+            getheaders=lambda: {},
+        )
+    )
+    assert is_optimistic_locking_conflict(validation) is False
+
+
+@patch("collective.bpmproxy.client.time.sleep")
+def test_complete_task_retries_optimistic_locking_conflict(mock_sleep):
+    conflict_body = (
+        b'{"message": "... was updated by another transaction concurrently."}'
+    )
+    conflict = ApiException(
+        http_resp=MagicMock(status=500, data=conflict_body, getheaders=lambda: {})
+    )
+
+    api = MagicMock()
+    api.complete.side_effect = [conflict, conflict, "ok"]
+
+    result = complete_task(api, "task_1", "dto", retries=3)
+
+    assert result == "ok"
+    assert api.complete.call_count == 3
+    # A short, randomized backoff separates the retries (see complete_task's
+    # docstring) so two colliding callers do not retry in lockstep.
+    assert mock_sleep.call_count == 2
+
+
+@patch("collective.bpmproxy.client.time.sleep")
+def test_complete_task_gives_up_after_retries_exhausted(mock_sleep):
+    conflict_body = (
+        b'{"message": "... was updated by another transaction concurrently."}'
+    )
+    conflict = ApiException(
+        http_resp=MagicMock(status=500, data=conflict_body, getheaders=lambda: {})
+    )
+
+    api = MagicMock()
+    api.complete.side_effect = [conflict, conflict, conflict]
+
+    with pytest.raises(ApiException):
+        complete_task(api, "task_1", "dto", retries=2)
+
+    assert api.complete.call_count == 3
+
+
+def test_complete_task_does_not_retry_unrelated_errors():
+    api = MagicMock()
+    api.complete.side_effect = ApiException(status=404, reason="Not Found")
+
+    with pytest.raises(ApiException):
+        complete_task(api, "task_1", "dto", retries=3)
+
+    api.complete.assert_called_once()
+
+
+@patch("collective.bpmproxy.client.transaction")
+@patch("collective.bpmproxy.client.SideEffectDataManager")
+def test_join_side_effect_defaults_to_check_engine_reachable(
+    mock_data_mgr, mock_transaction
+):
+    mock_txn = MagicMock()
+    mock_transaction.get.return_value = mock_txn
+
+    def my_callable(a, b):
+        pass
+
+    join_side_effect(my_callable, args=(1, 2))
+
+    mock_data_mgr.assert_called_once_with(
+        my_callable, args=(1, 2), vote=check_engine_reachable, onAbort=None
+    )
+    mock_txn.join.assert_called_once_with(mock_data_mgr.return_value)
+
+
+@patch("collective.bpmproxy.client.transaction")
+@patch("collective.bpmproxy.client.SideEffectDataManager")
+def test_join_side_effect_can_override_vote_and_onabort(
+    mock_data_mgr, mock_transaction
+):
+    def my_callable():
+        pass
+
+    def my_vote():
+        pass
+
+    def my_abort():
+        pass
+
+    join_side_effect(my_callable, vote=my_vote, onAbort=my_abort)
+
+    mock_data_mgr.assert_called_once_with(
+        my_callable, args=(), vote=my_vote, onAbort=my_abort
     )

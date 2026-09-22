@@ -16,10 +16,12 @@ and ``make test-live`` runs them. Start the engine first::
 
 from collective.bpmproxy.client import camunda_admin_client
 from collective.bpmproxy.client import camunda_client
+from collective.bpmproxy.client import check_engine_reachable
 from collective.bpmproxy.client import delete_deployment
 from collective.bpmproxy.client import deploy_process
 from collective.bpmproxy.client import get_deployments
 from collective.bpmproxy.interfaces import CAMUNDA_ADMIN_GROUP
+from collective.bpmproxy.interfaces import CAMUNDA_API_URL_ENV
 from collective.bpmproxy.portlets.tasks import Assignment as TasksAssignment
 from collective.bpmproxy.portlets.tasks import Renderer as TasksRenderer
 from unittest import mock
@@ -104,6 +106,23 @@ def test_deploy_and_delete_round_trip(integration, engine_configured):
             delete_deployment(client, deployment["id"])
 
         assert name not in [d.name for d in get_deployments(client)]
+
+
+def test_check_engine_reachable_against_the_real_engine(integration):
+    """The reachability precheck a ``SideEffectDataManager``'s ``vote``
+    runs in ``tpc_vote`` (see ``client.check_engine_reachable``) needs no
+    admin token -- it hits the same unauthenticated ``GET .../engine`` this
+    repo's own docs (devenv-browser-smoke.md) poll to tell a real outage
+    from Operaton still booting through Maven."""
+    check_engine_reachable()  # does not raise
+
+
+def test_check_engine_reachable_reports_an_unreachable_engine(integration, monkeypatch):
+    # An address nothing is listening on, rather than a hostname that would
+    # need DNS -- keeps this fast and independent of network policy.
+    monkeypatch.setenv(CAMUNDA_API_URL_ENV, "http://127.0.0.1:1/engine-rest")
+    with pytest.raises(RuntimeError, match="not reachable"):
+        check_engine_reachable()
 
 
 def test_unprivileged_user_token_is_refused_engine_rights(

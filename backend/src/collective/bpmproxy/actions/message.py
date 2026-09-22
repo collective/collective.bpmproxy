@@ -1,9 +1,9 @@
 from collective.bpmproxy import _
 from collective.bpmproxy.client import camunda_admin_client
+from collective.bpmproxy.client import join_side_effect
 from collective.bpmproxy.utils import get_tenant_ids
 from collective.bpmproxy.utils import infer_variables
 from collective.bpmproxy.utils import interpolate
-from collective.bpmproxy.utils import SideEffectDataManager
 from generic_camunda_client import CorrelationMessageDto
 from OFS.SimpleItem import SimpleItem
 from plone.app.contentrules.actions import ActionAddForm
@@ -19,12 +19,10 @@ from zope import schema
 from zope.component import adapter
 from zope.interface import implementer
 from zope.interface import Interface
-import functools
 import generic_camunda_client
 import logging
 import os
 import plone.api.user
-import transaction
 
 
 logger = logging.getLogger(__name__)
@@ -146,18 +144,9 @@ class BpmMessageActionExecutor:
         else:
             username = None
         tenant_ids = get_tenant_ids()
-        transaction.get().join(
-            SideEffectDataManager(
-                functools.partial(
-                    _throwMessage,
-                    name,
-                    business_key,
-                    correlation_keys,
-                    payload,
-                    username,
-                    tenant_ids,
-                )
-            )
+        join_side_effect(
+            _throwMessage,
+            args=(name, business_key, correlation_keys, payload, username, tenant_ids),
         )
         return True
 
