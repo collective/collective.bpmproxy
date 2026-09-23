@@ -4,7 +4,7 @@
     meta_type="Dexterity FTI"
     i18n:domain="collective.bpmproxy">
   <property name="title">Renovation Project</property>
-  <property name="description">Folderish home-renovation project with a BPM-driven review lifecycle.</property>
+  <property name="description">Folderish home-renovation case managed by a BPMN process.</property>
   <property name="factory">Renovation Project</property>
   <property name="icon_expr">string:contenttype/folder</property>
   <property name="global_allow">True</property>
@@ -15,7 +15,6 @@
   <property name="klass">plone.dexterity.content.Container</property>
   <property name="schema">plone.app.contenttypes.interfaces.IFolder</property>
   <property name="behaviors" purge="false">
-    <element value="collective.bpmproxy.renovation_project"/>
     <element value="plone.namefromtitle"/>
     <element value="plone.basic"/>
     <element value="plone.categorization"/>

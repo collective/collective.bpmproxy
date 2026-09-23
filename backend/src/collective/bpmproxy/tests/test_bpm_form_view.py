@@ -87,6 +87,19 @@ class TestBpmProxyStartFormView(unittest.TestCase):
         self.mock_iuuid = patcher.start()
         self.addCleanup(patcher.stop)
 
+        context_filter = patch(
+            "collective.bpmproxy.views.bpm_form_view.get_task_context_filter",
+            return_value=("12345678-1234-5678-1234-567812345678", False, None),
+        )
+        context_filter.start()
+        self.addCleanup(context_filter.stop)
+        context_filter = patch(
+            "collective.bpmproxy.views.bpm_form_view.get_task_context_filter",
+            return_value=("12345678-1234-5678-1234-567812345678", False, None),
+        )
+        context_filter.start()
+        self.addCleanup(context_filter.stop)
+
     @patch("collective.bpmproxy.views.bpm_form_view.camunda_client")
     @patch("collective.bpmproxy.views.bpm_form_view.get_start_form")
     @patch("collective.bpmproxy.views.bpm_form_view.get_available_tasks")
@@ -359,6 +372,13 @@ class TestBpmProxyTaskFormView(unittest.TestCase):
         self.mock_iuuid = patcher.start()
         self.addCleanup(patcher.stop)
 
+        context_filter = patch(
+            "collective.bpmproxy.views.bpm_form_view.get_task_context_filter",
+            return_value=("12345678-1234-5678-1234-567812345678", False, None),
+        )
+        context_filter.start()
+        self.addCleanup(context_filter.stop)
+
     def test_init_without_ibpmproxy(self):
         with patch(
             "collective.bpmproxy.views.bpm_form_view.IBpmProxy.providedBy",
@@ -464,7 +484,8 @@ class TestBpmProxyTaskFormView(unittest.TestCase):
         mock_get_tasks.return_value = [task]
 
         mock_get_vars.return_value = {
-            "businessKey": "uuid:12345678-1234-5678-1234-567812345678"
+            "businessKey": "uuid:12345678-1234-5678-1234-567812345678",
+            "childUrl": "http://site/case/page",
         }
         mock_get_form.return_value = (None, "data", "schema")
 
@@ -477,6 +498,7 @@ class TestBpmProxyTaskFormView(unittest.TestCase):
         self.assertEqual(
             self.view.attachments_key, "12345678-1234-5678-1234-567812345678"
         )
+        self.assertEqual(self.view.review_content_url, "http://site/case/page")
         self.assertTrue(self.view.tabs)
         mock_diagram.assert_called_once_with(ANY, "proc-def-1", "tenant-1")
 
@@ -743,8 +765,8 @@ class BpmProxyStartFormViewMissingProcessTest(unittest.TestCase):
 class BpmProxyStartFormViewNoInteractiveStartTest(unittest.TestCase):
     """The start form view for a process opted out of interactive start.
 
-    renovation_demo's Plan Review process is signal-started and has no
-    deployed start form -- get_start_form would always 404 for it. Setting
+    A signal-started process has no deployed start form -- get_start_form
+    would always 404 for it. Setting
     interactive_start_enabled = False must skip that call entirely, so the
     page renders normally with no error banner (the diagram and task list
     still come from their own, independent calls).
@@ -759,7 +781,7 @@ class BpmProxyStartFormViewNoInteractiveStartTest(unittest.TestCase):
         self.addCleanup(anonymous.stop)
 
         self.context = MagicMock()
-        self.context.process_definition_key = "renovation-plan-review"
+        self.context.process_definition_key = "signal-started-process"
         self.context.default_values = {}
         self.context.diagram_enabled = True
         self.context.interactive_start_enabled = False

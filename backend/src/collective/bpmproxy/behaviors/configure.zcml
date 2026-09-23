@@ -15,10 +15,4 @@
       marker=".process_context.IProcessContext"
   />
 
-  <plone:behavior
-      name="collective.bpmproxy.renovation_project"
-      title="Renovation project details"
-      description="Adds site address and budget fields for renovation projects."
-      provides=".renovation_project.IRenovationProjectBehavior"
-  />
 </configure>

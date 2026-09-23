@@ -24,6 +24,8 @@ class ParentUUIDSubstitution(BaseSubstitution):
 
     def safe_call(self):
         for parent in parents(self.context, iface=IUUIDAware):
+            if parent is self.context:
+                continue
             return IUUID(parent)
 
 

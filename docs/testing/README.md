@@ -89,9 +89,9 @@ Case ids are stable; they appear in the runner output and in the
 
 - **Operaton Cockpit and Keycloak's own UI.** Keycloak must be running —
   Operaton waits for its issuer metadata — but neither UI is under test.
-- **The `renovation-bot` purjo worker** (`examples/renovation-bot/`). It has to
-  be started separately (`make serve`); `scripts/e2e_renovation_project.py`
-  documents this as a prerequisite rather than starting it itself.
+- **The renovation case smoke test.** `scripts/e2e_renovation_project.py`
+  requires the deployed case BPMN and prepared profile fixture, but no
+  external task worker.
 - **Mail delivery.** The fixture configures no mail connector; see
   [Limitations](../user/11-limitations.md).
 

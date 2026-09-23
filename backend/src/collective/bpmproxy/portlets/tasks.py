@@ -4,13 +4,13 @@ from collective.bpmproxy.client import camunda_client
 from collective.bpmproxy.client import get_available_tasks
 from collective.bpmproxy.client import get_task_variables
 from collective.bpmproxy.interfaces import PLONE_TASK_VIEW
+from collective.bpmproxy.utils import get_task_context_filter
 from collective.bpmproxy.utils import is_review_state_allowed
 from collective.bpmproxy.utils import is_valid_uuid
 from generic_camunda_client.rest import ApiException
 from plone.app.portlets.portlets import base
 from plone.memoize.instance import memoize
 from plone.portlets.interfaces import IPortletDataProvider
-from plone.uuid.interfaces import IUUID
 from Products.Five import BrowserView
 from Products.Five.browser.pagetemplatefile import ViewPageTemplateFile
 from z3c.form import field
@@ -131,10 +131,22 @@ class Renderer(base.Renderer):
     @memoize
     def _data(self):
         with camunda_client() as client:
-            context_key = IUUID(self.context) if self.data.use_context else None
+            if not self.data.use_context:
+                return get_available_tasks(
+                    client,
+                    for_display=True,
+                    process_definition_key=self.data.process_definition_key,
+                )
+
+            context_key, nested_context, parent_context_key = get_task_context_filter(
+                self.context
+            )
+
             return get_available_tasks(
                 client,
                 context_key=context_key,
+                nested_context=nested_context,
+                parent_context_key=parent_context_key,
                 for_display=True,
                 process_definition_key=self.data.process_definition_key,
             )
@@ -166,7 +178,12 @@ class RedirectView(BrowserView):
                 raise NotFound(self, self.task_id, self.request) from None
         if not variables or "businessKey" not in variables:
             raise NotFound(self, self.task_id, self.request)
-        uuid = variables["businessKey"].split(":", 1)[0]
+        business_key_parts = variables["businessKey"].split(":")
+        uuid = (
+            business_key_parts[1]
+            if len(business_key_parts) >= 3
+            else business_key_parts[0]
+        )
         if not is_valid_uuid(uuid):
             raise NotFound(self, self.task_id, self.request)
         url = (

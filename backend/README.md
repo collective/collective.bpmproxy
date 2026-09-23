@@ -378,11 +378,11 @@ multiple concurrent instances. BPMN start and task forms can use the
 configured Plone string substitutions and deployed form vocabularies; task
 links return to the content through its UID.
 
-A folderish content type does not have to use this behavior at all, though —
-see `examples/renovation-project/` and `docs/renovation-project-scenario.md`
-for a richer example where a plain Dexterity Container relies entirely on
-the Task list and Message dispatch portlets, with every process
-signal/message-started from Plone workflow transitions.
+A folderish content type can also act as a case without using the process
+context behavior, as in `examples/renovation-project/` and
+`docs/renovation-project-scenario.md`. That case starts its process from a
+creation signal, uses correlated messages for workflow and child-content
+events, and exposes case-local Task and Message portlets.
 
 All BPM Proxy portlets can optionally be restricted to selected Plone review
 states. The `Display for review states` field uses Plone's

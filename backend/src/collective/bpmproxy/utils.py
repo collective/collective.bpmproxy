@@ -2,8 +2,11 @@ from Acquisition import aq_inner
 from Acquisition import aq_parent
 from concurrent.futures import ThreadPoolExecutor
 from dateutil.parser import isoparse
+from plone.base.interfaces import INavigationRoot
 from plone.keyring.interfaces import IKeyManager
 from plone.stringinterp.interfaces import IStringInterpolator
+from plone.uuid.interfaces import IUUID
+from plone.uuid.interfaces import IUUIDAware
 from transaction.interfaces import IDataManager
 from uuid import UUID
 from zope.component import getUtility
@@ -298,6 +301,18 @@ def parents(context, iface=None):
             # probably other) things, depends on being able to wrap itself in a
             # fake context.
             context = aq_parent(context)
+
+
+def get_task_context_filter(context):
+    """Return the business-key filter for a context-scoped task query."""
+    context_key = IUUID(context)
+    for parent in parents(context, iface=IUUIDAware):
+        if INavigationRoot.providedBy(parent):
+            continue
+        parent_key = IUUID(parent)
+        if parent_key != context_key:
+            return context_key, True, parent_key
+    return context_key, False, None
 
 
 # Shared site-wide by every SideEffectDataManager, so a single worker thread

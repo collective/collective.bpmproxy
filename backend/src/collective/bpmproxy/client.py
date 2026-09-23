@@ -261,7 +261,9 @@ def get_task_form(
         )
 
 
-def business_key_needle(context_key=None, attachments_key=None):
+def business_key_needle(
+    context_key=None, attachments_key=None, nested=False, parent_context_key=None
+):
     """Build the LIKE pattern matching a ``{context}:{attachments}`` key.
 
     Business keys are written by the form views as
@@ -283,6 +285,8 @@ def business_key_needle(context_key=None, attachments_key=None):
             return "%"
         return str(value).replace("-", "")
 
+    if nested and context_key is not None and parent_context_key is not None:
+        return f"{normalize(parent_context_key)}:{normalize(context_key)}:%"
     return f"{normalize(context_key)}:{normalize(attachments_key)}"
 
 
@@ -290,12 +294,19 @@ def get_available_tasks(
     client,
     context_key=None,
     attachments_key=None,
+    nested_context=False,
+    parent_context_key=None,
     for_display=False,
     process_definition_key=None,
 ):
     # we assume that authentication is enough to filter tasks by tenants
     task_api = generic_camunda_client.TaskApi(client)
-    needle = business_key_needle(context_key, attachments_key)
+    needle = business_key_needle(
+        context_key,
+        attachments_key,
+        nested=nested_context,
+        parent_context_key=parent_context_key,
+    )
     # Vocabulary tokens are "{key}:{tenant}" when a tenant is set (see
     # AvailableProcessDefinitions), but the engine's own processDefinitionKey
     # filter takes a bare key -- tenant scoping already happens through the

@@ -1,4 +1,4 @@
-"""operaton-tasks worker for the renovation-project's "Plone Workflow Transition" topic.
+"""operaton-tasks worker for the renovation case's workflow topic.
 
 A pure-Python alternative to ../renovation-bot/tasks.robot, built on
 https://pypi.org/project/operaton-tasks/ (the library purjo itself is built
@@ -27,7 +27,7 @@ async def transition_content(task: LockedExternalTaskDto) -> ExternalTaskComplet
     """Resolve a Plone content UUID and POST the requested workflow transition."""
     variables = task.variables or {}
     try:
-        uuid = variables["uuid"].value
+        uuid = variables["caseUuid"].value
         transition = variables["transition"].value
     except KeyError as exc:
         raise RuntimeError(f"Missing required process variable: {exc}") from exc
