@@ -5,10 +5,9 @@ Run from the repository root:
     playwright-python scripts/cut_review_process.py
 """
 
+from e2e_review_process import compose_recording
 from pathlib import Path
 import json
-
-from e2e_review_process import compose_recording
 
 
 ROOT = Path(__file__).resolve().parents[1]

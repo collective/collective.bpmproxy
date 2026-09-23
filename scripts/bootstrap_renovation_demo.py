@@ -52,7 +52,6 @@ def create_demo_case(site):
     case.reindexObjectSecurity()
 
 
-
 def main(app):
     app = makerequest(app)
 

@@ -19,17 +19,14 @@ offsets.
 
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from recording import delete_demo_content
+from recording import ensure_cockpit_toggle
+from recording import prepare_title_segments
+from recording import write_timing_manifest
 import base64
 import json
 import subprocess
 import time
-
-from recording import (
-    delete_demo_content,
-    ensure_cockpit_toggle,
-    prepare_title_segments,
-    write_timing_manifest,
-)
 import urllib.error
 import urllib.request
 
@@ -157,6 +154,7 @@ def show_actor_slide(page, eyebrow, title, subtitle):
         "subtitle": subtitle,
     }
     page.wait_for_timeout(int(ACTOR_SLIDE_DURATION * 1000))
+
 
 def nix_ffmpeg(tool, *args, capture=True):
     """Run ffmpeg/ffprobe from nixpkgs, so no global install is required."""
@@ -310,9 +308,7 @@ def compose_recording(cockpit_video, clips, output, cockpit_main_ranges):
             return "hidden"
         # Keep Operaton as an inset until the final title card. From that
         # chapter onward it becomes the main view for the remainder.
-        final_switch_at = (
-            clips[-1]["offset"] + VIDEO_TRIM + clips[-1]["title_duration"]
-        )
+        final_switch_at = clips[-1]["offset"] + VIDEO_TRIM + clips[-1]["title_duration"]
         if start >= final_switch_at or end > final_switch_at:
             return "cockpit"
         return "plone"
@@ -321,9 +317,7 @@ def compose_recording(cockpit_video, clips, output, cockpit_main_ranges):
         if end - start <= 0.05:
             return
         freeze_at = max(previous_end - 0.04, 0.0)
-        plone_slice(
-            f"gap{index}plone", plone_input_index, freeze_at, previous_end
-        )
+        plone_slice(f"gap{index}plone", plone_input_index, freeze_at, previous_end)
         filters.append(
             f"[gap{index}plone]tpad=stop_duration={end - start:.3f}:stop_mode=clone"
             f"[gap{index}ploneheld]"
@@ -428,9 +422,7 @@ def compose_recording(cockpit_video, clips, output, cockpit_main_ranges):
                 cockpit_slice(f"turn{index}cockpit", global_start, global_end)
             if mode == "plone":
                 inset(f"turn{index}cockpit", f"turn{index}inset")
-                add_composite(
-                    f"turn{index}", f"turn{index}plone", f"turn{index}inset"
-                )
+                add_composite(f"turn{index}", f"turn{index}plone", f"turn{index}inset")
                 main = "plone"
             elif mode == "cockpit":
                 inset(f"turn{index}plone", f"turn{index}inset")
@@ -457,32 +449,31 @@ def compose_recording(cockpit_video, clips, output, cockpit_main_ranges):
     write_timing_manifest(
         TIMING_PATH,
         {
-                "cockpit_video": str(cockpit_video),
-                "pip_video": str(output),
-                "cockpit_duration": round(cockpit_duration, 3),
-                "cockpit_main_ranges": [
-                    [round(start, 3), round(end, 3)]
-                    for start, end in cockpit_main_ranges
-                ],
-                "first_pip_at": round(first_pip_at, 3),
-                "title_segments": [
-                    {
-                        "video": str(clip["title_segment"]),
-                        "title": clip["title"],
-                        "duration": clip["title_duration"],
-                    }
-                    for clip in clips
-                ],
-                "clips": [
-                    {
-                        **clip,
-                        "video": str(clip["video"]),
-                        "duration": round(durations[index], 3),
-                    }
-                    for index, clip in enumerate(clips)
-                ],
-                "segments": timing_segments,
-            },
+            "cockpit_video": str(cockpit_video),
+            "pip_video": str(output),
+            "cockpit_duration": round(cockpit_duration, 3),
+            "cockpit_main_ranges": [
+                [round(start, 3), round(end, 3)] for start, end in cockpit_main_ranges
+            ],
+            "first_pip_at": round(first_pip_at, 3),
+            "title_segments": [
+                {
+                    "video": str(clip["title_segment"]),
+                    "title": clip["title"],
+                    "duration": clip["title_duration"],
+                }
+                for clip in clips
+            ],
+            "clips": [
+                {
+                    **clip,
+                    "video": str(clip["video"]),
+                    "duration": round(durations[index], 3),
+                }
+                for index, clip in enumerate(clips)
+            ],
+            "segments": timing_segments,
+        },
     )
 
     inputs = ["-i", cockpit_video]
@@ -736,7 +727,7 @@ def main():
             page.wait_for_load_state("load")
             page.wait_for_timeout(600)
             human_fill(page, page.locator("#form-widgets-IBasic-title"), "Contact us")
-            definition = page.locator("#form-widgets-process_definition_key"            )
+            definition = page.locator("#form-widgets-process_definition_key")
             definition.select_option(PROCESS_KEY)
             page.check("#form-widgets-diagram_enabled-0")
             human_click(page, page.locator("#form-buttons-save"))
@@ -767,12 +758,16 @@ def main():
             ).inner_text()
             page.goto(proxy_url, wait_until="load")
             page.wait_for_timeout(1200)
-            page.screenshot(path=str(DOCS / "contact-form-proxy-created.png"), full_page=True)
+            page.screenshot(
+                path=str(DOCS / "contact-form-proxy-created.png"), full_page=True
+            )
 
         record_turn("reception", "reception", reception_creates_proxy)
         focus_process_definition()
 
-        def visitor_submits(page, turn, name, email, subject, message, screenshot=False):
+        def visitor_submits(
+            page, turn, name, email, subject, message, screenshot=False
+        ):
             page.goto(proxy_url, wait_until="load")
             page.locator("#collective-bpmproxy-form .fjs-container").wait_for(
                 state="visible", timeout=30000
@@ -788,7 +783,9 @@ def main():
                 ),
             )
             if screenshot:
-                page.screenshot(path=str(DOCS / "contact-form-start-form.png"), full_page=True)
+                page.screenshot(
+                    path=str(DOCS / "contact-form-start-form.png"), full_page=True
+                )
             human_fill(page, page.get_by_label("Your Name"), name)
             human_fill(page, page.get_by_label("Your Email"), email)
             human_fill(page, page.get_by_label("Subject"), subject)
@@ -799,22 +796,34 @@ def main():
             assert "/@@bpm-task/" in page.url or "Submit successful" in page.content()
 
         record_turn(
-            "", "", lambda page: visitor_submits(
-                page, 2, "Conference visitor", "venue@example.com",
+            "",
+            "",
+            lambda page: visitor_submits(
+                page,
+                2,
+                "Conference visitor",
+                "venue@example.com",
                 "Venue availability for a conference",
                 "Could you tell me whether the venue is available for a conference?",
                 True,
-            ), anonymous=True,
+            ),
+            anonymous=True,
             label="visitor_submits_first",
         )
         refresh_definition_with_statistics()
 
         record_turn(
-            "", "", lambda page: visitor_submits(
-                page, 3, "Sponsorship visitor", "sponsor@example.com",
+            "",
+            "",
+            lambda page: visitor_submits(
+                page,
+                3,
+                "Sponsorship visitor",
+                "sponsor@example.com",
                 "Sponsorship options",
                 "Please send information about sponsorship options and packages.",
-            ), anonymous=True,
+            ),
+            anonymous=True,
             label="visitor_submits_second",
         )
         refresh_definition_and_open_instance()
@@ -828,7 +837,9 @@ def main():
             task = wait_for_task(page, proxy_url, "Review contact")
             # This screenshot intentionally shows both independent tasks before
             # the first one is opened.
-            page.screenshot(path=str(DOCS / "contact-form-review-tasks.png"), full_page=True)
+            page.screenshot(
+                path=str(DOCS / "contact-form-review-tasks.png"), full_page=True
+            )
             human_click(page, task)
             page.wait_for_load_state("load")
             show_actor_slide(
@@ -865,7 +876,11 @@ def main():
                 "Delegating the sponsorship inquiry to a specialist",
             )
             human_click(page, page.get_by_label("Delegate to specific user"))
-            human_fill(page, page.get_by_label("Delegate to user (Plone username)"), "specialist")
+            human_fill(
+                page,
+                page.get_by_label("Delegate to user (Plone username)"),
+                "specialist",
+            )
             human_click(page, page.get_by_role("button", name="Submit decision"))
             page.wait_for_load_state("load")
             page.wait_for_timeout(1000)
@@ -882,7 +897,9 @@ def main():
                 "Specialist",
                 "Replying to the delegated sponsorship inquiry",
             )
-            page.screenshot(path=str(DOCS / "contact-form-delegated-task.png"), full_page=True)
+            page.screenshot(
+                path=str(DOCS / "contact-form-delegated-task.png"), full_page=True
+            )
             human_click(page, page.get_by_label("Reply to sender by email"))
             paste_text(
                 page,
@@ -914,7 +931,11 @@ def main():
         history_link.wait_for(state="visible", timeout=10000)
         history_link.evaluate("element => element.click()")
         cockpit_page.wait_for_timeout(5000)
-        history_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
+        # Cockpit lists history instances newest-first.  The newest instance
+        # is the delegated branch; use the first visible process link rather
+        # than `.last`, which can resolve to the older reply-only instance
+        # when Angular keeps duplicate links in the DOM.
+        history_instance = cockpit_page.locator('a[href*="/process-instance/"]').first
         history_instance.wait_for(state="visible", timeout=30000)
         human_click(cockpit_page, history_instance)
         cockpit_page.wait_for_timeout(1500)
@@ -924,9 +945,7 @@ def main():
         assert sash_box is not None
         target_x = sash_box["x"] * (2 / 3)
         target_y = sash_box["y"] + sash_box["height"] / 2
-        cockpit_page.mouse.move(
-            sash_box["x"] + sash_box["width"] / 2, target_y
-        )
+        cockpit_page.mouse.move(sash_box["x"] + sash_box["width"] / 2, target_y)
         cockpit_page.mouse.down()
         cockpit_page.mouse.move(target_x, target_y, steps=18)
         cockpit_page.mouse.up()
@@ -942,7 +961,9 @@ def main():
         mail_page = mail_context.new_page()
         mail_page.goto("http://localhost:8025", wait_until="load")
         mail_page.wait_for_timeout(1500)
-        mail_page.screenshot(path=str(DOCS / "contact-form-mailpit.png"), full_page=True)
+        mail_page.screenshot(
+            path=str(DOCS / "contact-form-mailpit.png"), full_page=True
+        )
         mail_context.close()
 
         cockpit_video = cockpit_page.video.path()

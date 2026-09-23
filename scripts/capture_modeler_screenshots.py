@@ -21,9 +21,8 @@ from the deployment table when those resources are available.
 """
 
 from pathlib import Path
-import os
-
 from playwright.sync_api import sync_playwright
+import os
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -58,9 +57,7 @@ def main():
         page.locator("#deployments-tab").click()
         page.wait_for_timeout(1000)
 
-        bpmn_load = page.locator(
-            "button", has_text="Load contact-form.bpmn"
-        ).first
+        bpmn_load = page.locator("button", has_text="Load contact-form.bpmn").first
         if bpmn_load.count():
             bpmn_load.click()
             page.wait_for_timeout(1500)
@@ -80,9 +77,7 @@ def main():
 
         page.locator("#deployments-tab").click()
         page.wait_for_timeout(800)
-        form_load = page.locator(
-            "button", has_text="Load review-decision.form"
-        ).first
+        form_load = page.locator("button", has_text="Load review-decision.form").first
         if form_load.count():
             form_load.click()
             page.wait_for_timeout(1500)

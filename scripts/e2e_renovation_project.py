@@ -10,18 +10,14 @@ document review and close-case flow without requiring an external worker.
 """
 
 from pathlib import Path
+from playwright.sync_api import sync_playwright
+from recording import ensure_cockpit_toggle
+from recording import prepare_title_segments
+from recording import write_timing_manifest
 import base64
 import json
 import subprocess
 import time
-
-from playwright.sync_api import sync_playwright
-
-from recording import (
-    ensure_cockpit_toggle,
-    prepare_title_segments,
-    write_timing_manifest,
-)
 
 
 BASE = "http://localhost:8080/Plone"
@@ -35,6 +31,7 @@ VIDEO_TRIM = 0.8
 PIP_SCALE = 0.4
 PIP_MARGIN = 24
 PIP_BORDER = 3
+PIP_BORDER_COLOR = "0x1f2937"
 
 
 CURSOR_SCRIPT = """
@@ -147,28 +144,98 @@ def probe_duration(video):
 
 
 def compose_recording(cockpit_video, clips, output, timing_path=None):
-    """Keep Cockpit as the main view and show each actor turn as a PIP."""
+    """Make Plone the main view and use Operaton as the observer view.
+
+    Actor turns are shown full-frame from their first recorded frame, so the
+    contractor's clip starts before the document container is added. Between
+    turns, Operaton becomes the main view; the frozen Plone frame is retained
+    as a larger (2x) inset while the submitted form is reflected by the engine.
+    """
     cockpit_duration = probe_duration(cockpit_video)
-    filters = ["[0:v]setpts=PTS-STARTPTS[base]"]
-    current = "base"
-    inputs = [cockpit_video]
-    for index, clip in enumerate(clips, 1):
-        inputs.append(clip["video"])
-        duration = probe_duration(clip["video"])
-        start = clip["offset"] + VIDEO_TRIM
-        end = min(cockpit_duration, start + max(0, duration - VIDEO_TRIM))
-        next_label = f"pip{index}"
+    durations = [probe_duration(clip["video"]) for clip in clips]
+    gaps = []
+    for index in range(len(clips) + 1):
+        start = 0 if index == 0 else clips[index - 1]["offset"] + durations[index - 1]
+        end = clips[index]["offset"] if index < len(clips) else cockpit_duration
+        gaps.append((start, max(start, end)))
+
+    filters = []
+    segment_labels = []
+    inputs = ["-i", cockpit_video] + sum(
+        (["-i", str(clip["video"])] for clip in clips), []
+    )
+
+    def cockpit_slice(label, start, end):
         filters.append(
-            f"[{index}:v]setpts=PTS-STARTPTS,"
-            f"scale=iw*{PIP_SCALE}:ih*{PIP_SCALE}[clip{index}]"
+            f"[0:v]trim=start={start:.3f}:end={end:.3f},"
+            f"setpts=PTS-STARTPTS,fps=25[{label}]"
         )
+
+    def pad(label, output_label, scale):
         filters.append(
-            f"[{current}][clip{index}]overlay="
-            f"x=W-w-{PIP_MARGIN}:y=H-h-{PIP_MARGIN}:"
-            f"enable='between(t,{start:.3f},{end:.3f})':"
-            f"eof_action=repeat[{next_label}]"
+            f"[{label}]scale=iw*{scale}:-2,"
+            f"pad=iw+{2 * PIP_BORDER}:ih+{2 * PIP_BORDER}:"
+            f"{PIP_BORDER}:{PIP_BORDER}:color={PIP_BORDER_COLOR}[{output_label}]"
         )
-        current = next_label
+
+    # Keep the Plone page visible while the observer enters the process view.
+    initial_start, initial_end = gaps[0]
+    if initial_end - initial_start > 0.05:
+        freeze = max(VIDEO_TRIM, durations[0] - 0.04)
+        filters.append(
+            f"[1:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
+            f"setpts=PTS-STARTPTS,tpad=stop_duration={initial_end:.3f}:"
+            f"stop_mode=clone,fps=25[initial_plone]"
+        )
+        cockpit_slice("initial_cockpit_raw", 0, initial_end)
+        pad("initial_cockpit_raw", "initial_cockpit", PIP_SCALE)
+        filters.append(
+            "[initial_plone][initial_cockpit]overlay=W-w-24:H-h-24[initial]"
+        )
+        segment_labels.append("initial")
+
+    for index, clip in enumerate(clips):
+        input_index = index + 1
+        duration = durations[index]
+        body_start = VIDEO_TRIM
+        if duration - body_start > 0.05:
+            filters.append(
+                f"[{input_index}:v]trim=start={body_start:.3f},"
+                f"setpts=PTS-STARTPTS,fps=25[turn{index}]"
+            )
+            cockpit_slice(
+                f"turn{index}_cockpit_raw",
+                clip["offset"] + body_start,
+                clip["offset"] + duration,
+            )
+            pad(f"turn{index}_cockpit_raw", f"turn{index}_cockpit", PIP_SCALE)
+            filters.append(
+                f"[turn{index}][turn{index}_cockpit]"
+                f"overlay=W-w-24:H-h-24[turn{index}_out]"
+            )
+            segment_labels.append(f"turn{index}_out")
+
+        gap_start, gap_end = gaps[index + 1]
+        gap_duration = gap_end - gap_start
+        if gap_duration > 0.05:
+            freeze = max(body_start, duration - 0.04)
+            filters.append(
+                f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
+                f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_duration:.3f}:"
+                f"stop_mode=clone,fps=25[gap{index}_plone]"
+            )
+            cockpit_slice(f"gap{index}_cockpit_raw", gap_start, gap_end)
+            pad(f"gap{index}_plone", f"gap{index}_plone_inset", PIP_SCALE * 2)
+            filters.append(
+                f"[gap{index}_cockpit_raw][gap{index}_plone_inset]"
+                f"overlay=W-w-24:H-h-24[gap{index}]"
+            )
+            segment_labels.append(f"gap{index}")
+
+    filters.append(
+        f"{''.join(f'[{label}]' for label in segment_labels)}"
+        f"concat=n={len(segment_labels)}:v=1:a=0,format=yuv420p[out]"
+    )
     filter_complex = ";".join(filters)
     nix_ffmpeg(
         "ffmpeg",
@@ -176,11 +243,10 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         "-v",
         "error",
         "-nostats",
-        *sum((["-i", str(path)] for path in inputs), []),
+        *inputs,
         "-filter_complex",
         filter_complex,
-        "-map",
-        f"[{current}]",
+        "-map", "[out]",
         "-c:v",
         "libvpx-vp9",
         "-deadline",
@@ -200,6 +266,8 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
                 "cockpit_video": str(cockpit_video),
                 "clips": clips,
                 "output": str(output),
+                "main_view": "plone",
+                "post_submit_operaton_scale": PIP_SCALE * 2,
             },
         )
     return output
@@ -229,12 +297,11 @@ def add_document(page):
 
 
 def workflow(page, action):
-    response = page.request.post(
+    return page.request.post(
         f"{CASE}/@workflow/{action}",
         headers={"Accept": "application/json", "Content-Type": "application/json"},
         data="{}",
     )
-    assert response.status == 200, response.text()
 
 
 def main():
@@ -248,6 +315,7 @@ def main():
         )
         manager_page = manager.new_page()
         manager_page.goto(CASE, wait_until="load")
+        document_url = None
 
         cockpit_setup = browser.new_context()
         cockpit_setup_page = cockpit_setup.new_page()
@@ -288,9 +356,7 @@ def main():
                 viewport=VIDEO_SIZE,
                 record_video_dir=str(DOCS),
                 record_video_size=VIDEO_SIZE,
-                extra_http_headers={
-                    "Authorization": basic_auth(username, password)
-                },
+                extra_http_headers={"Authorization": basic_auth(username, password)},
             )
             context.add_init_script(CURSOR_SCRIPT)
             page = context.new_page()
@@ -310,9 +376,11 @@ def main():
             )
 
         def contractor_adds_document(page, turn, title, subtitle):
+            nonlocal document_url
             page.goto(CASE, wait_until="load")
             show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
             add_document(page)
+            document_url = page.url.removesuffix("/view")
             page.screenshot(
                 path=str(DOCS / "renovation-project-document-added.png"),
                 full_page=True,
@@ -326,6 +394,28 @@ def main():
             "Contractor",
             "Adding a document to the renovation case",
         )
+
+        assert document_url
+        sharing = manager_page.request.post(
+            f"{document_url}/@sharing",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps(
+                {
+                    "entries": [
+                        {
+                            "id": username,
+                            "roles": {"Reader": True},
+                            "type": "user",
+                        }
+                        for username in ("owner", "inspector")
+                    ]
+                }
+            ),
+        )
+        assert sharing.status in (200, 204), sharing.text()
 
         cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
         cockpit_page.get_by_role("link", name="renovation-page-review").click()
@@ -341,7 +431,9 @@ def main():
 
         def approves(page, turn, title, subtitle):
             page.goto(CASE, wait_until="load")
-            task_name = "Owner reviews page" if title == "Owner" else "Inspector reviews page"
+            task_name = (
+                "Owner reviews page" if title == "Owner" else "Inspector reviews page"
+            )
             task = wait_for_task(page, task_name)
             human_click(page, task)
             show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
@@ -349,9 +441,7 @@ def main():
             human_click(page, page.get_by_role("button", name="Submit review"))
             page.wait_for_load_state("load")
 
-        record_turn(
-            "owner", "owner", approves, 2, "Owner", "Reviewing the added page"
-        )
+        record_turn("owner", "owner", approves, 2, "Owner", "Reviewing the added page")
         cockpit_page.reload(wait_until="load")
         cockpit_page.wait_for_timeout(1200)
         configure_cockpit()
@@ -383,7 +473,12 @@ def main():
             "Closing the completed renovation case",
         )
 
-        cockpit_page.goto(f"{COCKPIT}/#/history", wait_until="load")
+        cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+        cockpit_page.get_by_role("link", name="renovation-case").click()
+        cockpit_page.wait_for_timeout(1200)
+        history_tab = cockpit_page.get_by_text("History", exact=True).last
+        history_tab.wait_for(state="visible", timeout=10000)
+        human_click(cockpit_page, history_tab)
         cockpit_page.wait_for_timeout(2500)
         history_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
         history_instance.wait_for(state="visible", timeout=30000)
@@ -403,7 +498,7 @@ def main():
         title_segments = prepare_title_segments(
             nix_ffmpeg, clips, DOCS / "renovation-project-pip.webm"
         )
-        for clip, segment in zip(clips, title_segments):
+        for clip, segment in zip(clips, title_segments, strict=True):
             clip["title_segment"] = str(segment)
         cockpit_video = cockpit_page.video.path()
         cockpit.close()

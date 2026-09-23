@@ -16,9 +16,7 @@ def run(session):
 
     # A published proxy is what an anonymous visitor can reach at all.
     page.goto(base, wait_until="load")
-    proxy_url = fixtures.create_proxy(
-        page, base, PROXY_TITLE, fixtures.CONTACT_FORM
-    )
+    proxy_url = fixtures.create_proxy(page, base, PROXY_TITLE, fixtures.CONTACT_FORM)
     published = fixtures.publish(page, proxy_url)
     check("J0", "public proxy published", published, proxy_url)
 

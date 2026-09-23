@@ -29,6 +29,7 @@ CONTACT_FORM_ASSETS = [
 # the content-rule integration.
 LIFECYCLE = "example-plone-published-lifecycle"
 
+
 def minimal_bpmn(key):
     """The smallest deployable process: one start event, nothing else."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>

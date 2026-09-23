@@ -79,9 +79,12 @@ def main(app):
 
     # The development browser uses 127.0.0.1. Plone's default theme
     # blacklist otherwise disables Diazo there, leaving the site unstyled.
-    hostname_blacklist = api.portal.get_registry_record(
-        "plone.app.theming.interfaces.IThemeSettings.hostnameBlacklist"
-    ) or []
+    hostname_blacklist = (
+        api.portal.get_registry_record(
+            "plone.app.theming.interfaces.IThemeSettings.hostnameBlacklist"
+        )
+        or []
+    )
     hostname_blacklist = [
         hostname
         for hostname in hostname_blacklist

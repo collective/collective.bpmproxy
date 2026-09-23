@@ -1,9 +1,8 @@
 """Re-cut the renovation-project video from persisted timing data."""
 
+from e2e_renovation_project import compose_recording
 from pathlib import Path
 import json
-
-from e2e_renovation_project import compose_recording
 
 
 ROOT = Path(__file__).resolve().parents[1]

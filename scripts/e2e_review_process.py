@@ -19,20 +19,18 @@ run, human-paced cursor and clicks, and a picture-in-picture composite
 aligned to real wall-clock offsets.
 """
 
+from pathlib import Path
+from playwright.sync_api import sync_playwright
+from recording import delete_demo_content
+from recording import ensure_cockpit_toggle
+from recording import prepare_title_segments
+from recording import write_timing_manifest
 import base64
 import json
 import os
 import subprocess
 import time
-from pathlib import Path
 
-from playwright.sync_api import sync_playwright
-from recording import (
-    delete_demo_content,
-    ensure_cockpit_toggle,
-    prepare_title_segments,
-    write_timing_manifest,
-)
 
 BASE = "http://localhost:8080/Plone"
 COCKPIT = "http://localhost:8081/operaton/app/cockpit/default"
@@ -184,6 +182,7 @@ def show_actor_slide(page, eyebrow, title, subtitle):
     }
     page.wait_for_timeout(int(ACTOR_SLIDE_DURATION * 1000))
 
+
 def nix_ffmpeg(tool, *args, capture=True):
     """Run ffmpeg/ffprobe from nixpkgs, so no global install is required."""
     nix_expression = (
@@ -327,40 +326,38 @@ def compose_recording(
         write_timing_manifest(
             timing_path,
             {
-                    "cockpit_video": os.path.relpath(cockpit_video, Path.cwd()),
-                    "title_segments": [
-                        {
-                            "video": os.path.relpath(
-                                clip["title_segment"], Path.cwd()
-                            ),
-                            "title": clip["title"],
-                            "duration": clip["title_duration"],
-                        }
-                        for clip in clips
-                    ],
-                    "clips": [
-                        {
-                            "video": os.path.relpath(clip["video"], Path.cwd()),
-                            "title": clip["title"],
-                            "title_segment": os.path.relpath(
-                                clip["title_segment"], Path.cwd()
-                            ),
-                            "title_duration": clip["title_duration"],
-                            "offset": clip["offset"],
-                            "duration": durations[index],
-                        }
-                        for index, clip in enumerate(clips)
-                    ],
-                    "gaps": [
-                        {
-                            "start": start,
-                            "end": end,
-                            "focus": gap_focus[index],
-                        }
-                        for index, (start, end) in enumerate(gaps)
-                    ],
-                    "final_history_at": final_history_at,
-                }
+                "cockpit_video": os.path.relpath(cockpit_video, Path.cwd()),
+                "title_segments": [
+                    {
+                        "video": os.path.relpath(clip["title_segment"], Path.cwd()),
+                        "title": clip["title"],
+                        "duration": clip["title_duration"],
+                    }
+                    for clip in clips
+                ],
+                "clips": [
+                    {
+                        "video": os.path.relpath(clip["video"], Path.cwd()),
+                        "title": clip["title"],
+                        "title_segment": os.path.relpath(
+                            clip["title_segment"], Path.cwd()
+                        ),
+                        "title_duration": clip["title_duration"],
+                        "offset": clip["offset"],
+                        "duration": durations[index],
+                    }
+                    for index, clip in enumerate(clips)
+                ],
+                "gaps": [
+                    {
+                        "start": start,
+                        "end": end,
+                        "focus": gap_focus[index],
+                    }
+                    for index, (start, end) in enumerate(gaps)
+                ],
+                "final_history_at": final_history_at,
+            },
         )
 
     filters = []
@@ -428,9 +425,7 @@ def compose_recording(
         if body_duration > 0.04:
             inset_start = clip["offset"] + VIDEO_TRIM + slide_end
             inset_end = clip["offset"] + persona_end
-            filters.append(
-                f"[t{index}main]setpts=PTS-STARTPTS[t{index}body]"
-            )
+            filters.append(f"[t{index}main]setpts=PTS-STARTPTS[t{index}body]")
             cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
             small_pad(f"t{index}cockraw", f"t{index}inset")
             filters.append(
@@ -905,9 +900,7 @@ def main():
 
         wait_for_state(poll_page, doc_url, "Published")
         final_history_at = time.monotonic() - started
-        history_toggle = cockpit_page.locator(
-            "button.toggle-history-view-button"
-        )
+        history_toggle = cockpit_page.locator("button.toggle-history-view-button")
         if history_toggle.count():
             history_toggle.wait_for(state="visible", timeout=10000)
             if (
@@ -917,9 +910,15 @@ def main():
                 human_click(cockpit_page, history_toggle)
         else:
             # A completed instance can leave Cockpit on the definition view
-            # after its final auto-refresh. Go directly to the History route
-            # instead of opening the More menu in the recording.
-            cockpit_page.goto(f"{COCKPIT}/#/history", wait_until="load")
+            # after its final auto-refresh. Re-open the process definition and
+            # select its History tab; the global #/history route does not load
+            # historic instances in this Cockpit version.
+            cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+            cockpit_page.get_by_role("link", name=PROCESS_KEY).click()
+            cockpit_page.wait_for_timeout(1200)
+            history_tab = cockpit_page.get_by_text("History", exact=True).last
+            history_tab.wait_for(state="visible", timeout=10000)
+            human_click(cockpit_page, history_tab)
             cockpit_page.wait_for_timeout(1500)
             history_instance = cockpit_page.locator(
                 'a[href*="/process-instance/"]'
@@ -936,9 +935,7 @@ def main():
         assert sash_box is not None
         target_x = sash_box["x"] * (2 / 3)
         target_y = sash_box["y"] + sash_box["height"] / 2
-        cockpit_page.mouse.move(
-            sash_box["x"] + sash_box["width"] / 2, target_y
-        )
+        cockpit_page.mouse.move(sash_box["x"] + sash_box["width"] / 2, target_y)
         cockpit_page.mouse.down()
         cockpit_page.mouse.move(target_x, target_y, steps=18)
         cockpit_page.mouse.up()
