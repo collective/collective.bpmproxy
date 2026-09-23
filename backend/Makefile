@@ -49,12 +49,12 @@ test-live: install
 		else exit $$status; fi
 
 lint: install
-	uv run ruff check src
-	uv run ruff format --check src
+	uv run ruff check src ../scripts
+	uv run ruff format --check src ../scripts
 
 format: install
-	uv run ruff format src
-	uv run ruff check --fix src
+	uv run ruff format src ../scripts
+	uv run ruff check --fix src ../scripts
 
 i18n: install
 	uv run update_locale

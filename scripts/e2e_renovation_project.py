@@ -178,10 +178,11 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
             f"{PIP_BORDER}:{PIP_BORDER}:color={PIP_BORDER_COLOR}[{output_label}]"
         )
 
-    # Keep the Plone page visible while the observer enters the process view.
+    # Keep Plone visible from the beginning, including the opening navigation
+    # and the contractor adding the renovation document.
     initial_start, initial_end = gaps[0]
     if initial_end - initial_start > 0.05:
-        freeze = max(VIDEO_TRIM, durations[0] - 0.04)
+        freeze = max(0, durations[0] - 0.04)
         filters.append(
             f"[1:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
             f"setpts=PTS-STARTPTS,tpad=stop_duration={initial_end:.3f}:"
@@ -189,15 +190,13 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         )
         cockpit_slice("initial_cockpit_raw", 0, initial_end)
         pad("initial_cockpit_raw", "initial_cockpit", PIP_SCALE)
-        filters.append(
-            "[initial_plone][initial_cockpit]overlay=W-w-24:H-h-24[initial]"
-        )
+        filters.append("[initial_plone][initial_cockpit]overlay=W-w-24:H-h-24[initial]")
         segment_labels.append("initial")
 
     for index, clip in enumerate(clips):
         input_index = index + 1
         duration = durations[index]
-        body_start = VIDEO_TRIM
+        body_start = 0
         if duration - body_start > 0.05:
             filters.append(
                 f"[{input_index}:v]trim=start={body_start:.3f},"
@@ -218,16 +217,20 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         gap_start, gap_end = gaps[index + 1]
         gap_duration = gap_end - gap_start
         if gap_duration > 0.05:
-            freeze = max(body_start, duration - 0.04)
+            freeze = max(0, duration - 0.04)
             filters.append(
                 f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
                 f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_duration:.3f}:"
                 f"stop_mode=clone,fps=25[gap{index}_plone]"
             )
             cockpit_slice(f"gap{index}_cockpit_raw", gap_start, gap_end)
-            pad(f"gap{index}_plone", f"gap{index}_plone_inset", PIP_SCALE * 2)
+            # The first three turns submit Plone forms and produce a new
+            # engine state; keep the final case-manager transition at normal
+            # inset size because it does not submit a Camunda form.
+            pip_scale = PIP_SCALE * 2 if index < len(clips) - 1 else PIP_SCALE
+            pad(f"gap{index}_cockpit_raw", f"gap{index}_cockpit_inset", pip_scale)
             filters.append(
-                f"[gap{index}_cockpit_raw][gap{index}_plone_inset]"
+                f"[gap{index}_plone][gap{index}_cockpit_inset]"
                 f"overlay=W-w-24:H-h-24[gap{index}]"
             )
             segment_labels.append(f"gap{index}")
@@ -246,7 +249,8 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         *inputs,
         "-filter_complex",
         filter_complex,
-        "-map", "[out]",
+        "-map",
+        "[out]",
         "-c:v",
         "libvpx-vp9",
         "-deadline",
@@ -305,6 +309,7 @@ def workflow(page, action):
 
 
 def main():
+    global CASE
     with sync_playwright() as playwright:
         browser = playwright.chromium.launch(
             headless=True,
@@ -314,7 +319,12 @@ def main():
             extra_http_headers={"Authorization": basic_auth("manager", "manager")}
         )
         manager_page = manager.new_page()
-        manager_page.goto(CASE, wait_until="load")
+        manager_page.goto(BASE, wait_until="load")
+        manager_page.request.delete(
+            CASE,
+            headers={"Accept": "application/json"},
+        )
+        case_url = None
         document_url = None
 
         cockpit_setup = browser.new_context()
@@ -351,6 +361,10 @@ def main():
                 cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
             )
 
+        # Keep the empty definition view live from the first recorded Plone
+        # action so the new case appears without a manual refresh.
+        configure_cockpit()
+
         def record_turn(username, password, action, turn, title, subtitle):
             context = browser.new_context(
                 viewport=VIDEO_SIZE,
@@ -375,10 +389,24 @@ def main():
                 }
             )
 
+        def manager_creates_case(page, turn, title, subtitle):
+            nonlocal case_url
+            page.goto(BASE, wait_until="load")
+            show_actor_slide(page, f"Renovation case · {turn} / 5", title, subtitle)
+            human_click(page, page.get_by_role("link", name="Add new…"))
+            human_click(
+                page,
+                page.get_by_role("link", name="Renovation Project", exact=True),
+            )
+            page.locator("#form-widgets-IBasic-title").fill("Demo renovation project")
+            human_click(page, page.get_by_role("button", name="Save"))
+            page.wait_for_load_state("load")
+            case_url = page.url.removesuffix("/view")
+
         def contractor_adds_document(page, turn, title, subtitle):
             nonlocal document_url
             page.goto(CASE, wait_until="load")
-            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
+            show_actor_slide(page, f"Renovation case · {turn} / 5", title, subtitle)
             add_document(page)
             document_url = page.url.removesuffix("/view")
             page.screenshot(
@@ -387,10 +415,50 @@ def main():
             )
 
         record_turn(
+            "manager",
+            "manager",
+            manager_creates_case,
+            1,
+            "Case manager",
+            "Creating the demo renovation project",
+        )
+        assert case_url
+        CASE = case_url
+        sharing = manager_page.request.post(
+            f"{CASE}/@sharing",
+            headers={
+                "Accept": "application/json",
+                "Content-Type": "application/json",
+            },
+            data=json.dumps(
+                {
+                    "entries": [
+                        {
+                            "id": "Renovation Contractors",
+                            "roles": {"Contributor": True, "Editor": True},
+                            "type": "group",
+                        },
+                        {
+                            "id": "Renovation Owners",
+                            "roles": {"Reviewer": True},
+                            "type": "group",
+                        },
+                        {
+                            "id": "Renovation Inspectors",
+                            "roles": {"Reviewer": True},
+                            "type": "group",
+                        },
+                    ]
+                }
+            ),
+        )
+        assert sharing.status in (200, 204), sharing.text()
+
+        record_turn(
             "contractor",
             "contractor",
             contractor_adds_document,
-            1,
+            2,
             "Contractor",
             "Adding a document to the renovation case",
         )
@@ -436,12 +504,12 @@ def main():
             )
             task = wait_for_task(page, task_name)
             human_click(page, task)
-            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
+            show_actor_slide(page, f"Renovation case · {turn} / 5", title, subtitle)
             human_click(page, page.get_by_label("Approved"))
             human_click(page, page.get_by_role("button", name="Submit review"))
             page.wait_for_load_state("load")
 
-        record_turn("owner", "owner", approves, 2, "Owner", "Reviewing the added page")
+        record_turn("owner", "owner", approves, 3, "Owner", "Reviewing the added page")
         cockpit_page.reload(wait_until="load")
         cockpit_page.wait_for_timeout(1200)
         configure_cockpit()
@@ -449,15 +517,30 @@ def main():
             "inspector",
             "inspector",
             approves,
-            3,
+            4,
             "Inspector",
             "Reviewing the added page for compliance",
         )
+        cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+        cockpit_page.get_by_role("link", name="renovation-case").click()
+        cockpit_page.wait_for_timeout(1200)
+        main_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
+        main_instance.wait_for(state="visible", timeout=30000)
+        human_click(cockpit_page, main_instance)
+        configure_cockpit()
+        cockpit_page.wait_for_timeout(1800)
 
         def manager_closes(page, turn, title, subtitle):
             page.goto(CASE, wait_until="load")
-            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
-            workflow(page, "close-case")
+            show_actor_slide(page, f"Renovation case · {turn} / 5", title, subtitle)
+            state = page.get_by_role("link", name="State: Open")
+            human_click(page, state)
+            close_case = page.locator(
+                '#plone-contentmenu-workflow a[href*="workflow_action=close-case"]'
+            )
+            close_case.wait_for(state="visible", timeout=10000)
+            human_click(page, close_case.last)
+            page.wait_for_load_state("load")
             page.reload(wait_until="load")
             assert "Closed" in page.locator("body").inner_text()
             page.screenshot(
@@ -468,7 +551,7 @@ def main():
             "manager",
             "manager",
             manager_closes,
-            4,
+            5,
             "Case manager",
             "Closing the completed renovation case",
         )
