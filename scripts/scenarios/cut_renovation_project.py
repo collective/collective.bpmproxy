@@ -5,7 +5,7 @@ from pathlib import Path
 import json
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TIMING = ROOT / "docs/renovation-project-timing.json"
 OUTPUT = ROOT / "docs/renovation-project-pip.webm"
 

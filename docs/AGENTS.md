@@ -6,9 +6,9 @@ here; the architecture below is shared by all of them. Run a runner from the
 repository root with the browser skill wrapper, e.g.:
 
 ```sh
-playwright-python scripts/e2e_renovation_project.py
-playwright-python scripts/e2e_review_process.py
-playwright-python scripts/e2e_contact_form.py
+playwright-python scripts/scenarios/e2e_renovation_project.py
+playwright-python scripts/scenarios/e2e_review_process.py
+playwright-python scripts/scenarios/e2e_contact_form.py
 ```
 
 See [renovation-project-scenario.md](renovation-project-scenario.md) and

@@ -2,7 +2,7 @@
 
 Run from the repository root with:
 
-    playwright-python scripts/e2e_contact_form.py
+    playwright-python scripts/scenarios/e2e_contact_form.py
 
 The script assumes the devenv services, a Plone site bootstrapped with
 `make bootstrap-site` and `make bootstrap-contact-form-demo`, and the

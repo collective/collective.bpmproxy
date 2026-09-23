@@ -2,7 +2,7 @@
 
 Run from the repository root:
 
-    playwright-python scripts/cut_review_process.py
+    playwright-python scripts/scenarios/cut_review_process.py
 """
 
 from e2e_review_process import compose_recording
@@ -10,7 +10,7 @@ from pathlib import Path
 import json
 
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 TIMING = ROOT / "docs/review-process-timing.json"
 OUTPUT = ROOT / "docs/review-process-pip.webm"
 

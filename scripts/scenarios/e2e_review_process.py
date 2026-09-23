@@ -2,7 +2,7 @@
 
 Run from the repository root with:
 
-    playwright-python scripts/e2e_review_process.py
+    playwright-python scripts/scenarios/e2e_review_process.py
 
 The script assumes the devenv services, a Plone site bootstrapped with
 `make bootstrap-site` and `make bootstrap-review-demo`, and the review-bot-py

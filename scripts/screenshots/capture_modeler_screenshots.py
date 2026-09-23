@@ -8,7 +8,7 @@ Prerequisites:
 
 Run from the repository root with the browser skill wrapper::
 
-    playwright-python scripts/capture_modeler_screenshots.py
+    playwright-python scripts/screenshots/capture_modeler_screenshots.py
 
 The default login is ``admin`` / ``admin``. Override it without editing the
 script using ``PLONE_ADMIN_USER`` and ``PLONE_ADMIN_PASSWORD``. Use
@@ -25,7 +25,7 @@ from playwright.sync_api import sync_playwright
 import os
 
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 PLONE_URL = os.environ.get(
     "PLONE_MODELER_URL",
     "http://127.0.0.1:8080/Plone/@@bpmproxy-modeler-controlpanel",

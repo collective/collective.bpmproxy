@@ -2,7 +2,7 @@
 
 Run from the repository root with::
 
-    playwright-python scripts/e2e_renovation_project.py
+    playwright-python scripts/scenarios/e2e_renovation_project.py
 
 Prepare the services, deploy ``examples/renovation-project`` and run
 ``make bootstrap-renovation-demo`` first. The runner records the case

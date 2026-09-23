@@ -64,5 +64,5 @@ tmp/
 *.swp
 
 # Large media (not worth tracking in git history)
-docs/**/*.webm
-docs/**/*.json
+scripts/**/*.webm
+scripts/**/*.json

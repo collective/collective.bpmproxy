@@ -96,7 +96,7 @@ the case-creation process instance are visible.
 Run the browser smoke test with:
 
 ```sh
-playwright-python scripts/e2e_renovation_project.py
+playwright-python scripts/scenarios/e2e_renovation_project.py
 ```
 
 The recording follows the same conventions as the contact-form and

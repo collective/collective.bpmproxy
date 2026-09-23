@@ -129,7 +129,7 @@ cd ../..
 Run the recording with the browser skill's headless Playwright wrapper:
 
 ```sh
-playwright-python scripts/e2e_contact_form.py
+playwright-python scripts/scenarios/e2e_contact_form.py
 ```
 
 ## Personas and user stories
@@ -143,7 +143,7 @@ playwright-python scripts/e2e_contact_form.py
 | Reception | Opens the sponsorship inquiry's task, chooses **Delegate**, and names `specialist`. | A **Handle delegated contact** task is created, assigned directly to `specialist` -- an assignee, not a candidate group, so nobody else sees it. |
 | Specialist | Opens **Contact us** and sees only the one task delegated to them, not Reception's other two. Chooses **Reply** and writes a response. | The delegated branch's own `contact-form-email` external task fires the same way; that instance ends at *Reply sent*. |
 | Operations observer (`admin`) | Follows `example-contact-form` in Cockpit from the moment the first inquiry starts. | Two concurrent instances are visible against one process definition, ending independently as Reception and Specialist each act -- unlike the other two scenarios' one-instance-(or-one-at-a-time)-per-content pattern. |
-| Maintainer | Re-run `scripts/e2e_contact_form.py` any number of times. | The script deletes and recreates its own **Contact us** page (Reception creates it on camera and so owns/publishes it fresh each run) and clears all Operaton deployments first, so Cockpit starts clean on every run. |
+| Maintainer | Re-run `scripts/scenarios/e2e_contact_form.py` any number of times. | The script deletes and recreates its own **Contact us** page (Reception creates it on camera and so owns/publishes it fresh each run) and clears all Operaton deployments first, so Cockpit starts clean on every run. |
 
 ## Fixture adaptations
 
@@ -233,7 +233,7 @@ timing data with the scenario artifacts for later cuts.
 2. Done: a `bootstrap-contact-form-demo` target in the root `Makefile`, matching
    `bootstrap-review-demo`/`bootstrap-renovation-demo`'s one-line
    `zconsole run` pattern.
-3. Done: `scripts/e2e_contact_form.py` -- the Playwright recording script:
+3. Done: `scripts/scenarios/e2e_contact_form.py` -- the Playwright recording script:
    Reception's Bpm-Proxy-creation turn can reuse
    `scripts/uitest/scenarios/bpm_proxy.py`'s proven add-menu selectors
    (`#form-widgets-process_definition_key`, `#form-buttons-save`) rather than
@@ -245,7 +245,7 @@ timing data with the scenario artifacts for later cuts.
    already learned building/fixing the other two scripts, worth having from
    the start here rather than re-discovering:
    - Port `show_actor_slide()` and `paste_text()` from
-     `scripts/e2e_review_process.py` (see docs/AGENTS.md's *Human-readable
+     `scripts/scenarios/e2e_review_process.py` (see docs/AGENTS.md's *Human-readable
      cursor and clicks* section). The six-turn scenario still benefits from
      the slide; `message`/`replyMessage` are exactly the
      free-text fields `paste_text()` (`fill()`, not `press_sequentially()`)

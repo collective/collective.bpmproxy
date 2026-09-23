@@ -45,7 +45,7 @@ login), and each observer interval's focus, so the final cut can be regenerated
 without re-recording:
 
 ```sh
-playwright-python scripts/cut_review_process.py
+playwright-python scripts/scenarios/cut_review_process.py
 ```
 
 `devenv up -d` often prints `Daemon failed to start within 120s` even when
@@ -105,7 +105,7 @@ cd ../..
 Run the recording with the browser skill's headless Playwright wrapper:
 
 ```sh
-playwright-python scripts/e2e_review_process.py
+playwright-python scripts/scenarios/e2e_review_process.py
 ```
 
 ## Personas and user stories
@@ -118,7 +118,7 @@ playwright-python scripts/e2e_review_process.py
 | Reviewer2 | Opens their own **Submit review** task, critiques the location, and requests changes. | Same, from the other parallel branch; both branches join once both are in. |
 | Reviewer3 (lead) | Opens **Consolidate review & decide**, sees both reviewers' feedback, and publishes. | `review-bot` applies the `publish` transition, with both reviews and the coordinator's own note as the transition comment. |
 | Operations observer (`admin`) | Follows the one process instance in Cockpit from the moment Author submits to the moment it ends. | The parallel-review sub-process's two concurrent tokens are visible on the diagram while both reviewers' tasks are open. |
-| Maintainer | Re-run `scripts/e2e_review_process.py` any number of times. | The script deletes and recreates the demo document itself (Author creates it on camera, so it -- not the site manager -- owns it and can submit it), and clears this example's own stale Operaton deployments first, so Cockpit's process list does not accumulate one version per run. |
+| Maintainer | Re-run `scripts/scenarios/e2e_review_process.py` any number of times. | The script deletes and recreates the demo document itself (Author creates it on camera, so it -- not the site manager -- owns it and can submit it), and clears this example's own stale Operaton deployments first, so Cockpit's process list does not accumulate one version per run. |
 
 Each Plone actor turn begins with a short title slide identifying the current
 persona and action. The body text is pasted at clipboard speed, and the final
@@ -205,7 +205,7 @@ a negative hold that `compose_recording()` should have refused to build).
 The timing manifest is the source of truth for later cuts. Keep the raw
 `review-process-cockpit.webm` and the `page@*.webm` actor clips; change the
 manifest's `gaps[].focus` values or trim boundaries as needed, then run
-`playwright-python scripts/cut_review_process.py`.
+`playwright-python scripts/scenarios/cut_review_process.py`.
 
 ## Cleanup
 
