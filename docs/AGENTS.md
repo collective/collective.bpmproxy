@@ -74,6 +74,11 @@ The PIP composer keeps the Cockpit inset hidden for that 8s interlude, then
 restores it for the actor's actual Plone interaction. This rule applies to all
 scenario runners; do not add the inset across the complete actor clip.
 
+When a scenario ends on a completed process in Cockpit History, keep the
+information panel visible and drag its `[data-testid="sash"]` left to
+`sash_box["x"] * (2 / 3)`. Do not minimize the panel; the two-thirds position
+is part of the recording composition.
+
 For a body of text longer than a short label (e.g. a document's rich-text
 body), use `paste_text()` (`locator.fill(value)`) instead of
 `human_fill()`/`press_sequentially()` -- typing hundreds of characters at

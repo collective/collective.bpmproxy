@@ -68,11 +68,11 @@ make start
 until curl -sf http://127.0.0.1:8080/Plone >/dev/null; do sleep 3; done
 ```
 
-The bootstrap script creates the groups, demo users, and fresh
-`renovation-project-demo` case. The profile's content-type portlet assignments
-provide aggregate case tasks on the case and page-review tasks on Documents. The browser
-scenario assumes this prepared state and does not modify deployments or
-recreate the case.
+The bootstrap script creates the groups and demo users. The profile's
+content-type portlet assignments provide aggregate case tasks on the case and
+page-review tasks on Documents. The browser scenario deletes and recreates the
+demo case during the recorded manager turn so the opening empty-site state and
+the case-creation process instance are visible.
 
 ## Personas
 
@@ -85,11 +85,13 @@ recreate the case.
 
 ## Scenario
 
-1. Contractor adds a Document directly inside the case.
-2. The child-created message starts a child page-review process with parallel owner and inspector tasks.
-3. Owner and inspector complete the document review independently.
-4. A case manager closes the Plone case through its `close-case` workflow transition.
-5. The close message reaches the main case process and ends it.
+1. The manager creates the Demo renovation project from Plone's Add new menu.
+2. The contractor adds a Document directly inside the case.
+3. The child-created message starts a child page-review process with parallel owner and inspector tasks.
+4. Owner and inspector complete the document review independently.
+5. The page-review subprocess completes and the main case process resumes.
+6. A case manager closes the Plone case through its `close-case` workflow transition.
+7. The close message reaches the main case process and ends it.
 
 Run the browser smoke test with:
 
@@ -101,7 +103,8 @@ The recording follows the same conventions as the contact-form and
 review-process scenarios:
 
 - Cockpit is authenticated in an unrecorded context, then recorded first and
-  kept open as the observer for the whole run.
+  kept open as the observer for the whole run. Auto-refresh and sequence-flow
+  visualization are enabled before the empty Plone site is recorded.
 - Each persona turn gets its own 1920x1080 recorded context, cursor/click
   overlay, human-paced interactions, and an eight-second title card.
 - Cockpit enables auto-refresh and sequence-flow visualization, and waits
@@ -110,7 +113,8 @@ review-process scenarios:
   and generated title segments are written beside it for later recuts.
 
 The runner does not activate Cockpit's time heat-map. It captures the final
-case in History with the information panel minimized instead.
+case in History with the left information-panel sash dragged left so the
+panel remains visible at roughly two thirds of its original width.
 
 ## Artifacts
 

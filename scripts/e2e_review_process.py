@@ -440,6 +440,7 @@ def compose_recording(
         if index == len(clips) - 1:
             gap_end = min(gap_end, output_end)
         gap_len = gap_end - gap_start
+        history_at = None
         if gap_len > 0.05:
             freeze_at = max(persona_end - 0.04, persona_start)
             history_at = (
@@ -485,37 +486,39 @@ def compose_recording(
                     f"[seg{index + 1}post]"
                 )
                 segment_labels.append(f"seg{index + 1}post")
-            elif gap_focus[index + 1] == "cockpit":
-                cockpit_slice(f"g{index + 1}main", gap_start, gap_end)
-                filters.append(
-                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
-                    f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
-                    f"stop_mode=clone,fps=25[g{index + 1}ploneraw]"
-                )
-                small_pad(f"g{index + 1}ploneraw", f"g{index + 1}inset")
             else:
+                if gap_focus[index + 1] == "cockpit":
+                    cockpit_slice(f"g{index + 1}main", gap_start, gap_end)
+                    filters.append(
+                        f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
+                        f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
+                        f"stop_mode=clone,fps=25[g{index + 1}ploneraw]"
+                    )
+                    small_pad(f"g{index + 1}ploneraw", f"g{index + 1}inset")
+                else:
+                    filters.append(
+                        f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
+                        f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
+                        f"stop_mode=clone,fps=25[g{index + 1}main]"
+                    )
+                    cockpit_slice(f"g{index + 1}cockraw", gap_start, gap_end)
+                    small_pad(
+                        f"g{index + 1}cockraw",
+                        f"g{index + 1}inset",
+                        PIP_SCALE * 2,
+                    )
                 filters.append(
-                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
-                    f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
-                    f"stop_mode=clone,fps=25[g{index + 1}main]"
+                    f"[g{index + 1}main][g{index + 1}inset]"
+                    f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg{index + 1}]"
                 )
-                cockpit_slice(f"g{index + 1}cockraw", gap_start, gap_end)
-                small_pad(
-                    f"g{index + 1}cockraw",
-                    f"g{index + 1}inset",
-                    PIP_SCALE * 2,
-                )
-            filters.append(
-                f"[g{index + 1}main][g{index + 1}inset]"
-                f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg{index + 1}]"
-            )
         else:
             # No meaningful gap before the next turn -- skip straight to it,
             # rather than build a near-zero-length segment concat chokes on.
             filters.append(
                 f"[t{index}main]fps=25,trim=start=0:end=0.04[seg{index + 1}]"
             )
-        segment_labels.append(f"seg{index + 1}")
+        if history_at is None:
+            segment_labels.append(f"seg{index + 1}")
 
     concat_inputs = "".join(f"[{label}]" for label in segment_labels)
     filters.append(
@@ -927,8 +930,8 @@ def main():
             human_click(cockpit_page, history_instance)
         cockpit_page.wait_for_url("**/#/history/process-instance/**", timeout=30000)
         cockpit_page.wait_for_timeout(1500)
-        # Keep the history information panel visible, but narrow it to roughly
-        # one third of the viewport instead of collapsing it completely.
+        # Keep the history information panel visible at roughly two thirds of
+        # its original width instead of collapsing it completely.
         info_sash = cockpit_page.locator('[data-testid="sash"]').first
         info_sash.wait_for(state="visible", timeout=10000)
         sash_box = info_sash.bounding_box()

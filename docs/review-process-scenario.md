@@ -122,9 +122,9 @@ playwright-python scripts/e2e_review_process.py
 
 Each Plone actor turn begins with a short title slide identifying the current
 persona and action. The body text is pasted at clipboard speed, and the final
-Cockpit segment opens the completed process's **History** view, collapses its
-left information panel to roughly one third of the viewport while keeping the
-panel visible, and remains there for five seconds.
+Cockpit segment opens the completed process's **History** view, drags the
+left information-panel sash left so the panel remains visible at roughly
+two thirds of its original width, and remains there for five seconds.
 
 ## Fixture adaptations
 

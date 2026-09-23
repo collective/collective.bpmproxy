@@ -23,6 +23,7 @@ import time
 BASE = "http://localhost:8080/Plone"
 COCKPIT = "http://localhost:8081/operaton/app/cockpit/default"
 CASE = f"{BASE}/renovation-project-demo"
+ASSETS = Path("examples/renovation-project")
 DOCS = Path("docs")
 TIMING_PATH = DOCS / "renovation-project-timing.json"
 VIDEO_SIZE = {"width": 1920, "height": 1080}
@@ -153,6 +154,9 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
     """
     cockpit_duration = probe_duration(cockpit_video)
     durations = [probe_duration(clip["video"]) for clip in clips]
+    # The manager turn ends at about 1:55 in the composed timeline; switch
+    # to the completed Operaton instance immediately after that turn.
+    final_focus_switch_at = 117.0
     gaps = []
     for index in range(len(clips) + 1):
         start = 0 if index == 0 else clips[index - 1]["offset"] + durations[index - 1]
@@ -182,7 +186,9 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
     # and the contractor adding the renovation document.
     initial_start, initial_end = gaps[0]
     if initial_end - initial_start > 0.05:
-        freeze = max(0, durations[0] - 0.04)
+        # The first clip opens on the empty site. Do not freeze its final
+        # frame here: that would show the created case before the manager turn.
+        freeze = 0
         filters.append(
             f"[1:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
             f"setpts=PTS-STARTPTS,tpad=stop_duration={initial_end:.3f}:"
@@ -218,22 +224,51 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         gap_duration = gap_end - gap_start
         if gap_duration > 0.05:
             freeze = max(0, duration - 0.04)
-            filters.append(
-                f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
-                f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_duration:.3f}:"
-                f"stop_mode=clone,fps=25[gap{index}_plone]"
-            )
-            cockpit_slice(f"gap{index}_cockpit_raw", gap_start, gap_end)
             # The first three turns submit Plone forms and produce a new
             # engine state; keep the final case-manager transition at normal
             # inset size because it does not submit a Camunda form.
             pip_scale = PIP_SCALE * 2 if index < len(clips) - 1 else PIP_SCALE
-            pad(f"gap{index}_cockpit_raw", f"gap{index}_cockpit_inset", pip_scale)
-            filters.append(
-                f"[gap{index}_plone][gap{index}_cockpit_inset]"
-                f"overlay=W-w-24:H-h-24[gap{index}]"
-            )
-            segment_labels.append(f"gap{index}")
+            if index == len(clips) - 1 and gap_start < final_focus_switch_at < gap_end:
+                pre_duration = final_focus_switch_at - gap_start
+                post_duration = gap_end - final_focus_switch_at
+                filters.append(
+                    f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
+                    f"setpts=PTS-STARTPTS,tpad=stop_duration={pre_duration:.3f}:"
+                    f"stop_mode=clone,fps=25[final_pre_plone]"
+                )
+                cockpit_slice("final_pre_cockpit_raw", gap_start, final_focus_switch_at)
+                pad("final_pre_cockpit_raw", "final_pre_cockpit", pip_scale)
+                filters.append(
+                    "[final_pre_plone][final_pre_cockpit]"
+                    "overlay=W-w-24:H-h-24[final_pre]"
+                )
+                segment_labels.append("final_pre")
+
+                filters.append(
+                    f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
+                    f"setpts=PTS-STARTPTS,tpad=stop_duration={post_duration:.3f}:"
+                    f"stop_mode=clone,fps=25[final_post_plone]"
+                )
+                cockpit_slice("final_post_cockpit", final_focus_switch_at, gap_end)
+                pad("final_post_plone", "final_post_inset", pip_scale)
+                filters.append(
+                    "[final_post_cockpit][final_post_inset]"
+                    "overlay=W-w-24:H-h-24[final_post]"
+                )
+                segment_labels.append("final_post")
+            else:
+                filters.append(
+                    f"[{input_index}:v]trim=start={freeze:.3f}:end={freeze + 0.04:.3f},"
+                    f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_duration:.3f}:"
+                    f"stop_mode=clone,fps=25[gap{index}_plone]"
+                )
+                cockpit_slice(f"gap{index}_cockpit_raw", gap_start, gap_end)
+                pad(f"gap{index}_cockpit_raw", f"gap{index}_cockpit_inset", pip_scale)
+                filters.append(
+                    f"[gap{index}_plone][gap{index}_cockpit_inset]"
+                    f"overlay=W-w-24:H-h-24[gap{index}]"
+                )
+                segment_labels.append(f"gap{index}")
 
     filters.append(
         f"{''.join(f'[{label}]' for label in segment_labels)}"
@@ -324,6 +359,33 @@ def main():
             CASE,
             headers={"Accept": "application/json"},
         )
+        deployments = manager_page.request.get(
+            f"{BASE}/@bpmproxy-deployments",
+            headers={"Accept": "application/json"},
+        )
+        assert deployments.status == 200, deployments.text()
+        for deployment in deployments.json():
+            response = manager_page.request.delete(
+                f"{BASE}/@bpmproxy-deployments",
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps({"id": deployment["id"]}),
+            )
+            assert response.status == 200, response.text()
+        for asset in ASSETS.iterdir():
+            if asset.suffix not in (".bpmn", ".form"):
+                continue
+            response = manager_page.request.post(
+                f"{BASE}/@bpmproxy-deploy",
+                headers={
+                    "Accept": "application/json",
+                    "Content-Type": "application/json",
+                },
+                data=json.dumps({"name": asset.name, "xml": asset.read_text()}),
+            )
+            assert response.status == 200, response.text()
         case_url = None
         document_url = None
 
@@ -360,10 +422,6 @@ def main():
             ensure_cockpit_toggle(
                 cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
             )
-
-        # Keep the empty definition view live from the first recorded Plone
-        # action so the new case appears without a manual refresh.
-        configure_cockpit()
 
         def record_turn(username, password, action, turn, title, subtitle):
             context = browser.new_context(
@@ -453,6 +511,17 @@ def main():
             ),
         )
         assert sharing.status in (200, 204), sharing.text()
+
+        # The new case is now visible in the definition list. Enter its live
+        # instance before the contractor turn so auto-refresh and sequence
+        # flow are active for every subsequent engine update.
+        cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+        cockpit_page.get_by_role("link", name="renovation-case").click()
+        cockpit_page.wait_for_timeout(1200)
+        case_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
+        case_instance.wait_for(state="visible", timeout=30000)
+        human_click(cockpit_page, case_instance)
+        configure_cockpit()
 
         record_turn(
             "contractor",
@@ -556,6 +625,11 @@ def main():
             "Closing the completed renovation case",
         )
 
+        # The close transition can finish the engine instance while Cockpit's
+        # auto-refresh request is between intervals. Force one refresh before
+        # opening History so the completion flow is visible in the recording.
+        cockpit_page.reload(wait_until="load")
+        cockpit_page.wait_for_timeout(1800)
         cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
         cockpit_page.get_by_role("link", name="renovation-case").click()
         cockpit_page.wait_for_timeout(1200)
@@ -567,11 +641,19 @@ def main():
         history_instance.wait_for(state="visible", timeout=30000)
         human_click(cockpit_page, history_instance)
         cockpit_page.wait_for_timeout(1500)
-        info_panel = cockpit_page.get_by_role(
-            "button", name="Minimize info panel", exact=True
+        info_sash = cockpit_page.locator('[data-testid="sash"]').first
+        info_sash.wait_for(state="visible", timeout=10000)
+        sash_box = info_sash.bounding_box()
+        assert sash_box is not None
+        target_x = sash_box["x"] * (2 / 3)
+        target_y = sash_box["y"] + sash_box["height"] / 2
+        cockpit_page.mouse.move(sash_box["x"] + sash_box["width"] / 2, target_y)
+        cockpit_page.mouse.down()
+        cockpit_page.mouse.move(target_x, target_y, steps=18)
+        cockpit_page.mouse.up()
+        cockpit_page.get_by_text("Audit Log", exact=True).last.wait_for(
+            state="visible", timeout=10000
         )
-        if info_panel.count() and info_panel.first.is_visible():
-            human_click(cockpit_page, info_panel.first)
         cockpit_page.wait_for_timeout(5000)
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-completed.png"),
