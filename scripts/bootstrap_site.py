@@ -32,7 +32,12 @@ MANAGER_PASSWORD = os.environ.get("PLONE_MANAGER_PASSWORD", "manager")
 # everyone below a site manager.
 EDITOR_USER = os.environ.get("PLONE_EDITOR_USER", "editor")
 EDITOR_PASSWORD = os.environ.get("PLONE_EDITOR_PASSWORD", "editor")
-PROFILES = ("collective.bpmproxy:default", "collective.bpmproxy.modeler:default")
+PROFILES = (
+    "plone.app.theming:default",
+    "plonetheme.barceloneta:default",
+    "collective.bpmproxy:default",
+    "collective.bpmproxy.modeler:default",
+)
 
 
 def main(app):
@@ -71,6 +76,21 @@ def main(app):
             continue
         print(f"Installing {profile} ...")
         installer.install_product(package)
+
+    # The development browser uses 127.0.0.1. Plone's default theme
+    # blacklist otherwise disables Diazo there, leaving the site unstyled.
+    hostname_blacklist = api.portal.get_registry_record(
+        "plone.app.theming.interfaces.IThemeSettings.hostnameBlacklist"
+    ) or []
+    hostname_blacklist = [
+        hostname
+        for hostname in hostname_blacklist
+        if hostname not in {"127.0.0.1", "localhost"}
+    ]
+    api.portal.set_registry_record(
+        "plone.app.theming.interfaces.IThemeSettings.hostnameBlacklist",
+        hostname_blacklist,
+    )
 
     if site.acl_users.getUserById(MANAGER_USER) is None:
         print(f"Creating '{MANAGER_USER}' (Manager, Administrators) ...")

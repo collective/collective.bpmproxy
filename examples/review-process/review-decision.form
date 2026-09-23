@@ -12,8 +12,8 @@
           "value": "publish"
         },
         {
-          "label": "Reject page back to draft",
-          "value": "reject"
+          "label": "Retract page back to draft",
+          "value": "retract"
         }
       ],
       "label": "Final Decision",

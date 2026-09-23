@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_renovation_work_and_extra_work" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.2.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.17.0">
-  <bpmn:process id="renovation-work-and-extra-work" name="Renovation: Work &amp; Extra-Work" isExecutable="true" camunda:historyTimeToLive="P30D">
+  <bpmn:process id="renovation-work-and-extra-work" name="Renovation: Work &#38; Extra-Work" isExecutable="true" camunda:historyTimeToLive="P30D">
     <bpmn:startEvent id="StartEvent_1" name="Work phase started">
       <bpmn:outgoing>Flow_start_to_bind</bpmn:outgoing>
       <bpmn:signalEventDefinition id="SignalEventDefinition_start" signalRef="Signal_WorkPhaseStarted" />
@@ -82,12 +82,6 @@
       <bpmndi:BPMNShape id="Activity_document_work_di" bpmnElement="Activity_document_work">
         <dc:Bounds x="500" y="160" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="Event_documented_di" bpmnElement="Event_documented">
-        <dc:Bounds x="650" y="182" width="36" height="36" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="631" y="225" width="74" height="27" />
-        </bpmndi:BPMNLabel>
-      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_submit_final_di" bpmnElement="Activity_submit_final">
         <dc:Bounds x="500" y="360" width="100" height="80" />
       </bpmndi:BPMNShape>
@@ -100,8 +94,14 @@
           <dc:Bounds x="781" y="425" width="79" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_documented_di" bpmnElement="Event_documented">
+        <dc:Bounds x="802" y="182" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="783" y="225" width="74" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_extra_work_di" bpmnElement="Activity_extra_work" isExpanded="true">
-        <dc:Bounds x="140" y="520" width="560" height="200" />
+        <dc:Bounds x="140" y="520" width="370" height="170" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Event_extrawork_start_di" bpmnElement="Event_extrawork_start">
         <dc:Bounds x="180" y="582" width="36" height="36" />
@@ -118,6 +118,14 @@
           <dc:Bounds x="419" y="625" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_extrawork_start_to_task_di" bpmnElement="Flow_extrawork_start_to_task">
+        <di:waypoint x="216" y="600" />
+        <di:waypoint x="280" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_extrawork_task_to_end_di" bpmnElement="Flow_extrawork_task_to_end">
+        <di:waypoint x="380" y="600" />
+        <di:waypoint x="440" y="600" />
+      </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_start_to_bind_di" bpmnElement="Flow_start_to_bind">
         <di:waypoint x="188" y="300" />
         <di:waypoint x="240" y="300" />
@@ -133,7 +141,7 @@
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_document_to_end_di" bpmnElement="Flow_document_to_end">
         <di:waypoint x="600" y="200" />
-        <di:waypoint x="650" y="200" />
+        <di:waypoint x="802" y="200" />
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="Flow_split_to_submit_di" bpmnElement="Flow_split_to_submit">
         <di:waypoint x="425" y="325" />
@@ -147,14 +155,6 @@
       <bpmndi:BPMNEdge id="Flow_transition_to_end_di" bpmnElement="Flow_transition_to_end">
         <di:waypoint x="750" y="400" />
         <di:waypoint x="802" y="400" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_extrawork_start_to_task_di" bpmnElement="Flow_extrawork_start_to_task">
-        <di:waypoint x="216" y="600" />
-        <di:waypoint x="280" y="600" />
-      </bpmndi:BPMNEdge>
-      <bpmndi:BPMNEdge id="Flow_extrawork_task_to_end_di" bpmnElement="Flow_extrawork_task_to_end">
-        <di:waypoint x="380" y="600" />
-        <di:waypoint x="440" y="600" />
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>

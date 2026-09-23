@@ -98,7 +98,7 @@
       <bpmndi:BPMNShape id="Gateway_decision_di" bpmnElement="Gateway_decision" isMarkerVisible="true">
         <dc:Bounds x="760" y="275" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="746" y="245" width="79" height="27" />
+          <dc:Bounds x="821" y="293" width="78" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="Activity_set_approve_di" bpmnElement="Activity_set_approve">

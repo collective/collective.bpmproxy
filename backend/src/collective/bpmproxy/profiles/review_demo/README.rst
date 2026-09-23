@@ -4,7 +4,7 @@ collective.bpmproxy:review_demo
 GenericSetup extension profile for the parallel review process example.
 
 When applied, it registers the required Plone content rules:
-- ``plone-content-submitted-to-review``: Dispatches BPMN signal when content is submitted for review (transition ``submit``).
+- ``plone-content-submitted-to-review``: Sends a BPMN message when content is submitted for review (transition ``submit``).
 - ``plone-content-retracted``: Dispatches BPMN signal when content is retracted (transition ``retract``).
 
 Both rules are automatically assigned and enabled on the Plone site root.

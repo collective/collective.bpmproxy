@@ -229,6 +229,13 @@ def validate_camunda_form(data_json, schema_json, context):
         if validation.get("required"):
             _require(value not in [None, ""], f"Field {key} is required.")
 
+        required_if = validation.get("requiredIf")
+        if required_if:
+            condition_key = required_if.get("field")
+            condition_value = required_if.get("equals")
+            if data.get(condition_key) == condition_value:
+                _require(value not in [None, ""], f"Field {key} is required.")
+
         # Numeric bounds only apply to fields that were actually filled in;
         # an empty value is the "required" check's business, not theirs.
         min_value = validation.get("min")

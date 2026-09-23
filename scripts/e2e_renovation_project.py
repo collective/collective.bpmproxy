@@ -22,11 +22,19 @@ import json
 import subprocess
 import time
 
+from recording import (
+    delete_demo_content,
+    ensure_cockpit_toggle,
+    prepare_title_segments,
+    write_timing_manifest,
+)
+
 
 BASE = "http://localhost:8080/Plone"
 COCKPIT = "http://localhost:8081/operaton/app/cockpit/default"
 ASSETS = Path("examples/renovation-project")
 DOCS = Path("docs")
+TIMING_PATH = DOCS / "renovation-project-timing.json"
 PROJECT_PATH = "renovation-project-demo"
 PROCESS_KEYS = (
     "renovation-plan-review",
@@ -50,6 +58,7 @@ VIDEO_SIZE = {"width": 1920, "height": 1080}
 # Every recording opens on a blank frame while the first document paints.
 # Trimming it keeps that frame out of the picture-in-picture hold frames.
 VIDEO_TRIM = 0.8
+ACTOR_SLIDE_DURATION = 8.0
 PIP_SCALE = 0.4
 PIP_MARGIN = 24
 PIP_BORDER = 3
@@ -157,62 +166,13 @@ def paste_text(page, locator, value):
 
 
 def show_actor_slide(page, eyebrow, title, subtitle):
-    """Overlay a full-frame title card naming the persona and turn, ported
-    from scripts/e2e_review_process.py -- this scenario has three personas
-    acting across nine turns (more than review's four across five), so
-    identifying whose turn it is matters at least as much here.
-    """
-    page.evaluate(
-        """({eyebrow, title, subtitle}) => {
-          document.getElementById('bpmproxy-recording-slide')?.remove();
-          const style = document.createElement('style');
-          style.id = 'bpmproxy-recording-slide-style';
-          style.textContent = `
-            #bpmproxy-recording-slide {
-              position: fixed; inset: 0; z-index: 2147483645;
-              display: grid; place-items: center; pointer-events: none;
-              background: rgba(15, 23, 42, .72);
-              color: white; font-family: system-ui, sans-serif;
-            }
-            #bpmproxy-recording-slide > div {
-              width: min(980px, 80vw); padding: 58px 72px;
-              border-left: 10px solid #0ea5e9; background: rgba(15, 23, 42, .96);
-              box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
-            }
-            #bpmproxy-recording-slide .eyebrow {
-              color: #7dd3fc; font-size: 24px; letter-spacing: .12em;
-              text-transform: uppercase; margin-bottom: 22px;
-            }
-            #bpmproxy-recording-slide .title {
-              font-size: 58px; font-weight: 700; line-height: 1.08;
-            }
-            #bpmproxy-recording-slide .subtitle {
-              margin-top: 24px; color: #cbd5e1; font-size: 30px;
-            }
-          `;
-          document.head.appendChild(style);
-          const slide = document.createElement('div');
-          slide.id = 'bpmproxy-recording-slide';
-          slide.innerHTML = `<div>
-            <div class="eyebrow"></div>
-            <div class="title"></div>
-            <div class="subtitle"></div>
-          </div>`;
-          slide.querySelector('.eyebrow').textContent = eyebrow;
-          slide.querySelector('.title').textContent = title;
-          slide.querySelector('.subtitle').textContent = subtitle;
-          document.documentElement.appendChild(slide);
-        }""",
-        {"eyebrow": eyebrow, "title": title, "subtitle": subtitle},
-    )
-    page.wait_for_timeout(3600)
-    page.evaluate(
-        """() => {
-          document.getElementById('bpmproxy-recording-slide')?.remove();
-          document.getElementById('bpmproxy-recording-slide-style')?.remove();
-        }"""
-    )
-
+    """Record title metadata; the title is rendered as an independent segment."""
+    page._bpmproxy_title = {
+        "eyebrow": eyebrow,
+        "title": title,
+        "subtitle": subtitle,
+    }
+    page.wait_for_timeout(int(ACTOR_SLIDE_DURATION * 1000))
 
 def nix_ffmpeg(tool, *args, capture=True):
     """Run ffmpeg/ffprobe from nixpkgs, so no global install is required."""
@@ -283,11 +243,12 @@ def wait_for_state(page, project_url, state_text, timeout_ms=90000):
     raise AssertionError(f"Workflow did not reach {state_text!r} in time")
 
 
-def compose_recording(cockpit_video, clips, output=None):
-    """Build a focus-flipping composite: Cockpit is the main view while
-    nothing is happening in Plone, but the frame flips to Plone-as-main
-    (with a small Cockpit inset) for the span of each persona turn, then
-    flips back.
+def compose_recording(cockpit_video, clips, output=None, timing_path=None):
+    """Build a composite with Plone as the main view during every gap.
+
+    Each persona turn is Plone-as-main with a small Cockpit inset. Between
+    turns, the last Plone frame remains full-screen and the relevant Cockpit
+    slice is shown only as an inset.
 
     `clips` is a chronological list of {"video": path, "offset": seconds},
     offset being wall-clock time since the Cockpit recording started
@@ -303,18 +264,21 @@ def compose_recording(cockpit_video, clips, output=None):
     `scripts/uitest/` -- err, see the __main__ smoke test at the bottom of
     this file) before ever running it against a real recording:
 
-      gap_0 (Cockpit alone, nothing happened yet)
+      gap_0 (Plone alone, nothing happened yet)
       turn_0 (Plone main + small Cockpit inset)
-      gap_1 (Cockpit main + small *frozen last frame of turn_0* inset)
+      gap_1 (Plone main + small Cockpit inset)
       turn_1 (Plone main + small Cockpit inset)
       ...
-      gap_N (Cockpit main + small frozen last frame of turn_{N-1})
+      gap_N (Plone main + small Cockpit inset)
 
     Never use `overlay=...:shortest=1` here -- see docs/AGENTS.md.
     """
     output = output or DOCS / "renovation-project-pip.webm"
     cockpit_duration = probe_duration(cockpit_video)
     durations = [probe_duration(clip["video"]) for clip in clips]
+    title_segments = prepare_title_segments(
+        nix_ffmpeg, clips, output or DOCS / "renovation-project-pip.webm"
+    )
 
     # Back-to-back turns (e.g. Owner and Inspector approving in parallel,
     # with no Cockpit interstitial between them) leave zero real-time gap by
@@ -373,9 +337,20 @@ def compose_recording(cockpit_video, clips, output=None):
             f":color={PIP_BORDER_COLOR}[{dst_label}]"
         )
 
-    # gap_0: Cockpit alone -- there is no prior Plone frame to show yet.
+    # gap_0: use the first actor frame as the main view so the finished cut
+    # starts in Plone; Cockpit remains available only as an inset.
     start, end = gaps[0]
-    cockpit_slice("seg0", max(start, VIDEO_TRIM), max(end, VIDEO_TRIM + 0.04))
+    gap_len = end - start
+    filters.append(
+        f"[1:v]trim=start=0:end=0.04,setpts=PTS-STARTPTS,"
+        f"tpad=stop_duration={gap_len:.3f}:stop_mode=clone,fps=25[g0main]"
+    )
+    cockpit_slice("g0cockraw", max(start, VIDEO_TRIM), max(end, VIDEO_TRIM + 0.04))
+    small_pad("g0cockraw", "g0inset")
+    filters.append(
+        "[g0main][g0inset]"
+        f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg0]"
+    )
     segment_labels.append("seg0")
 
     for index, clip in enumerate(clips):
@@ -383,34 +358,65 @@ def compose_recording(cockpit_video, clips, output=None):
         # inset sliced from the exact same real-time window.
         persona_start = VIDEO_TRIM
         persona_end = durations[index]
+        slide_end = clip["title_duration"]
         filters.append(
-            f"[{index + 1}:v]trim=start={persona_start:.3f}:end={persona_end:.3f},"
+            f"[{len(clips) + index + 1}:v]trim=start=0:end={clip['title_duration']:.3f},"
+            f"setpts=PTS-STARTPTS,fps=25[turn{index}titlebase];"
+            f"[turn{index}titlebase]format=rgba,colorchannelmixer=aa=0.8"
+            f"[turn{index}title]"
+        )
+        filters.append(
+            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:"
+            f"end={persona_start + slide_end + 0.04:.3f},"
+            f"setpts=PTS-STARTPTS,tpad=stop_duration={clip['title_duration']:.3f}:"
+            f"stop_mode=clone,fps=25[turn{index}titlemain]"
+        )
+        cockpit_slice(
+            f"turn{index}titlecockraw",
+            clip["offset"] + VIDEO_TRIM,
+            clip["offset"] + VIDEO_TRIM + clip["title_duration"],
+        )
+        small_pad(f"turn{index}titlecockraw", f"turn{index}titlecock")
+        filters.append(
+            f"[turn{index}titlemain][turn{index}titlecock]"
+            f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}"
+            f"[turn{index}titlewithpip];"
+            f"[turn{index}titlewithpip][turn{index}title]"
+            f"overlay=0:0[seg_turn{index}title]"
+        )
+        segment_labels.append(f"seg_turn{index}title")
+        filters.append(
+            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:end={persona_end:.3f},"
             f"setpts=PTS-STARTPTS,fps=25[t{index}main]"
         )
-        inset_start = clip["offset"] + VIDEO_TRIM
-        inset_end = clip["offset"] + persona_end
-        cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
-        small_pad(f"t{index}cockraw", f"t{index}inset")
-        filters.append(
-            f"[t{index}main][t{index}inset]"
-            f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg_turn{index}]"
-        )
-        segment_labels.append(f"seg_turn{index}")
+        if persona_end - persona_start > slide_end + 0.04:
+            inset_start = clip["offset"] + VIDEO_TRIM + slide_end
+            inset_end = clip["offset"] + persona_end
+            filters.append(
+                f"[t{index}main]trim=start={slide_end:.3f}:end={persona_end - persona_start:.3f},"
+                f"setpts=PTS-STARTPTS[t{index}body]"
+            )
+            cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
+            small_pad(f"t{index}cockraw", f"t{index}inset")
+            filters.append(
+                f"[t{index}body][t{index}inset]"
+                f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg_turn{index}]"
+            )
+            segment_labels.append(f"seg_turn{index}")
 
-        # gap_{i+1}: Cockpit main again, small inset frozen on this turn's
-        # last frame for the length of the gap -- a visual reminder of what
-        # Plone just showed while the viewer's attention returns to Cockpit.
+        # gap_{i+1}: keep the last Plone frame as the main view while Cockpit
+        # continues in the inset until the next persona turn.
         gap_start, gap_end = gaps[index + 1]
         gap_len = gap_end - gap_start
         if gap_len > 0.05:
-            cockpit_slice(f"g{index + 1}main", gap_start, gap_end)
             freeze_at = max(persona_end - 0.04, persona_start)
             filters.append(
                 f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
                 f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:stop_mode=clone,"
-                f"fps=25[g{index + 1}frozen]"
+                f"fps=25[g{index + 1}main]"
             )
-            small_pad(f"g{index + 1}frozen", f"g{index + 1}inset")
+            cockpit_slice(f"g{index + 1}cockraw", gap_start, gap_end)
+            small_pad(f"g{index + 1}cockraw", f"g{index + 1}inset")
             filters.append(
                 f"[g{index + 1}main][g{index + 1}inset]"
                 f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg{index + 1}]"
@@ -428,10 +434,40 @@ def compose_recording(cockpit_video, clips, output=None):
         f"{concat_inputs}concat=n={len(segment_labels)}:v=1:a=0,format=yuv420p[out]"
     )
     filter_complex = ";".join(filters)
+    if timing_path:
+        write_timing_manifest(
+            timing_path,
+            {
+                "cockpit_video": str(cockpit_video),
+                "pip_video": str(output),
+                "title_segments": [
+                    {
+                        "video": str(clip["title_segment"]),
+                        "title": clip["title"],
+                        "duration": clip["title_duration"],
+                    }
+                    for clip in clips
+                ],
+                "clips": [
+                    {
+                        **clip,
+                        "video": str(clip["video"]),
+                        "title_segment": str(clip["title_segment"]),
+                        "duration": durations[index],
+                    }
+                    for index, clip in enumerate(clips)
+                ],
+                "gaps": [
+                    {"start": start, "end": end} for start, end in gaps
+                ],
+            },
+        )
 
     inputs = ["-i", cockpit_video]
     for clip in clips:
         inputs += ["-i", clip["video"]]
+    for title_segment in title_segments:
+        inputs += ["-i", title_segment]
 
     nix_ffmpeg(
         "ffmpeg",
@@ -506,6 +542,11 @@ def main():
             )
 
         project_url = f"{BASE}/{PROJECT_PATH}"
+        delete_demo_content(
+            setup_page,
+            BASE,
+            ("contact-us", "plone-conference-2027-unveiled"),
+        )
         children = setup_page.evaluate(
             """async url => (await (await fetch(url + '?fullobjects=0', {
               headers: {'Accept': 'application/json'}
@@ -581,12 +622,12 @@ def main():
             instance_link.wait_for(state="visible", timeout=30000)
             human_click(cockpit_page, instance_link)
             cockpit_page.wait_for_timeout(1200)
-            auto_refresh = cockpit_page.locator(".toggle-auto-refresh-button")
-            sequence_flow = cockpit_page.locator(".toggle-sequence-flow-button")
-            if auto_refresh.count():
-                human_click(cockpit_page, auto_refresh)
-            if sequence_flow.count():
-                human_click(cockpit_page, sequence_flow)
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-auto-refresh-button", "auto-refresh"
+            )
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
+            )
 
         def focus_instance_view():
             cockpit_page.bring_to_front()
@@ -599,11 +640,24 @@ def main():
             before it and closed immediately after, per docs/AGENTS.md -- so
             this is the unit every clip in `clips` corresponds to.
             """
+            auth = browser.new_context(
+                extra_http_headers={"Authorization": basic_auth(username, password)}
+            )
+            auth_page = auth.new_page()
+            auth_page.goto(BASE, wait_until="load")
+            if auth_page.locator("#__ac_name").count():
+                auth_page.locator("#__ac_name").fill(username)
+                auth_page.locator("#__ac_password").fill(password)
+                auth_page.locator("#buttons-login").click()
+                auth_page.wait_for_load_state("load")
+            storage_state = auth.storage_state()
+            auth.close()
             context = browser.new_context(
                 viewport=VIDEO_SIZE,
                 record_video_dir=str(DOCS),
                 record_video_size=VIDEO_SIZE,
                 extra_http_headers={"Authorization": basic_auth(username, password)},
+                storage_state=storage_state,
             )
             context.add_init_script(CURSOR_SCRIPT)
             page = context.new_page()
@@ -611,7 +665,18 @@ def main():
             action(page)
             video_path = page.video.path()
             context.close()
-            clips.append({"video": video_path, "offset": offset})
+            # Give Cockpit's auto-refresh one full interval after each Plone
+            # submission before the next actor turn starts.
+            cockpit_page.bring_to_front()
+            cockpit_page.wait_for_timeout(6000)
+            clips.append(
+                {
+                    "video": video_path,
+                    "offset": offset,
+                    "title": getattr(page, "_bpmproxy_title", None),
+                    "title_duration": ACTOR_SLIDE_DURATION,
+                }
+            )
             return video_path
 
         # Cockpit follows Plan Review from the start -- there is nothing to see
@@ -891,12 +956,6 @@ def main():
         )
         if info_panel.count() and info_panel.first.is_visible():
             human_click(cockpit_page, info_panel.first)
-        heatmap = cockpit_page.locator("button.toggle-heatmap-button")
-        heatmap.wait_for(state="visible", timeout=10000)
-        if heatmap.get_attribute("aria-label", timeout=10000).startswith(
-            "Show time heatmap"
-        ):
-            human_click(cockpit_page, heatmap)
         cockpit_page.wait_for_timeout(5000)
         cockpit_page.screenshot(
             path=str(DOCS / "renovation-project-cockpit-completed.png"), full_page=True
@@ -916,7 +975,12 @@ def main():
         Path(cockpit_video).replace(DOCS / "renovation-project-cockpit.webm")
         for clip in clips:
             clip["video"] = Path(clip["video"])
-        compose_recording(DOCS / "renovation-project-cockpit.webm", clips)
+        compose_recording(
+            DOCS / "renovation-project-cockpit.webm",
+            clips,
+            output=DOCS / "renovation-project-pip.webm",
+            timing_path=TIMING_PATH,
+        )
 
 
 if __name__ == "__main__":

@@ -230,6 +230,54 @@ def test_validate_camunda_form():
     validate_camunda_form(json.dumps(ok_data), json.dumps(schema), None)
 
 
+def test_validate_camunda_form_required_if():
+    schema = {
+        "components": [
+            {
+                "key": "assignedUser",
+                "validate": {
+                    "requiredIf": {"field": "action", "equals": "delegate"}
+                },
+            },
+            {
+                "key": "replyMessage",
+                "validate": {
+                    "requiredIf": {"field": "action", "equals": "reply"}
+                },
+            },
+        ]
+    }
+
+    validate_camunda_form(
+        json.dumps({"action": "abandon"}),
+        json.dumps(schema),
+        None,
+    )
+    validate_camunda_form(
+        json.dumps({"action": "delegate", "assignedUser": "specialist"}),
+        json.dumps(schema),
+        None,
+    )
+    validate_camunda_form(
+        json.dumps({"action": "reply", "replyMessage": "Thanks"}),
+        json.dumps(schema),
+        None,
+    )
+
+    with pytest.raises(AssertionError, match="Field assignedUser is required"):
+        validate_camunda_form(
+            json.dumps({"action": "delegate"}),
+            json.dumps(schema),
+            None,
+        )
+    with pytest.raises(AssertionError, match="Field replyMessage is required"):
+        validate_camunda_form(
+            json.dumps({"action": "reply"}),
+            json.dumps(schema),
+            None,
+        )
+
+
 def test_validate_camunda_form_vocabulary():
     schema = {
         "components": [{"key": "f_vocab", "properties": {"vocabulary": "my.vocab"}}]

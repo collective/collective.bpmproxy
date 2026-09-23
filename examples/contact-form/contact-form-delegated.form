@@ -30,7 +30,13 @@
       "type": "textarea",
       "id": "Field_replyMessage",
       "key": "replyMessage",
-      "description": "Required if replying"
+      "description": "Required if replying",
+      "validate": {
+        "requiredIf": {
+          "field": "action",
+          "equals": "reply"
+        }
+      }
     },
     {
       "action": "submit",

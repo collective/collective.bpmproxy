@@ -20,7 +20,8 @@
       "id": "Field_senderEmail",
       "key": "senderEmail",
       "validate": {
-        "required": true
+        "required": true,
+        "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
       }
     },
     {

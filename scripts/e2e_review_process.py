@@ -19,18 +19,26 @@ run, human-paced cursor and clicks, and a picture-in-picture composite
 aligned to real wall-clock offsets.
 """
 
-from pathlib import Path
-from playwright.sync_api import sync_playwright
 import base64
 import json
+import os
 import subprocess
 import time
+from pathlib import Path
 
+from playwright.sync_api import sync_playwright
+from recording import (
+    delete_demo_content,
+    ensure_cockpit_toggle,
+    prepare_title_segments,
+    write_timing_manifest,
+)
 
 BASE = "http://localhost:8080/Plone"
 COCKPIT = "http://localhost:8081/operaton/app/cockpit/default"
 ASSETS = Path("examples/review-process")
 DOCS = Path("docs")
+TIMING_PATH = DOCS / "review-process-timing.json"
 DOC_TITLE = "Plone Conference 2027 unveiled!"
 DOC_PATH = "plone-conference-2027-unveiled"  # the slug Plone derives from DOC_TITLE
 DOC_BODY = (
@@ -55,6 +63,7 @@ VIDEO_SIZE = {"width": 1920, "height": 1080}
 # Every recording opens on a blank frame while the first document paints.
 # Trimming it keeps that frame out of the picture-in-picture hold frames.
 VIDEO_TRIM = 0.8
+ACTOR_SLIDE_DURATION = 8.0
 PIP_SCALE = 0.4
 PIP_MARGIN = 24
 PIP_BORDER = 3
@@ -113,6 +122,14 @@ def basic_auth(username, password):
     return f"Basic {value}"
 
 
+def login(page, username, password):
+    page.goto(f"{BASE}/login", wait_until="load")
+    page.locator("#__ac_name").fill(username)
+    page.locator("#__ac_password").fill(password)
+    page.locator("#buttons-login").click()
+    page.wait_for_load_state("load")
+
+
 def deploy(page, name, content):
     return page.evaluate(
         """async ({base, name, xml}) => {
@@ -159,57 +176,13 @@ def paste_text(page, locator, value):
 
 
 def show_actor_slide(page, eyebrow, title, subtitle):
-    page.evaluate(
-        """({eyebrow, title, subtitle}) => {
-          document.getElementById('bpmproxy-recording-slide')?.remove();
-          const style = document.createElement('style');
-          style.id = 'bpmproxy-recording-slide-style';
-          style.textContent = `
-            #bpmproxy-recording-slide {
-              position: fixed; inset: 0; z-index: 2147483645;
-              display: grid; place-items: center; pointer-events: none;
-              background: rgba(15, 23, 42, .72);
-              color: white; font-family: system-ui, sans-serif;
-            }
-            #bpmproxy-recording-slide > div {
-              width: min(980px, 80vw); padding: 58px 72px;
-              border-left: 10px solid #0ea5e9; background: rgba(15, 23, 42, .96);
-              box-shadow: 0 18px 50px rgba(0, 0, 0, .35);
-            }
-            #bpmproxy-recording-slide .eyebrow {
-              color: #7dd3fc; font-size: 24px; letter-spacing: .12em;
-              text-transform: uppercase; margin-bottom: 22px;
-            }
-            #bpmproxy-recording-slide .title {
-              font-size: 58px; font-weight: 700; line-height: 1.08;
-            }
-            #bpmproxy-recording-slide .subtitle {
-              margin-top: 24px; color: #cbd5e1; font-size: 30px;
-            }
-          `;
-          document.head.appendChild(style);
-          const slide = document.createElement('div');
-          slide.id = 'bpmproxy-recording-slide';
-          slide.innerHTML = `<div>
-            <div class="eyebrow"></div>
-            <div class="title"></div>
-            <div class="subtitle"></div>
-          </div>`;
-          slide.querySelector('.eyebrow').textContent = eyebrow;
-          slide.querySelector('.title').textContent = title;
-          slide.querySelector('.subtitle').textContent = subtitle;
-          document.documentElement.appendChild(slide);
-        }""",
-        {"eyebrow": eyebrow, "title": title, "subtitle": subtitle},
-    )
-    page.wait_for_timeout(3600)
-    page.evaluate(
-        """() => {
-          document.getElementById('bpmproxy-recording-slide')?.remove();
-          document.getElementById('bpmproxy-recording-slide-style')?.remove();
-        }"""
-    )
-
+    """Record title metadata; the title is rendered as an independent segment."""
+    page._bpmproxy_title = {
+        "eyebrow": eyebrow,
+        "title": title,
+        "subtitle": subtitle,
+    }
+    page.wait_for_timeout(int(ACTOR_SLIDE_DURATION * 1000))
 
 def nix_ffmpeg(tool, *args, capture=True):
     """Run ffmpeg/ffprobe from nixpkgs, so no global install is required."""
@@ -275,11 +248,18 @@ def wait_for_state(page, doc_url, state_text, timeout_ms=60000):
     raise AssertionError(f"Workflow did not reach {state_text!r} in time")
 
 
-def compose_recording(cockpit_video, clips, output):
-    """Build a focus-flipping composite: Cockpit is the main view while
-    nothing is happening in Plone, but the frame flips to Plone-as-main
-    (with a small Cockpit inset) for the span of each persona turn, then
-    flips back.
+def compose_recording(
+    cockpit_video,
+    clips,
+    output,
+    gap_focus=None,
+    timing_path=None,
+    final_history_at=None,
+):
+    """Build a focus-flipping composite starting with the first Plone turn.
+
+    Persona turns are Plone-as-main with a small Cockpit inset. Observer gaps
+    can put either source first so the process state follows the story.
 
     `clips` is a chronological list of {"video": path, "offset": seconds},
     offset being wall-clock time since the Cockpit recording started
@@ -290,6 +270,14 @@ def compose_recording(cockpit_video, clips, output):
     """
     cockpit_duration = probe_duration(cockpit_video)
     durations = [probe_duration(clip["video"]) for clip in clips]
+    title_segments = prepare_title_segments(
+        nix_ffmpeg, clips, timing_path or DOCS / "review-process-pip.webm"
+    )
+    gap_focus = gap_focus or ["plone"] + ["cockpit"] * len(clips)
+    if len(gap_focus) != len(clips) + 1:
+        raise ValueError("gap_focus must contain one focus value per timeline gap")
+    if any(focus not in {"plone", "cockpit"} for focus in gap_focus):
+        raise ValueError("gap_focus values must be 'plone' or 'cockpit'")
 
     # Back-to-back turns leave zero real-time gap by design. ffprobe's
     # measured clip duration and the wall-clock offsets captured via
@@ -314,6 +302,9 @@ def compose_recording(cockpit_video, clips, output):
             )
         end = max(end, start)
         gaps.append((start, end))
+    if final_history_at is None:
+        final_history_at = gaps[-1][0] + 12.0
+    output_end = min(gaps[-1][1], final_history_at + 8.0)
 
     print(
         "PIP timeline:",
@@ -328,8 +319,49 @@ def compose_recording(cockpit_video, clips, output):
                 for index, clip in enumerate(clips)
             ],
             "gaps": [(round(a, 2), round(b, 2)) for a, b in gaps],
+            "gap_focus": gap_focus,
         },
     )
+    if timing_path:
+        timing_path = Path(timing_path)
+        write_timing_manifest(
+            timing_path,
+            {
+                    "cockpit_video": os.path.relpath(cockpit_video, Path.cwd()),
+                    "title_segments": [
+                        {
+                            "video": os.path.relpath(
+                                clip["title_segment"], Path.cwd()
+                            ),
+                            "title": clip["title"],
+                            "duration": clip["title_duration"],
+                        }
+                        for clip in clips
+                    ],
+                    "clips": [
+                        {
+                            "video": os.path.relpath(clip["video"], Path.cwd()),
+                            "title": clip["title"],
+                            "title_segment": os.path.relpath(
+                                clip["title_segment"], Path.cwd()
+                            ),
+                            "title_duration": clip["title_duration"],
+                            "offset": clip["offset"],
+                            "duration": durations[index],
+                        }
+                        for index, clip in enumerate(clips)
+                    ],
+                    "gaps": [
+                        {
+                            "start": start,
+                            "end": end,
+                            "focus": gap_focus[index],
+                        }
+                        for index, (start, end) in enumerate(gaps)
+                    ],
+                    "final_history_at": final_history_at,
+                }
+        )
 
     filters = []
     segment_labels = []
@@ -340,50 +372,144 @@ def compose_recording(cockpit_video, clips, output):
             f"fps=25[{label}]"
         )
 
-    def small_pad(src_label, dst_label):
+    def small_pad(src_label, dst_label, scale=PIP_SCALE):
         filters.append(
-            f"[{src_label}]scale=iw*{PIP_SCALE}:-2,"
+            f"[{src_label}]scale=iw*{scale}:-2,"
             f"pad=iw+{2 * PIP_BORDER}:ih+{2 * PIP_BORDER}:{PIP_BORDER}:{PIP_BORDER}"
             f":color={PIP_BORDER_COLOR}[{dst_label}]"
         )
 
-    # gap_0: Cockpit alone -- there is no prior Plone frame to show yet.
-    start, end = gaps[0]
-    cockpit_slice("seg0", max(start, VIDEO_TRIM), max(end, VIDEO_TRIM + 0.04))
-    segment_labels.append("seg0")
+    initial_start, initial_end = gaps[0]
+    if initial_end - initial_start > 0.05:
+        filters.append(
+            f"[1:v]trim=start={VIDEO_TRIM}:end={VIDEO_TRIM + 0.04},"
+            f"setpts=PTS-STARTPTS,tpad=stop_duration={initial_end - initial_start:.3f}:"
+            f"stop_mode=clone,fps=25[initial]"
+        )
+        segment_labels.append("initial")
 
     for index, clip in enumerate(clips):
         # turn_i: this persona's own clip, full frame, with a small Cockpit
         # inset sliced from the exact same real-time window.
         persona_start = VIDEO_TRIM
         persona_end = durations[index]
+        slide_end = clip["title_duration"]
         filters.append(
-            f"[{index + 1}:v]trim=start={persona_start:.3f}:end={persona_end:.3f},"
+            f"[{len(clips) + index + 1}:v]trim=start=0:end={clip['title_duration']:.3f},"
+            f"setpts=PTS-STARTPTS,fps=25[turn{index}titlebase];"
+            f"[turn{index}titlebase]format=rgba,colorchannelmixer=aa=0.8"
+            f"[turn{index}title]"
+        )
+        filters.append(
+            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:"
+            f"end={persona_start + slide_end + 0.04:.3f},"
+            f"setpts=PTS-STARTPTS,tpad=stop_duration={clip['title_duration']:.3f}:"
+            f"stop_mode=clone,fps=25[turn{index}titlemain]"
+        )
+        cockpit_slice(
+            f"turn{index}titlecockraw",
+            clip["offset"] + VIDEO_TRIM,
+            clip["offset"] + VIDEO_TRIM + clip["title_duration"],
+        )
+        small_pad(f"turn{index}titlecockraw", f"turn{index}titlecock")
+        filters.append(
+            f"[turn{index}titlemain][turn{index}titlecock]"
+            f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}"
+            f"[turn{index}titlewithpip];"
+            f"[turn{index}titlewithpip][turn{index}title]"
+            f"overlay=0:0[seg_turn{index}title]"
+        )
+        segment_labels.append(f"seg_turn{index}title")
+        filters.append(
+            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:end={persona_end:.3f},"
             f"setpts=PTS-STARTPTS,fps=25[t{index}main]"
         )
-        inset_start = clip["offset"] + VIDEO_TRIM
-        inset_end = clip["offset"] + persona_end
-        cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
-        small_pad(f"t{index}cockraw", f"t{index}inset")
-        filters.append(
-            f"[t{index}main][t{index}inset]"
-            f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg_turn{index}]"
-        )
-        segment_labels.append(f"seg_turn{index}")
+        body_duration = persona_end - persona_start - slide_end
+        if body_duration > 0.04:
+            inset_start = clip["offset"] + VIDEO_TRIM + slide_end
+            inset_end = clip["offset"] + persona_end
+            filters.append(
+                f"[t{index}main]setpts=PTS-STARTPTS[t{index}body]"
+            )
+            cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
+            small_pad(f"t{index}cockraw", f"t{index}inset")
+            filters.append(
+                f"[t{index}body][t{index}inset]"
+                f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg_turn{index}]"
+            )
+            segment_labels.append(f"seg_turn{index}")
 
-        # gap_{i+1}: Cockpit main again, small inset frozen on this turn's
-        # last frame for the length of the gap.
+        # gap_{i+1}: focus the source carrying the next meaningful state and
+        # keep the other source as a small inset.
         gap_start, gap_end = gaps[index + 1]
+        if index == len(clips) - 1:
+            gap_end = min(gap_end, output_end)
         gap_len = gap_end - gap_start
         if gap_len > 0.05:
-            cockpit_slice(f"g{index + 1}main", gap_start, gap_end)
             freeze_at = max(persona_end - 0.04, persona_start)
-            filters.append(
-                f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
-                f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:stop_mode=clone,"
-                f"fps=25[g{index + 1}frozen]"
+            history_at = (
+                final_history_at
+                if index == len(clips) - 1
+                and final_history_at is not None
+                and gap_start < final_history_at < gap_end
+                else None
             )
-            small_pad(f"g{index + 1}frozen", f"g{index + 1}inset")
+            if history_at is not None:
+                pre_history_len = history_at - gap_start
+                cockpit_slice(f"g{index + 1}pre_cockraw", gap_start, history_at)
+                filters.append(
+                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:"
+                    f"end={persona_end:.3f},setpts=PTS-STARTPTS,"
+                    f"tpad=stop_duration={pre_history_len:.3f}:"
+                    f"stop_mode=clone,fps=25[g{index + 1}pre_plone]"
+                )
+                small_pad(
+                    f"g{index + 1}pre_cockraw",
+                    f"g{index + 1}pre_inset",
+                    PIP_SCALE * 2,
+                )
+                filters.append(
+                    f"[g{index + 1}pre_plone][g{index + 1}pre_inset]"
+                    f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}"
+                    f"[seg{index + 1}pre]"
+                )
+                segment_labels.append(f"seg{index + 1}pre")
+
+                post_history_len = gap_end - history_at
+                cockpit_slice(f"g{index + 1}post_main", history_at, gap_end)
+                filters.append(
+                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:"
+                    f"end={persona_end:.3f},setpts=PTS-STARTPTS,"
+                    f"tpad=stop_duration={post_history_len:.3f}:"
+                    f"stop_mode=clone,fps=25[g{index + 1}post_plone]"
+                )
+                small_pad(f"g{index + 1}post_plone", f"g{index + 1}post_inset")
+                filters.append(
+                    f"[g{index + 1}post_main][g{index + 1}post_inset]"
+                    f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}"
+                    f"[seg{index + 1}post]"
+                )
+                segment_labels.append(f"seg{index + 1}post")
+            elif gap_focus[index + 1] == "cockpit":
+                cockpit_slice(f"g{index + 1}main", gap_start, gap_end)
+                filters.append(
+                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
+                    f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
+                    f"stop_mode=clone,fps=25[g{index + 1}ploneraw]"
+                )
+                small_pad(f"g{index + 1}ploneraw", f"g{index + 1}inset")
+            else:
+                filters.append(
+                    f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
+                    f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:"
+                    f"stop_mode=clone,fps=25[g{index + 1}main]"
+                )
+                cockpit_slice(f"g{index + 1}cockraw", gap_start, gap_end)
+                small_pad(
+                    f"g{index + 1}cockraw",
+                    f"g{index + 1}inset",
+                    PIP_SCALE * 2,
+                )
             filters.append(
                 f"[g{index + 1}main][g{index + 1}inset]"
                 f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg{index + 1}]"
@@ -405,6 +531,8 @@ def compose_recording(cockpit_video, clips, output):
     inputs = ["-i", cockpit_video]
     for clip in clips:
         inputs += ["-i", clip["video"]]
+    for title_segment in title_segments:
+        inputs += ["-i", title_segment]
 
     nix_ffmpeg(
         "ffmpeg",
@@ -487,7 +615,11 @@ def main():
         # Owner, and an object created by manager makes manager the owner,
         # not Author.
         doc_url = f"{BASE}/{DOC_PATH}"
-        setup_page.request.delete(doc_url, headers={"Accept": "application/json"})
+        delete_demo_content(
+            setup_page,
+            BASE,
+            ("contact-us", DOC_PATH),
+        )
         setup.close()
 
         # Unrecorded, kept open for the whole script: wait_for_state()'s
@@ -497,6 +629,7 @@ def main():
             extra_http_headers={"Authorization": basic_auth("manager", "manager")}
         )
         poll_page = poll_context.new_page()
+        login(poll_page, "manager", "manager")
 
         # --- Cockpit: observer, opens first and closes last -------------------
         cockpit_setup = browser.new_context()
@@ -522,35 +655,42 @@ def main():
         clips = []
 
         def follow_instance():
-            """Enter the (only) running instance via in-app navigation.
+            """Enter the newly created instance from its process definition.
 
-            Navigates "Processes" then the definition again, rather than
-            reload() -- see docs/AGENTS.md.
+            This is needed after the Author submits because the observer was
+            watching the empty definition view and has not entered an instance
+            yet. Existing instances are refreshed in place by
+            ``reload_instance_view`` instead.
             """
-            human_click(
-                cockpit_page,
-                cockpit_page.get_by_role("link", name="Processes", exact=True).first,
-            )
-            cockpit_page.wait_for_timeout(1000)
-            human_click(
-                cockpit_page, cockpit_page.get_by_role("link", name=PROCESS_KEY)
-            )
+            cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+            cockpit_page.get_by_role("link", name=PROCESS_KEY).click()
+            cockpit_page.wait_for_timeout(800)
             cockpit_page.wait_for_timeout(1200)
             instance_link = cockpit_page.locator('a[href*="/process-instance/"]').last
             instance_link.wait_for(state="visible", timeout=30000)
             human_click(cockpit_page, instance_link)
             cockpit_page.wait_for_timeout(1200)
-            for selector in (
-                ".toggle-auto-refresh-button",
-                ".toggle-sequence-flow-button",
-            ):
-                button = cockpit_page.locator(selector)
-                if button.count():
-                    human_click(cockpit_page, button)
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-auto-refresh-button", "auto-refresh"
+            )
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
+            )
 
         def focus_instance_view():
             cockpit_page.bring_to_front()
             cockpit_page.wait_for_timeout(6000)
+
+        def reload_instance_view():
+            """Refresh the active instance without leaving its Cockpit route."""
+            cockpit_page.reload(wait_until="load")
+            cockpit_page.wait_for_timeout(1800)
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-auto-refresh-button", "auto-refresh"
+            )
+            ensure_cockpit_toggle(
+                cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
+            )
 
         def record_turn(username, password, action):
             """Open a short recorded context for one persona turn and run
@@ -564,11 +704,25 @@ def main():
             )
             context.add_init_script(CURSOR_SCRIPT)
             page = context.new_page()
+            # Anchor the clip to context creation, before login and the actor
+            # flow, so its recorded timeline matches the Cockpit observer.
             offset = time.monotonic() - started
+            login(page, username, password)
             action(page)
             video_path = page.video.path()
             context.close()
-            clips.append({"video": video_path, "offset": offset})
+            # Give Cockpit's auto-refresh one full interval after each Plone
+            # submission before the next actor turn starts.
+            cockpit_page.bring_to_front()
+            cockpit_page.wait_for_timeout(6000)
+            clips.append(
+                {
+                    "video": video_path,
+                    "offset": offset,
+                    "title": getattr(page, "_bpmproxy_title", None),
+                    "title_duration": ACTOR_SLIDE_DURATION,
+                }
+            )
             return video_path
 
         # Cockpit watches the (still empty) process list from the start --
@@ -695,6 +849,10 @@ def main():
             page.wait_for_timeout(700)
 
         record_turn("reviewer1", "reviewer1", reviewer1_submits)
+        # Cockpit's auto-refresh can miss the completion while the reviewer
+        # context is open. Refresh explicitly so the consumed subprocess token
+        # is visible before recording the next reviewer turn.
+        reload_instance_view()
         focus_instance_view()
 
         # --- Reviewer 2 turn: request changes --------------------------------------
@@ -746,31 +904,44 @@ def main():
         focus_instance_view()
 
         wait_for_state(poll_page, doc_url, "Published")
-        cockpit_page.wait_for_timeout(2500)
-        # Open the navigation menu without adding an unnecessary mouse gesture
-        # to the recording; History is the intended next Cockpit view.
-        cockpit_page.get_by_role("link", name="More", exact=True).first.evaluate(
-            "(element) => element.click()"
+        final_history_at = time.monotonic() - started
+        history_toggle = cockpit_page.locator(
+            "button.toggle-history-view-button"
         )
-        history_link = cockpit_page.get_by_text("History", exact=True).last
-        history_link.wait_for(state="visible", timeout=10000)
-        history_link.evaluate("(element) => element.click()")
-        cockpit_page.wait_for_timeout(5000)
-        history_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
-        history_instance.wait_for(state="visible", timeout=30000)
-        human_click(cockpit_page, history_instance)
+        if history_toggle.count():
+            history_toggle.wait_for(state="visible", timeout=10000)
+            if (
+                history_toggle.get_attribute("aria-label", timeout=10000)
+                == "Show history view"
+            ):
+                human_click(cockpit_page, history_toggle)
+        else:
+            # A completed instance can leave Cockpit on the definition view
+            # after its final auto-refresh. Go directly to the History route
+            # instead of opening the More menu in the recording.
+            cockpit_page.goto(f"{COCKPIT}/#/history", wait_until="load")
+            cockpit_page.wait_for_timeout(1500)
+            history_instance = cockpit_page.locator(
+                'a[href*="/process-instance/"]'
+            ).last
+            history_instance.wait_for(state="visible", timeout=30000)
+            human_click(cockpit_page, history_instance)
+        cockpit_page.wait_for_url("**/#/history/process-instance/**", timeout=30000)
         cockpit_page.wait_for_timeout(1500)
-        info_panel = cockpit_page.get_by_role(
-            "button", name="Minimize info panel", exact=True
+        # Keep the history information panel visible, but narrow it to roughly
+        # one third of the viewport instead of collapsing it completely.
+        info_sash = cockpit_page.locator('[data-testid="sash"]').first
+        info_sash.wait_for(state="visible", timeout=10000)
+        sash_box = info_sash.bounding_box()
+        assert sash_box is not None
+        target_x = sash_box["x"] * (2 / 3)
+        target_y = sash_box["y"] + sash_box["height"] / 2
+        cockpit_page.mouse.move(
+            sash_box["x"] + sash_box["width"] / 2, target_y
         )
-        if info_panel.count() and info_panel.first.is_visible():
-            human_click(cockpit_page, info_panel.first)
-        heatmap = cockpit_page.locator("button.toggle-heatmap-button")
-        heatmap.wait_for(state="visible", timeout=10000)
-        if heatmap.get_attribute("aria-label", timeout=10000).startswith(
-            "Show time heatmap"
-        ):
-            human_click(cockpit_page, heatmap)
+        cockpit_page.mouse.down()
+        cockpit_page.mouse.move(target_x, target_y, steps=18)
+        cockpit_page.mouse.up()
         cockpit_page.wait_for_timeout(5000)
         cockpit_page.screenshot(
             path=str(DOCS / "review-process-cockpit-completed.png"), full_page=True
@@ -794,6 +965,9 @@ def main():
             DOCS / "review-process-cockpit.webm",
             clips,
             output=DOCS / "review-process-pip.webm",
+            gap_focus=["plone"] * (len(clips) + 1),
+            timing_path=TIMING_PATH,
+            final_history_at=final_history_at,
         )
 
 

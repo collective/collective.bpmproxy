@@ -1,9 +1,9 @@
 # Contact-form browser scenario
 
-> **Status: implemented, not yet recorded.** The bootstrap target and
-> Playwright runner exist and have been syntax-checked. A first recording still
-> requires the shared service stack and the contact-form worker; do not run it
-> from an environment that is being used by another scenario.
+> **Status: implemented and recorded.** The bootstrap target and Playwright
+> runner are ready for repeatable takes. Run recordings only with the shared
+> service stack and contact-form worker available, and do not use an environment
+> that is being used by another scenario.
 
 This will be the reproducible demo scenario for `examples/contact-form`: a
 `Bpm Proxy` content item used *directly*, with no Plone workflow and no
@@ -26,8 +26,8 @@ offsets.
 The other two scenarios each drive exactly one process instance (or a
 chain of one-at-a-time instances) per piece of content. This scenario's own
 payoff is different and worth recording on its own merits: **one persistent
-Plone page, several independent process instances running against it at
-once.** Every visitor who submits the contact form starts a *new*
+Plone page, two independent process instances running against it at once.**
+Every visitor who submits the contact form starts a *new*
 `example-contact-form` instance, all sharing the same page's business-key
 prefix (`views/bpm_form_view.py` mints `IUUID(context) + ":" + uuid4().hex`
 per submission) -- so the same "Contact us" page shows Reception a list of
@@ -88,8 +88,9 @@ mirroring how the review-process scenario has Author create its own demo
 document rather than have it pre-exist. This is also the one flow already
 proven to work end-to-end by `scripts/uitest/scenarios/bpm_proxy.py`
 (scenario "C"): add a `Bpm Proxy` from the add menu, select the deployed
-process from `#form-widgets-process_definition_key`, leave
-`#form-widgets-diagram_enabled-0` unchecked to hide the diagram tab, and save.
+process from `#form-widgets-process_definition_key`, check
+`#form-widgets-diagram_enabled-0` to enable the diagram for authenticated
+users, and save. The diagram tab remains hidden from anonymous visitors.
 
 The scenario expects these endpoints and users:
 
@@ -134,15 +135,13 @@ playwright-python scripts/e2e_contact_form.py
 
 | Persona | Story | Expected result |
 | --- | --- | --- |
-| Reception | Adds a `Bpm Proxy` ("Contact us") from the site-root add menu, selects "Example: Contact form" as its process definition, leaves the diagram tab disabled, and publishes it. | The page renders `contact-form-start`'s form (via form-js) to anyone who opens it, logged in or not. |
-| Visitor (anonymous) | Opens **Contact us** and submits an inquiry ("Venue availability for a conference"). | A new `example-contact-form` instance starts; a **Review contact form** task appears, candidate group `Administrators`. |
+| Reception | Adds a `Bpm Proxy` ("Contact Us") from the site-root add menu, selects "Example: Contact form" as its process definition, opens the Process diagram tab before publishing, and publishes it. | The page renders `contact-form-start`'s form (via form-js) to anyone who opens it; authenticated users can also open the Process diagram tab. |
+| Visitor (anonymous) | Opens **Contact us** and submits an inquiry ("Venue availability for a conference"). | A new `example-contact-form` instance starts; a **Review contact** task appears, candidate group `Administrators`. |
 | Visitor (anonymous) | Opens the same **Contact us** page in an independent turn and submits a second inquiry ("Sponsorship options"). | A second, fully independent instance starts against the *same* Plone page -- both share the page's UUID as the first half of their business key but differ in the random second half, so their tasks list side by side without colliding. |
-| Reception | Opens **Contact us** (now logged in) and sees both pending **Review contact form** tasks listed on the very page visitors used to submit them. Opens the venue inquiry, chooses **Reply**, writes a response. | `contact-form-email`'s external task fires, delivering the reply via Mailpit to the sender's own submitted address; that instance ends at *Reply sent*. |
-| Reception | Opens the sponsorship inquiry's task, chooses **Delegate**, and names `specialist`. | A **Handle delegated contact form** task is created, assigned directly to `specialist` -- an assignee, not a candidate group, so nobody else sees it. |
-| Visitor (anonymous) | Submits a third inquiry ("looks like spam"). | A third, independent instance starts. |
-| Reception | Opens the third task and chooses **Abandon**. | That instance ends at *Contact form abandoned* -- no email sent, demonstrating the gateway's default path. |
+| Reception | Opens **Contact us** (now logged in) and sees both pending **Review contact** tasks listed on the very page visitors used to submit them. Opens the venue inquiry, chooses **Reply**, writes a response. | `contact-form-email`'s external task fires, delivering the reply via Mailpit to the sender's own submitted address; that instance ends at *Reply sent*. |
+| Reception | Opens the sponsorship inquiry's task, chooses **Delegate**, and names `specialist`. | A **Handle delegated contact** task is created, assigned directly to `specialist` -- an assignee, not a candidate group, so nobody else sees it. |
 | Specialist | Opens **Contact us** and sees only the one task delegated to them, not Reception's other two. Chooses **Reply** and writes a response. | The delegated branch's own `contact-form-email` external task fires the same way; that instance ends at *Reply sent*. |
-| Operations observer (`admin`) | Follows `example-contact-form` in Cockpit from the moment the first inquiry starts. | Up to three concurrent instances are visible against one process definition, ending independently as Reception and Specialist each act -- unlike the other two scenarios' one-instance-(or-one-at-a-time)-per-content pattern. |
+| Operations observer (`admin`) | Follows `example-contact-form` in Cockpit from the moment the first inquiry starts. | Two concurrent instances are visible against one process definition, ending independently as Reception and Specialist each act -- unlike the other two scenarios' one-instance-(or-one-at-a-time)-per-content pattern. |
 | Maintainer | Re-run `scripts/e2e_contact_form.py` any number of times. | The script deletes and recreates its own **Contact us** page (Reception creates it on camera and so owns/publishes it fresh each run) and clears all Operaton deployments first, so Cockpit starts clean on every run. |
 
 ## Fixture adaptations
@@ -161,17 +160,15 @@ script.
 ## Cockpit observation
 
 One process definition, but -- unlike either other scenario -- *multiple
-concurrent instances* rather than one at a time: the process-definition
-instance list is the payload here, not a single instance's own diagram.
-Cockpit's instance list loads once and does not poll (see
-[AGENTS.md](AGENTS.md)), so each time a new inquiry starts or an existing one
-is resolved, re-enter it via in-app navigation ("Processes", then the
-definition again) rather than reloading, to pick up the row change without a
-blank flash. At its fullest point (after Reception delegates the second
-inquiry and before Specialist or Reception close the remaining two), the
-list should show three rows: one on **Review contact form**, one on
-**Handle delegated contact form**, and either could be the third row's task
-depending on take order.
+concurrent instances* rather than one at a time. The recording starts with
+Plone alone. The first Visitor submission introduces Operaton as a PIP, then
+the refreshed process-definition view becomes the front view and its statistics
+button is enabled so executed-activity badges appear on the BPMN. The second
+submission briefly returns Operaton to a PIP; after an in-place refresh, the
+newest process instance is shown with auto-refresh and sequence-flow
+visualization enabled. Reception and Specialist turns keep that instance view
+as the Operaton inset. The final history view keeps the information panel
+visible at roughly two thirds of its original width.
 
 ## Artifacts
 
@@ -181,25 +178,36 @@ so they are not committed, only regenerated by re-running the script):
 | Artifact | Description |
 | --- | --- |
 | `contact-form-cockpit.webm` | Full HD (1920x1080) raw Cockpit recording, spanning all instances |
-| `contact-form-pip.webm` | Full HD focus-flipping composite: Cockpit main view, flipping to Plone-as-main for each persona's turn |
+| `contact-form-pip.webm` | Full HD composite that starts with Plone alone, introduces Operaton as a PIP during the first submission, briefly brings the refreshed definition and second instance views front, then keeps the reviewed instance as a PIP |
 | `contact-form-proxy-created.png` | Reception's freshly created, published "Contact us" page |
 | `contact-form-start-form.png` | The start form as an anonymous Visitor sees it |
 | `contact-form-review-tasks.png` | Reception's view of Contact us with two pending review tasks listed |
 | `contact-form-delegated-task.png` | Specialist's view, showing only their own delegated task |
 | `contact-form-mailpit.png` | Mailpit inbox with the delivered reply emails |
-| `contact-form-cockpit-concurrent-instances.png` | Cockpit: several concurrent instances against the one process definition |
+| `contact-form-cockpit-concurrent-instances.png` | Cockpit: the second reviewed process instance with activity statistics badges, auto-refresh, and sequence-flow visualization enabled |
 | `contact-form-cockpit-completed.png` | Cockpit: all instances ended |
+| `contact-form-timing.json` | Raw Cockpit/Plone offsets, focus ranges, and composed segment boundaries for later cuts |
 
 ## Verifying a take
 
-Once implemented, this section should give the same `ffprobe`/`ffmpeg`
-contact-sheet recipe the other two scenarios use, with a tile grid sized to
-however many persona turns the finished script actually records (currently
-planned at eight: one Reception setup turn, three Visitor turns, three
-Reception decision turns, one Specialist turn). Fill in the exact
-`ffmpeg -vf 'fps=...,scale=480:-1,tile=...'` values from a real take rather
-than guessing them here, the same way `review-process-scenario.md` and
-`renovation-project-scenario.md` record their own tuned values.
+The runner writes `contact-form-timing.json` beside the recordings. It
+contains the raw Cockpit duration, each actor clip's offset and duration, the
+Cockpit focus transition, and every composed segment's source range. Use those
+values for later cuts without re-recording:
+
+```sh
+ffprobe -v error -show_entries format=duration \
+  -show_entries stream=width,height,r_frame_rate \
+  -of default=noprint_wrappers=1 docs/contact-form-pip.webm
+ffmpeg -y -i docs/contact-form-pip.webm \
+  -vf 'fps=0.4,scale=480:-1,tile=6x4' -frames:v 1 \
+  /tmp/contact-form-pip-sheet.png
+```
+
+The six recorded turns are one Reception setup turn, two Visitor turns, two
+Reception decision turns, and one Specialist turn. Recompute the contact-sheet
+rate from the timing data and the actual output duration when a later cut
+changes the tile grid.
 
 ## Cleanup
 
@@ -213,9 +221,9 @@ artifacts in `docs/`.
 
 ## Implementation checklist
 
-The implementation is now in place. The remaining step is a first recording
-against the shared services, followed by filling in the exact artifact
-durations and contact-sheet recipe.
+The implementation is now in place. Re-run the recording against the shared
+services whenever the process or composition changes; keep the generated
+timing data with the scenario artifacts for later cuts.
 
 1. Done: `scripts/bootstrap_contact_form_demo.py` -- creates `reception`
    (Administrators) and `specialist` (Member) with known passwords. No
@@ -230,13 +238,15 @@ durations and contact-sheet recipe.
    (`#form-widgets-process_definition_key`, `#form-buttons-save`) rather than
    re-discovering them; the anonymous
    Visitor turns need no login/storage-state handling at all, only a fresh
-   context per submission. Lessons already learned building/fixing the other
-   two scripts, worth having from the start here rather than re-discovering:
+   context per submission. This scenario has six turns across three personas,
+   and the process key is used in Visitor slide subtitles so the overlays
+   describe the operation rather than repeating the contact subject. Lessons
+   already learned building/fixing the other two scripts, worth having from
+   the start here rather than re-discovering:
    - Port `show_actor_slide()` and `paste_text()` from
      `scripts/e2e_review_process.py` (see docs/AGENTS.md's *Human-readable
-     cursor and clicks* section). This scenario has up to eight turns across
-     three personas -- more than either other scenario -- so the slide
-     matters at least as much here; `message`/`replyMessage` are exactly the
+     cursor and clicks* section). The six-turn scenario still benefits from
+     the slide; `message`/`replyMessage` are exactly the
      free-text fields `paste_text()` (`fill()`, not `press_sequentially()`)
      is for.
    - Reception's own turn *publishes* the Bpm Proxy through Plone's standard
@@ -250,5 +260,6 @@ durations and contact-sheet recipe.
      deploying the contact-form assets, so Cockpit starts without stale
      process definitions or instances.
 4. Done: a link to this document from [AGENTS.md](AGENTS.md)'s scenario index.
-5. Fill in *Artifacts* and *Verifying a take* above with real values from
-   that first recording.
+5. Done: the runner records the six-turn scenario with diagram support,
+   process-derived Visitor subtitles, action-following PIP focus, and timing
+   data for later cuts.

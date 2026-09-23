@@ -5,28 +5,30 @@ A multi-reviewer delegation and parallel review process demonstrating Plone cont
 ## Overview
 
 When content is submitted for review in Plone (Simple Publication Workflow), this process:
-1. **Listens for Plone content rule signal** (`plone-content-submitted-to-review`).
+1. **Starts from a Plone content rule message** (`plone-content-submitted-to-review`).
 2. **Binds businessKey** to the Plone content item (`${uuid}:${processInstanceId}`) so that tasks appear in Plone's task views and portlets.
 3. **Presents a reviewer triage task** (`review-select-reviewers.form`) where a lead reviewer or administrator selects multiple reviewers.
-4. **Initializes a pre-allocated array** (`reviews`) matching the number of selected reviewers.
+4. **Initializes a shared review transcript** (`reviews`) for the selected reviewers.
 5. **Spawns parallel review tasks** inside an expanded multi-instance sub-process, one for each selected reviewer (`review-submit.form`).
-6. **Merges each review into its assigned array slot** via `${reviews.set(loopCounter, ...)}` to eliminate race conditions and avoid data loss during parallel completion.
+6. **Appends each review** to the shared transcript in an async-before script task; optimistic-lock retries preserve both submissions when parallel completions collide.
 7. **Consolidates reviews** into a summary and prompts the coordinator for a final decision (`review-decision.form`): either **Publish** or **Reject**.
 8. **Dispatches an external service task** (`Plone Workflow Transition`) handled by `examples/review-bot-py`, which triggers the Plone REST API `/@workflow/{transition}` with the complete aggregated review text submitted as the transition comment.
 
 ## Process Diagram
 
 The process definition is in `review-process.bpmn`. It contains:
-- **Start Event**: Signal catch event for `plone-content-submitted-to-review`.
+- **Start Event**: Message catch event for `plone-content-submitted-to-review`.
 - **Bind Key**: Script task binding the business key to `${uuid}:${execution.processInstanceId}`.
 - **Choose Reviewers**: User task for group `Reviewers` with form `review-select-reviewers`.
-- **Initialize Array**: Script task setting `reviews = reviewers.clone()`.
+- **Initialize Reviews**: Script task setting `reviews` to an empty transcript.
 - **Parallel Review Sub-process**: Multi-instance sub-process (`isSequential="false"`, collection `${reviewers}`, element `reviewer`):
   - User task assigned to `${reviewer}` with form `review-submit`.
-  - Script task writing into `reviews[loopCounter]`.
+  - Async-before script task appending the submitted review to `reviews`.
 - **Consolidate Reviews**: Script task creating `reviewSummary`.
-- **Final Decision**: User task with form `review-decision`.
-- **Exclusive Gateway**: Routes to `publish` or `reject` path.
+- **Final Decision**: User task with form `review-decision`, assigned to the
+  coordinator `reviewer3` so individual reviewers do not see the coordinator's
+  task.
+- **Exclusive Gateway**: Routes to `publish` or `retract` path.
 - **Service Task**: External task for topic `Plone Workflow Transition`.
 - **End Event**: Process completed.
 
@@ -43,7 +45,7 @@ The fastest way to configure Plone for this example is to apply the extension pr
 **`collective.bpmproxy:review_demo`**
 
 This profile:
-- Automatically registers the content rule `plone-content-submitted-to-review` triggered on transition `submit`.
+- Automatically registers the content rule message `plone-content-submitted-to-review` triggered on transition `submit`.
 - Automatically registers the content rule `plone-content-retracted` triggered on transition `retract`.
 - Assigns and enables both content rules directly on the Plone site root.
 - Ensures the `Reviewers` group exists and provisions the `review-bot` user account.
@@ -59,8 +61,8 @@ If configuring manually instead of using the profile:
 2. Add a new content rule:
    - **Trigger**: *Workflow state changed*
    - **Condition**: *Workflow transition* equals `submit` (or workflow state is `pending`)
-   - **Action**: *BPM Signal*
-     - **BPM Signal name**: `plone-content-submitted-to-review`
+   - **Action**: *BPM Message*
+     - **BPM Message name**: `plone-content-submitted-to-review`
      - **JSON Payload**:
        ```json
        {
@@ -108,7 +110,7 @@ example already holds the `review-bot` credentials.
    assigns `reviewer1` and `reviewer2`.
 3. Each of them opens their own **Submit review** task.
 4. `reviewer3` opens **Consolidate review & decide**, sees both reviews and
-   publishes or rejects. The worker applies the transition with the reviews as
+   publishes or retracts. The worker applies the transition with the reviews as
    the workflow comment.
 
 ## Implementation notes

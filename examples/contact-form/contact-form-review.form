@@ -34,14 +34,26 @@
       "type": "textfield",
       "id": "Field_assignedUser",
       "key": "assignedUser",
-      "description": "Required if delegating"
+      "description": "Required if delegating",
+      "validate": {
+        "requiredIf": {
+          "field": "action",
+          "equals": "delegate"
+        }
+      }
     },
     {
       "label": "Reply message",
       "type": "textarea",
       "id": "Field_replyMessage",
       "key": "replyMessage",
-      "description": "Required if replying"
+      "description": "Required if replying",
+      "validate": {
+        "requiredIf": {
+          "field": "action",
+          "equals": "reply"
+        }
+      }
     },
     {
       "action": "submit",

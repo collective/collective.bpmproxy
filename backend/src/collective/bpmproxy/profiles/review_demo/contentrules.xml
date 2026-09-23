@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <contentrules>
- <rule name="plone-content-submitted-to-review" title="BPMN signal: content submitted to review" cascading="False"
-    description="Fires BPMN signal to start the parallel review process when content is submitted for review." enabled="True"
+ <rule name="plone-content-submitted-to-review" title="BPMN message: content submitted to review" cascading="False"
+    description="Sends a BPMN message to start the parallel review process when content is submitted for review." enabled="True"
     event="Products.CMFCore.interfaces.IActionSucceededEvent"
     stop-after="False">
   <conditions>
@@ -12,8 +12,10 @@
    </condition>
   </conditions>
   <actions>
-   <action type="plone.actions.BpmSignal">
+   <action type="plone.actions.BpmMessage">
     <property name="name">plone-content-submitted-to-review</property>
+    <property name="businessKey"></property>
+    <property name="correlationKeys">{}</property>
     <property
        name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;title&#x27;: &#x27;${title}&#x27;, &#x27;author&#x27;: &#x27;${user_fullname}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
    </action>

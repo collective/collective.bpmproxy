@@ -65,10 +65,14 @@ injected cursor at its centered default position.
 
 Recording runners also call `show_actor_slide()` at the start of each persona
 turn: a full-frame overlay naming the persona and the turn's place in the
-sequence (e.g. "Renovation project · 4 / 9"), held for 3.6s via
+sequence (e.g. "Renovation project · 4 / 9"), held for 8s via
 `page.evaluate()` before the turn's own clicks begin. This matters more the
 more turns and personas a scenario has -- worth adding to any new scenario
 with more than one or two personas.
+
+The PIP composer keeps the Cockpit inset hidden for that 8s interlude, then
+restores it for the actor's actual Plone interaction. This rule applies to all
+scenario runners; do not add the inset across the complete actor clip.
 
 For a body of text longer than a short label (e.g. a document's rich-text
 body), use `paste_text()` (`locator.fill(value)`) instead of
