@@ -151,6 +151,7 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
     contractor's clip starts before the document container is added. Between
     turns, Operaton becomes the main view; the frozen Plone frame is retained
     as a larger (2x) inset while the submitted form is reflected by the engine.
+    Interlude title cards are inserted before each actor turn.
     """
     cockpit_duration = probe_duration(cockpit_video)
     durations = [probe_duration(clip["video"]) for clip in clips]
@@ -167,6 +168,9 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
     segment_labels = []
     inputs = ["-i", cockpit_video] + sum(
         (["-i", str(clip["video"])] for clip in clips), []
+    )
+    inputs += sum(
+        (["-i", str(clip["title_segment"])] for clip in clips), []
     )
 
     def cockpit_slice(label, start, end):
@@ -203,6 +207,13 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
         input_index = index + 1
         duration = durations[index]
         body_start = 0
+        title_index = len(clips) + index + 1
+        title_duration = float(clip.get("title_duration", ACTOR_SLIDE_DURATION))
+        filters.append(
+            f"[{title_index}:v]trim=start=0:end={title_duration:.3f},"
+            f"setpts=PTS-STARTPTS,fps=25[title{index}]"
+        )
+        segment_labels.append(f"title{index}")
         if duration - body_start > 0.05:
             filters.append(
                 f"[{input_index}:v]trim=start={body_start:.3f},"
