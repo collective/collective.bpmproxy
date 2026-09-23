@@ -51,7 +51,7 @@ class ReviewDemoProfileTest(unittest.TestCase):
         self.assertTrue(rule_submit.enabled)
         transitions = [c.wf_transitions for c in rule_submit.conditions]
         self.assertEqual(transitions[0], {"submit"})
-        self.assertEqual(rule_submit.actions[0].element, "plone.actions.BpmSignal")
+        self.assertEqual(rule_submit.actions[0].element, "plone.actions.BpmMessage")
         self.assertEqual(
             rule_submit.actions[0].name, "plone-content-submitted-to-review"
         )
