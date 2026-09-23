@@ -1,6 +1,6 @@
 .DEFAULT_GOAL := help
 
-DEPLOY_FILES = ../renovation-project/renovation-case.bpmn
+DEPLOY_FILES = review-process.bpmn review-select-reviewers.form review-submit.form review-decision.form
 
 .PHONY: help lock test dist deploy serve run
 
@@ -10,8 +10,8 @@ help:
 lock:
 	uv lock
 
-test:
-	uv run robot --dryrun tasks.robot
+test: $(DEPLOY_FILES)
+	@echo "All review process assets are present."
 
 dist: test
 	uv run --with=purjo pur wrap

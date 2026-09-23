@@ -1,33 +1,27 @@
-Renovation-project demo profile
-================================
+Renovation case-management demo profile
+========================================
 
-Install this profile manually after installing the main
-``collective.bpmproxy`` profile. It adds a folderish ``Renovation Project``
-type with the ``BPM process context`` behavior, a stateful workflow for the
-project's lifecycle, and three Camunda/Operaton groups used as candidate
-groups on the demo's BPMN processes: ``Renovation Owners``,
-``Renovation Contractors`` and ``Renovation Inspectors``.
+Install this profile after installing the main ``collective.bpmproxy``
+profile. It adds a plain folderish ``Renovation Project`` case type, a Plone
+workflow, the case-specific content rules, and a Tasks portlet assignment for
+the ``Renovation Project`` content type. It does not create users, groups, or
+cases; ``scripts/bootstrap_renovation_demo.py`` creates those disposable demo
+fixtures.
 
-The project's workflow has five states: ``drafting_plan`` -> ``plan_review``
--> ``in_progress`` -> ``final_review`` -> ``closed``. Only the first
-transition, ``submit-plan``, is triggered manually from Plone's workflow
-menu. Every other transition (``approve-plan``, ``reject-plan``,
-``submit-for-final-review``, ``reject-final-review``, ``close-project``) is
-driven by Camunda, through content rules that broadcast a BPMN signal
-scoped to the project's UUID on each Plone-side transition, and an external
-task worker (see ``examples/renovation-bot/``) that performs the matching
-Plone-side transition back once each phase's review completes.
+Creating a ``Renovation Project`` emits the ``renovation-case-created`` signal
+and starts ``examples/renovation-project/renovation-case.bpmn``. The main case
+process waits for the case to close. Direct child Documents and the extra-work
+portlet start independent correlated event subprocesses; all messages include
+the case UUID as the ``caseUuid`` correlation key.
 
-Deploy the three BPMN processes under ``examples/renovation-project/`` (and
-their ``.form`` files) to Operaton, and run the ``renovation-bot`` purjo
-worker (``examples/renovation-bot/``) against the same engine, before
-exercising the demo project created by this profile
-(``renovation-project-demo``).
+The case workflow is simply ``open`` -> ``closed``. The case manager advances
+it independently of the BPMN event subprocesses.
 
-Sub-content uses built-in Plone types directly inside the project:
-``Document``/``Image``/``File`` for the plan and drawings, and a
-``Document`` tagged "Work Log" added directly into the project (not into a
-sub-folder -- see the BPM task auto-complete mechanism in
-``subscribers/tasks.py``, which matches on the *direct* parent's UUID) to
-log completed work. Extra-work request evidence uses this add-on's
-task-scoped ``Bpm Attachments``/``Bpm Attachment`` mechanism.
+The case allows ``Document`` children. A direct Document creation delivers
+``renovation-case-document-created`` to the main process's non-interrupting
+event subprocess, which calls the separate ``renovation-page-review`` process.
+The page review process has its own business key containing the case and page
+UUIDs, while remaining a child in the Operaton process tree.
+
+Deploy the case BPMN and forms from ``examples/renovation-project/`` to
+Operaton. No external task worker is required for this example.

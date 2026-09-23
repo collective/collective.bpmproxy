@@ -338,6 +338,10 @@ def test_business_key_needle_matches_the_stored_format():
     # A missing half still matches anything in that position.
     assert business_key_needle("ctx1", None) == "ctx1:%"
     assert business_key_needle(None, "att1") == "%:att1"
+    assert (
+        business_key_needle("page1", nested=True, parent_context_key="case1")
+        == "case1:page1:%"
+    )
 
 
 @patch("collective.bpmproxy.client.plone.api.portal")

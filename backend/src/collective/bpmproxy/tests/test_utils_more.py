@@ -1,5 +1,6 @@
 from collective.bpmproxy.utils import datetime_to_c7
 from collective.bpmproxy.utils import flatten_variables
+from collective.bpmproxy.utils import get_task_context_filter
 from collective.bpmproxy.utils import get_tenant_ids
 from collective.bpmproxy.utils import infer_variable
 from collective.bpmproxy.utils import infer_variables
@@ -483,3 +484,40 @@ def test_verify_anonymous_token_rejects_forgeries():
         # Empty / None input.
         assert verify_anonymous_token("") is None
         assert verify_anonymous_token(None) is None
+
+
+def test_task_context_filter_skips_current_wrapper_and_navigation_root():
+    context = mock.Mock()
+    case = mock.Mock()
+    navigation_root = mock.Mock()
+    with (
+        mock.patch(
+            "collective.bpmproxy.utils.parents",
+            return_value=[context, case, navigation_root],
+        ),
+        mock.patch(
+            "collective.bpmproxy.utils.IUUID",
+            side_effect=["page-uuid", "page-uuid", "case-uuid"],
+        ),
+        mock.patch(
+            "collective.bpmproxy.utils.INavigationRoot.providedBy",
+            side_effect=[False, False, True],
+        ),
+    ):
+        assert get_task_context_filter(context) == ("page-uuid", True, "case-uuid")
+
+    with (
+        mock.patch(
+            "collective.bpmproxy.utils.parents",
+            return_value=[case, navigation_root],
+        ),
+        mock.patch(
+            "collective.bpmproxy.utils.IUUID",
+            side_effect=["case-uuid", "case-uuid"],
+        ),
+        mock.patch(
+            "collective.bpmproxy.utils.INavigationRoot.providedBy",
+            side_effect=[False, True],
+        ),
+    ):
+        assert get_task_context_filter(case) == ("case-uuid", False, None)

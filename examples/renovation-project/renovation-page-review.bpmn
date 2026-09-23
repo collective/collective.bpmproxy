@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_renovation_page_review" targetNamespace="http://bpmn.io/schema/bpmn">
+  <bpmn:process id="renovation-page-review" name="Renovation Page Review" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:startEvent id="Start_page_review" name="Page review started">
+      <bpmn:outgoing>Flow_page_bind</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_bind_page" name="Bind page review">
+      <bpmn:incoming>Flow_page_bind</bpmn:incoming>
+      <bpmn:outgoing>Flow_page_split</bpmn:outgoing>
+      <bpmn:script>${execution.setBusinessKey(caseUuid.concat(':').concat(childUuid).concat(':').concat(execution.getProcessInstanceId()))}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:parallelGateway id="Gateway_page_split">
+      <bpmn:incoming>Flow_page_split</bpmn:incoming>
+      <bpmn:outgoing>Flow_page_owner</bpmn:outgoing>
+      <bpmn:outgoing>Flow_page_inspector</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_page_bind" sourceRef="Start_page_review" targetRef="Activity_bind_page" />
+    <bpmn:sequenceFlow id="Flow_page_split" sourceRef="Activity_bind_page" targetRef="Gateway_page_split" />
+    <bpmn:userTask id="Task_page_owner" name="Owner reviews page" camunda:formRef="renovation-owner-approval" camunda:formRefBinding="latest" camunda:candidateGroups="Renovation Owners">
+      <bpmn:incoming>Flow_page_owner</bpmn:incoming>
+      <bpmn:outgoing>Flow_page_owner_join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_page_owner" sourceRef="Gateway_page_split" targetRef="Task_page_owner" />
+    <bpmn:userTask id="Task_page_inspector" name="Inspector reviews page" camunda:formRef="renovation-inspector-approval" camunda:formRefBinding="latest" camunda:candidateGroups="Renovation Inspectors">
+      <bpmn:incoming>Flow_page_inspector</bpmn:incoming>
+      <bpmn:outgoing>Flow_page_inspector_join</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:sequenceFlow id="Flow_page_inspector" sourceRef="Gateway_page_split" targetRef="Task_page_inspector" />
+    <bpmn:parallelGateway id="Gateway_page_join">
+      <bpmn:incoming>Flow_page_owner_join</bpmn:incoming>
+      <bpmn:incoming>Flow_page_inspector_join</bpmn:incoming>
+      <bpmn:outgoing>Flow_page_end</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_page_owner_join" sourceRef="Task_page_owner" targetRef="Gateway_page_join" />
+    <bpmn:sequenceFlow id="Flow_page_inspector_join" sourceRef="Task_page_inspector" targetRef="Gateway_page_join" />
+    <bpmn:endEvent id="End_page_review" name="Page review complete">
+      <bpmn:incoming>Flow_page_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_page_end" sourceRef="Gateway_page_join" targetRef="End_page_review" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_renovation_page_review">
+    <bpmndi:BPMNPlane id="BPMNPlane_renovation_page_review" bpmnElement="renovation-page-review">
+      <bpmndi:BPMNShape id="Start_page_review_di" bpmnElement="Start_page_review">
+        <dc:Bounds x="100" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="87.5" y="161.5" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_bind_page_di" bpmnElement="Activity_bind_page">
+        <dc:Bounds x="196" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_page_split_di" bpmnElement="Gateway_page_split">
+        <dc:Bounds x="356" y="115" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_page_owner_di" bpmnElement="Task_page_owner">
+        <dc:Bounds x="466" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Task_page_inspector_di" bpmnElement="Task_page_inspector">
+        <dc:Bounds x="466" y="220" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_page_join_di" bpmnElement="Gateway_page_join">
+        <dc:Bounds x="626" y="235" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="End_page_review_di" bpmnElement="End_page_review">
+        <dc:Bounds x="736" y="242" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="723.5" y="281.5" width="61" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_page_bind_di" bpmnElement="Flow_page_bind">
+        <di:waypoint x="136" y="140" />
+        <di:waypoint x="196" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_split_di" bpmnElement="Flow_page_split">
+        <di:waypoint x="296" y="140" />
+        <di:waypoint x="356" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_owner_di" bpmnElement="Flow_page_owner">
+        <di:waypoint x="406" y="140" />
+        <di:waypoint x="466" y="140" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_inspector_di" bpmnElement="Flow_page_inspector">
+        <di:waypoint x="381" y="165" />
+        <di:waypoint x="381" y="260" />
+        <di:waypoint x="466" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_owner_join_di" bpmnElement="Flow_page_owner_join">
+        <di:waypoint x="566" y="140" />
+        <di:waypoint x="651" y="140" />
+        <di:waypoint x="651" y="235" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_inspector_join_di" bpmnElement="Flow_page_inspector_join">
+        <di:waypoint x="566" y="260" />
+        <di:waypoint x="626" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_page_end_di" bpmnElement="Flow_page_end">
+        <di:waypoint x="676" y="260" />
+        <di:waypoint x="736" y="260" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

@@ -709,8 +709,12 @@ Post-publication management: social media sharing tasks, periodic content update
 ### Contact Form (`examples/contact-form/`) + Contact Form Bot (`examples/contact-form-bot-py/`)
 Start form capturing visitor inquiry, reviewer user task for Plone `Administrators` to either reply, triage/delegate to a specific Plone user, or abandon. An `operaton-tasks` Python worker delivers reply emails via Mailpit SMTP (`127.0.0.1:1025`). The browser test suite's main fixture.
 
-### Renovation Project (`examples/renovation-project/`) + Renovation Bot (`examples/renovation-bot/`)
-Three chained processes (plan review, work & extra-work, final review) correlated by a project UUID via signal/message-started events, driving the Tasks and Message portlets. `renovation-bot`, a purjo RPA bot (Robot Framework task package), performs the Plone workflow transitions between phases. See `docs/renovation-project-scenario.md`.
+### Renovation Project (`examples/renovation-project/`)
+A simple case coordinator starts from a case-creation signal and hosts
+correlated event subprocesses for direct child-document reviews and extra-work
+requests. The Plone workflow and case-local Tasks/Message portlets are
+configured by the disposable bootstrap script. See
+`docs/renovation-project-scenario.md`.
 
 ---
 

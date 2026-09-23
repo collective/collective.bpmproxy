@@ -18,6 +18,7 @@ from collective.bpmproxy.interfaces import FORM_DATA_KEY
 from collective.bpmproxy.interfaces import HTTPMethod
 from collective.bpmproxy.interfaces import PLONE_TASK_VIEW
 from collective.bpmproxy.interfaces import PloneNotificationLevel
+from collective.bpmproxy.utils import get_task_context_filter
 from collective.bpmproxy.utils import prepare_camunda_form
 from collective.bpmproxy.utils import validate_camunda_form
 from generic_camunda_client.rest import ApiException
@@ -65,6 +66,16 @@ class BpmProxyNavigationBreadcrumbs(PhysicalNavigationBreadcrumbs):
         task_title = getattr(task_view, "task_title", None)
 
         if task_id and task_title:
+            base = tuple(
+                entry
+                for entry in base
+                if not (
+                    entry.get("Title") == task_title
+                    and entry.get("absolute_url", "")
+                    .rstrip("/")
+                    .endswith(f"{PLONE_TASK_VIEW}/{task_id}")
+                )
+            )
             return base + (
                 {
                     "absolute_url": "/".join(
@@ -283,6 +294,7 @@ class BpmProxyTaskFormView(BrowserView):
         self.task_id = None
         self.task_title = None
         self.task_description = None
+        self.review_content_url = None
 
     def publishTraverse(self, request, name):
         if self.task_id is None:  # ../task_id
@@ -299,6 +311,7 @@ class BpmProxyTaskFormView(BrowserView):
                 self.task_description = task.description
                 self.task_definition_key = task.task_definition_key
                 current_values = get_task_variables(client, self.task_id)
+                self.review_content_url = current_values.get("childUrl")
 
                 # Get diagram
                 if can_show_diagram(self.process_context):
@@ -409,10 +422,16 @@ class BpmProxyTaskFormView(BrowserView):
         with camunda_client() as client:
             try:
                 # Sanity check. Task belongs to this context.
+                context_key, nested_context, parent_context_key = (
+                    get_task_context_filter(self.context)
+                )
                 tasks = {
                     task.id: task
                     for task in get_available_tasks(
-                        client, context_key=IUUID(self.context)
+                        client,
+                        context_key=context_key,
+                        nested_context=nested_context,
+                        parent_context_key=parent_context_key,
                     )
                 }
                 if self.task_id not in tasks:

@@ -81,9 +81,12 @@ def test_renderer():
         ) as get_portal_mock,
         mock.patch("collective.bpmproxy.portlets.tasks.camunda_client"),
         mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_task_context_filter",
+            return_value=("context-uuid", False, None),
+        ),
+        mock.patch(
             "collective.bpmproxy.portlets.tasks.get_available_tasks"
         ) as get_tasks_mock,
-        mock.patch("collective.bpmproxy.portlets.tasks.IUUID"),
     ):
         portal_state_mock = mock.Mock()
         portal_state_mock.anonymous.return_value = False
@@ -106,6 +109,8 @@ def test_renderer():
         get_tasks_mock.assert_called_once_with(
             mock.ANY,
             context_key=mock.ANY,
+            nested_context=False,
+            parent_context_key=None,
             for_display=True,
             process_definition_key="key",
         )
@@ -125,7 +130,6 @@ def test_renderer():
         assert tasks2 == [task1]
         get_tasks_mock.assert_called_with(
             mock.ANY,
-            context_key=mock.ANY,
             for_display=True,
             process_definition_key=None,
         )
@@ -180,4 +184,103 @@ def test_redirect_view():
         assert (
             request.response.getHeader("Location")
             == f"http://127.0.0.1/resolveuid/{valid_uuid}/@@bpm-task/task-123"
+        )
+
+
+def test_redirect_view_uses_child_uuid_from_nested_business_key():
+    context = mock.Mock()
+    request = TestRequest()
+    view = RedirectView(context, request)
+    view.publishTraverse(request, "task-123")
+
+    import uuid
+
+    case_uuid = str(uuid.uuid4())
+    child_uuid = str(uuid.uuid4())
+    with (
+        mock.patch("collective.bpmproxy.portlets.tasks.camunda_client"),
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_task_variables",
+            return_value={"businessKey": f"{case_uuid}:{child_uuid}:process"},
+        ),
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.plone.api.portal.get"
+        ) as get_portal_mock,
+    ):
+        get_portal_mock().absolute_url.return_value = "http://127.0.0.1"
+        view()
+
+    assert (
+        request.response.getHeader("Location")
+        == f"http://127.0.0.1/resolveuid/{child_uuid}/@@bpm-task/task-123"
+    )
+
+
+def test_renderer_queries_nearest_case_for_child_context():
+    context = mock.Mock()
+    request = TestRequest()
+    assignment = Assignment(header="H", use_context=True)
+    parent_task = mock.Mock(id="parent-task")
+
+    with (
+        mock.patch("collective.bpmproxy.portlets.tasks.getMultiAdapter") as gma,
+        mock.patch("collective.bpmproxy.portlets.tasks.plone.api.portal.get"),
+        mock.patch("collective.bpmproxy.portlets.tasks.camunda_client"),
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_available_tasks",
+            return_value=[parent_task],
+        ) as get_tasks,
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_task_context_filter",
+            return_value=("child-uuid", True, "case-uuid"),
+        ),
+    ):
+        portal_state = mock.Mock()
+        portal_state.anonymous.return_value = False
+        gma.return_value = portal_state
+        renderer = Renderer(context, request, mock.Mock(), mock.Mock(), assignment)
+        assert renderer.tasks() == [parent_task]
+
+        get_tasks.assert_called_once_with(
+            mock.ANY,
+            context_key="child-uuid",
+            nested_context=True,
+            parent_context_key="case-uuid",
+            for_display=True,
+            process_definition_key=None,
+        )
+
+
+def test_renderer_skips_acquisition_wrapper_for_current_context():
+    context = mock.Mock()
+    request = TestRequest()
+    assignment = Assignment(header="H", use_context=True)
+    task = mock.Mock(id="page-task")
+
+    with (
+        mock.patch("collective.bpmproxy.portlets.tasks.getMultiAdapter") as gma,
+        mock.patch("collective.bpmproxy.portlets.tasks.plone.api.portal.get"),
+        mock.patch("collective.bpmproxy.portlets.tasks.camunda_client"),
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_available_tasks",
+            return_value=[task],
+        ) as get_tasks,
+        mock.patch(
+            "collective.bpmproxy.portlets.tasks.get_task_context_filter",
+            return_value=("page-uuid", True, "case-uuid"),
+        ),
+    ):
+        portal_state = mock.Mock()
+        portal_state.anonymous.return_value = False
+        gma.return_value = portal_state
+        renderer = Renderer(context, request, mock.Mock(), mock.Mock(), assignment)
+        assert renderer.tasks() == [task]
+
+        get_tasks.assert_called_once_with(
+            mock.ANY,
+            context_key="page-uuid",
+            nested_context=True,
+            parent_context_key="case-uuid",
+            for_display=True,
+            process_definition_key=None,
         )

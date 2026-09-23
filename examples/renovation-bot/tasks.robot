@@ -6,19 +6,19 @@ Library     requests
 ${BPMN:PROCESS}     local
 
 ${portalUrl}        http://localhost:8080/Plone
-${uuid}             ${EMPTY}
+${caseUuid}         ${EMPTY}
 ${transition}       ${EMPTY}
 
 
 *** Tasks ***
 Transition content
     Sleep    2s
-    Should not be empty    ${uuid}
+    Should not be empty    ${caseUuid}
     Should not be empty    ${transition}
 
     ${headers}    Get headers
 
-    ${url}    Resolve redirect    ${portalUrl}/resolveuid/${uuid}
+    ${url}    Resolve redirect    ${portalUrl}/resolveuid/${caseUuid}
 
     ${response}    Post    ${url}/@workflow/${transition}
     ...    headers=${headers}

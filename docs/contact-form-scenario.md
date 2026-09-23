@@ -11,8 +11,9 @@ content-rule wiring at all. Unlike
 [the review-process scenario](review-process-scenario.md) (a real Plone
 workflow driven by content-rule Signal/Message actions on a Document) and
 [the renovation-project scenario](renovation-project-scenario.md) (a
-five-state workflow chaining three process definitions via a custom content
-type and its own subscribers), this one needs none of that machinery: adding
+case folder whose creation starts one process and whose workflow, child
+content, and message portlets stay correlated to it), this one needs none of
+that machinery: adding
 a `Bpm Proxy` item, pointing its `process_definition_key` at a deployed
 process, and publishing it *is* the entire setup. The page itself renders
 whatever form is next -- the start form to an anonymous visitor, an open

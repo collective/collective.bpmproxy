@@ -1,29 +1,23 @@
-"""Record the renovation-project scenario in Plone and Operaton Cockpit.
+"""Record the upstream renovation case-management scenario.
 
-Run from the repository root with:
+Run from the repository root with::
 
     playwright-python scripts/e2e_renovation_project.py
 
-The script assumes the devenv services, a Plone site bootstrapped with
-`make bootstrap-site` and `make bootstrap-renovation-demo`, and the
-renovation-bot purjo worker (`examples/renovation-bot/`, `make serve`) are
-all running. See docs/renovation-project-scenario.md for the full sequence.
-
-This scenario has three named personas who each act more than once, separated by
-other actors' turns -- so each turn gets its own short recorded context, and
-compose_recording() below places an arbitrary list of them onto the Cockpit
-timeline.
+Prepare the services, deploy ``examples/renovation-project`` and run
+``make bootstrap-renovation-demo`` first. The runner records the case
+document review and close-case flow without requiring an external worker.
 """
 
 from pathlib import Path
-from playwright.sync_api import sync_playwright
 import base64
 import json
 import subprocess
 import time
 
+from playwright.sync_api import sync_playwright
+
 from recording import (
-    delete_demo_content,
     ensure_cockpit_toggle,
     prepare_title_segments,
     write_timing_manifest,
@@ -32,37 +26,16 @@ from recording import (
 
 BASE = "http://localhost:8080/Plone"
 COCKPIT = "http://localhost:8081/operaton/app/cockpit/default"
-ASSETS = Path("examples/renovation-project")
+CASE = f"{BASE}/renovation-project-demo"
 DOCS = Path("docs")
 TIMING_PATH = DOCS / "renovation-project-timing.json"
-PROJECT_PATH = "renovation-project-demo"
-PROCESS_KEYS = (
-    "renovation-plan-review",
-    "renovation-work-and-extra-work",
-    "renovation-final-review",
-)
-PLAN_BODY = (
-    "Full kitchen and bathroom remodel: replace the kitchen cabinetry and "
-    "countertops, retile the bathroom floor and shower surround, and "
-    "upgrade the plumbing fixtures in both rooms. Work is scheduled to "
-    "begin once the plan is approved by the owner and reviewed for code "
-    "compliance by the inspector."
-)
-WORK_LOG_BODY = (
-    "Week 1: demolished the old kitchen cabinetry and removed the bathroom "
-    "floor tile. Rough plumbing was inspected and approved. Next week: "
-    "install the new cabinetry and begin bathroom tiling."
-)
 VIDEO_SIZE = {"width": 1920, "height": 1080}
-
-# Every recording opens on a blank frame while the first document paints.
-# Trimming it keeps that frame out of the picture-in-picture hold frames.
-VIDEO_TRIM = 0.8
 ACTOR_SLIDE_DURATION = 8.0
+VIDEO_TRIM = 0.8
 PIP_SCALE = 0.4
 PIP_MARGIN = 24
 PIP_BORDER = 3
-PIP_BORDER_COLOR = "0x1f2937"
+
 
 CURSOR_SCRIPT = """
 (() => {
@@ -72,14 +45,15 @@ CURSOR_SCRIPT = """
     style.textContent = `
       #bpmproxy-recording-cursor {
         position: fixed; left: 50%; top: 50%; z-index: 2147483647;
-        width: 24px; height: 24px;
-        border: 2px solid #ff3b30; border-radius: 50%; pointer-events: none;
+        width: 24px; height: 24px; border: 2px solid #ff3b30;
+        border-radius: 50%; pointer-events: none;
         transform: translate(-50%, -50%); box-shadow: 0 0 0 2px white;
       }
       .bpmproxy-recording-click {
         position: fixed; z-index: 2147483646; width: 56px; height: 56px;
         border: 4px solid #ff3b30; border-radius: 50%; pointer-events: none;
-        transform: translate(-50%, -50%); animation: bpmproxy-click .8s ease-out;
+        transform: translate(-50%, -50%);
+        animation: bpmproxy-click .8s ease-out;
       }
       @keyframes bpmproxy-click {
         from { opacity: .95; transform: translate(-50%, -50%) scale(.35); }
@@ -117,20 +91,6 @@ def basic_auth(username, password):
     return f"Basic {value}"
 
 
-def deploy(page, name, content):
-    return page.evaluate(
-        """async ({base, name, xml}) => {
-          const response = await fetch(base + '/@bpmproxy-deploy', {
-            method: 'POST',
-            headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
-            body: JSON.stringify({name, xml})
-          });
-          return {status: response.status, body: await response.text()};
-        }""",
-        {"base": BASE, "name": name, "xml": content},
-    )
-
-
 def human_move(page, locator):
     locator.scroll_into_view_if_needed()
     box = locator.bounding_box()
@@ -149,24 +109,7 @@ def human_click(page, locator):
     page.wait_for_timeout(850)
 
 
-def human_fill(page, locator, value):
-    human_click(page, locator)
-    locator.fill("")
-    locator.press_sequentially(value, delay=75)
-    page.wait_for_timeout(650)
-
-
-def paste_text(page, locator, value):
-    # Long body text via press_sequentially's per-keystroke delay would take
-    # unreasonably long (see scripts/e2e_review_process.py) -- fill() pastes
-    # it in one step instead.
-    human_click(page, locator)
-    locator.fill(value)
-    page.wait_for_timeout(650)
-
-
 def show_actor_slide(page, eyebrow, title, subtitle):
-    """Record title metadata; the title is rendered as an independent segment."""
     page._bpmproxy_title = {
         "eyebrow": eyebrow,
         "title": title,
@@ -174,14 +117,14 @@ def show_actor_slide(page, eyebrow, title, subtitle):
     }
     page.wait_for_timeout(int(ACTOR_SLIDE_DURATION * 1000))
 
+
 def nix_ffmpeg(tool, *args, capture=True):
-    """Run ffmpeg/ffprobe from nixpkgs, so no global install is required."""
-    nix_expression = (
+    expression = (
         'with (builtins.getFlake "nixpkgs").legacyPackages.'
         "${builtins.currentSystem}; ffmpeg-headless"
     )
     return subprocess.run(
-        ["nix", "shell", "--impure", "--expr", nix_expression, "--command", tool]
+        ["nix", "shell", "--impure", "--expr", expression, "--command", tool]
         + [str(argument) for argument in args],
         check=True,
         capture_output=capture,
@@ -203,283 +146,41 @@ def probe_duration(video):
     return float(result.stdout.strip())
 
 
-def wait_for_task(page, name, timeout_ms=60000):
-    """Poll the project view until a task named `name` shows in its task list.
-
-    Tasks appear once renovation-bot (or, for the first one, the Contractor's
-    own submit-plan click) has moved the workflow into the right state and
-    Operaton has created the corresponding process instance -- both slightly
-    asynchronous from the browser's point of view, so this is a real wait,
-    not a fixed sleep.
-    """
-    deadline = time.monotonic() + timeout_ms / 1000
-    # :visible guards against any future duplicate match (e.g. a hidden nav
-    # entry) picking a link that isn't actually on screen -- today the
-    # "Project tasks" portlet is the only source of these links, so this is
-    # a no-op safeguard, not a fix for an active ambiguity.
-    link = page.locator("a:visible").filter(has_text=name)
-    while time.monotonic() < deadline:
-        page.reload(wait_until="load")
-        if link.count():
-            return link.first
-        page.wait_for_timeout(1500)
-    raise AssertionError(f"Task {name!r} did not appear in time")
-
-
-def wait_for_state(page, project_url, state_text, timeout_ms=90000):
-    """Poll the project's workflow state label until it reads `state_text`.
-
-    Every transition after "Submit plan" is performed by renovation-bot
-    reacting to a Camunda signal, not by anything in this script -- so
-    reaching each next state is a real wait on that external worker, not a
-    fixed sleep.
-    """
-    deadline = time.monotonic() + timeout_ms / 1000
-    while time.monotonic() < deadline:
-        page.goto(project_url, wait_until="load")
-        if page.get_by_text(f"State: {state_text}", exact=False).count():
-            return
-        page.wait_for_timeout(1500)
-    raise AssertionError(f"Workflow did not reach {state_text!r} in time")
-
-
-def compose_recording(cockpit_video, clips, output=None, timing_path=None):
-    """Build a composite with Plone as the main view during every gap.
-
-    Each persona turn is Plone-as-main with a small Cockpit inset. Between
-    turns, the last Plone frame remains full-screen and the relevant Cockpit
-    slice is shown only as an inset.
-
-    `clips` is a chronological list of {"video": path, "offset": seconds},
-    offset being wall-clock time since the Cockpit recording started
-    (`time.monotonic() - started`, measured right when that turn's context
-    was created).
-
-    Rather than a static small-corner PIP (where Cockpit is always main and
-    Plone always a small inset), every segment here is independently composited
-    at full 1920x1080 and the segments are then concatenated -- there is no
-    time-gated `overlay(enable=...)` and no alpha channel involved, which keeps
-    alpha channel involved, which keeps the filter graph simple enough to
-    reason about and to test against synthetic clips (see
-    `scripts/uitest/` -- err, see the __main__ smoke test at the bottom of
-    this file) before ever running it against a real recording:
-
-      gap_0 (Plone alone, nothing happened yet)
-      turn_0 (Plone main + small Cockpit inset)
-      gap_1 (Plone main + small Cockpit inset)
-      turn_1 (Plone main + small Cockpit inset)
-      ...
-      gap_N (Plone main + small Cockpit inset)
-
-    Never use `overlay=...:shortest=1` here -- see docs/AGENTS.md.
-    """
-    output = output or DOCS / "renovation-project-pip.webm"
+def compose_recording(cockpit_video, clips, output, timing_path=None):
+    """Keep Cockpit as the main view and show each actor turn as a PIP."""
     cockpit_duration = probe_duration(cockpit_video)
-    durations = [probe_duration(clip["video"]) for clip in clips]
-    title_segments = prepare_title_segments(
-        nix_ffmpeg, clips, output or DOCS / "renovation-project-pip.webm"
-    )
-
-    # Back-to-back turns (e.g. Owner and Inspector approving in parallel,
-    # with no Cockpit interstitial between them) leave zero real-time gap by
-    # design. ffprobe's measured clip duration and the wall-clock offsets
-    # captured via time.monotonic() then disagree by a small amount (video
-    # encoder startup latency, not an actual ordering problem), which can
-    # make `end` land fractionally before `start`. Clamp that away instead of
-    # failing the whole recording; only a large overlap -- which would mean
-    # two persona contexts genuinely ran concurrently, contradicting
-    # record_turn()'s one-context-at-a-time contract -- is still a real bug.
-    OVERLAP_TOLERANCE = 1.5
-
-    gaps = []
-    for index in range(len(clips) + 1):
-        start = 0.0 if index == 0 else clips[index - 1]["offset"] + durations[index - 1]
-        end = clips[index]["offset"] if index < len(clips) else cockpit_duration
-        if end < start - OVERLAP_TOLERANCE:
-            raise AssertionError(
-                "Recording order broke the timeline: turn "
-                f"{index - 1} ({clips[index - 1]['video']}) overlaps the "
-                f"next one (gap={end - start:.2f}). Close each persona "
-                "context before opening the next one."
-            )
-        end = max(end, start)
-        gaps.append((start, end))
-
-    print(
-        "PIP timeline:",
-        {
-            "cockpit": round(cockpit_duration, 2),
-            "clips": [
-                {
-                    "video": str(clip["video"]),
-                    "offset": round(clip["offset"], 2),
-                    "duration": round(durations[index], 2),
-                }
-                for index, clip in enumerate(clips)
-            ],
-            "gaps": [(round(a, 2), round(b, 2)) for a, b in gaps],
-        },
-    )
-
-    filters = []
-    segment_labels = []
-
-    def cockpit_slice(label, start, end):
+    filters = ["[0:v]setpts=PTS-STARTPTS[base]"]
+    current = "base"
+    inputs = [cockpit_video]
+    for index, clip in enumerate(clips, 1):
+        inputs.append(clip["video"])
+        duration = probe_duration(clip["video"])
+        start = clip["offset"] + VIDEO_TRIM
+        end = min(cockpit_duration, start + max(0, duration - VIDEO_TRIM))
+        next_label = f"pip{index}"
         filters.append(
-            f"[0:v]trim=start={start:.3f}:end={end:.3f},setpts=PTS-STARTPTS,"
-            f"fps=25[{label}]"
-        )
-
-    def small_pad(src_label, dst_label):
-        filters.append(
-            f"[{src_label}]scale=iw*{PIP_SCALE}:-2,"
-            f"pad=iw+{2 * PIP_BORDER}:ih+{2 * PIP_BORDER}:{PIP_BORDER}:{PIP_BORDER}"
-            f":color={PIP_BORDER_COLOR}[{dst_label}]"
-        )
-
-    # gap_0: use the first actor frame as the main view so the finished cut
-    # starts in Plone; Cockpit remains available only as an inset.
-    start, end = gaps[0]
-    gap_len = end - start
-    filters.append(
-        f"[1:v]trim=start=0:end=0.04,setpts=PTS-STARTPTS,"
-        f"tpad=stop_duration={gap_len:.3f}:stop_mode=clone,fps=25[g0main]"
-    )
-    cockpit_slice("g0cockraw", max(start, VIDEO_TRIM), max(end, VIDEO_TRIM + 0.04))
-    small_pad("g0cockraw", "g0inset")
-    filters.append(
-        "[g0main][g0inset]"
-        f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg0]"
-    )
-    segment_labels.append("seg0")
-
-    for index, clip in enumerate(clips):
-        # turn_i: this persona's own clip, full frame, with a small Cockpit
-        # inset sliced from the exact same real-time window.
-        persona_start = VIDEO_TRIM
-        persona_end = durations[index]
-        slide_end = clip["title_duration"]
-        filters.append(
-            f"[{len(clips) + index + 1}:v]trim=start=0:end={clip['title_duration']:.3f},"
-            f"setpts=PTS-STARTPTS,fps=25[turn{index}titlebase];"
-            f"[turn{index}titlebase]format=rgba,colorchannelmixer=aa=0.8"
-            f"[turn{index}title]"
+            f"[{index}:v]setpts=PTS-STARTPTS,"
+            f"scale=iw*{PIP_SCALE}:ih*{PIP_SCALE}[clip{index}]"
         )
         filters.append(
-            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:"
-            f"end={persona_start + slide_end + 0.04:.3f},"
-            f"setpts=PTS-STARTPTS,tpad=stop_duration={clip['title_duration']:.3f}:"
-            f"stop_mode=clone,fps=25[turn{index}titlemain]"
+            f"[{current}][clip{index}]overlay="
+            f"x=W-w-{PIP_MARGIN}:y=H-h-{PIP_MARGIN}:"
+            f"enable='between(t,{start:.3f},{end:.3f})':"
+            f"eof_action=repeat[{next_label}]"
         )
-        cockpit_slice(
-            f"turn{index}titlecockraw",
-            clip["offset"] + VIDEO_TRIM,
-            clip["offset"] + VIDEO_TRIM + clip["title_duration"],
-        )
-        small_pad(f"turn{index}titlecockraw", f"turn{index}titlecock")
-        filters.append(
-            f"[turn{index}titlemain][turn{index}titlecock]"
-            f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}"
-            f"[turn{index}titlewithpip];"
-            f"[turn{index}titlewithpip][turn{index}title]"
-            f"overlay=0:0[seg_turn{index}title]"
-        )
-        segment_labels.append(f"seg_turn{index}title")
-        filters.append(
-            f"[{index + 1}:v]trim=start={persona_start + slide_end:.3f}:end={persona_end:.3f},"
-            f"setpts=PTS-STARTPTS,fps=25[t{index}main]"
-        )
-        if persona_end - persona_start > slide_end + 0.04:
-            inset_start = clip["offset"] + VIDEO_TRIM + slide_end
-            inset_end = clip["offset"] + persona_end
-            filters.append(
-                f"[t{index}main]trim=start={slide_end:.3f}:end={persona_end - persona_start:.3f},"
-                f"setpts=PTS-STARTPTS[t{index}body]"
-            )
-            cockpit_slice(f"t{index}cockraw", inset_start, inset_end)
-            small_pad(f"t{index}cockraw", f"t{index}inset")
-            filters.append(
-                f"[t{index}body][t{index}inset]"
-                f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg_turn{index}]"
-            )
-            segment_labels.append(f"seg_turn{index}")
-
-        # gap_{i+1}: keep the last Plone frame as the main view while Cockpit
-        # continues in the inset until the next persona turn.
-        gap_start, gap_end = gaps[index + 1]
-        gap_len = gap_end - gap_start
-        if gap_len > 0.05:
-            freeze_at = max(persona_end - 0.04, persona_start)
-            filters.append(
-                f"[{index + 1}:v]trim=start={freeze_at:.3f}:end={persona_end:.3f},"
-                f"setpts=PTS-STARTPTS,tpad=stop_duration={gap_len:.3f}:stop_mode=clone,"
-                f"fps=25[g{index + 1}main]"
-            )
-            cockpit_slice(f"g{index + 1}cockraw", gap_start, gap_end)
-            small_pad(f"g{index + 1}cockraw", f"g{index + 1}inset")
-            filters.append(
-                f"[g{index + 1}main][g{index + 1}inset]"
-                f"overlay=W-w-{PIP_MARGIN}:H-h-{PIP_MARGIN}[seg{index + 1}]"
-            )
-        else:
-            # No meaningful gap before the next turn -- skip straight to it,
-            # rather than build a near-zero-length segment concat chokes on.
-            filters.append(
-                f"[t{index}main]fps=25,trim=start=0:end=0.04[seg{index + 1}]"
-            )
-        segment_labels.append(f"seg{index + 1}")
-
-    concat_inputs = "".join(f"[{label}]" for label in segment_labels)
-    filters.append(
-        f"{concat_inputs}concat=n={len(segment_labels)}:v=1:a=0,format=yuv420p[out]"
-    )
+        current = next_label
     filter_complex = ";".join(filters)
-    if timing_path:
-        write_timing_manifest(
-            timing_path,
-            {
-                "cockpit_video": str(cockpit_video),
-                "pip_video": str(output),
-                "title_segments": [
-                    {
-                        "video": str(clip["title_segment"]),
-                        "title": clip["title"],
-                        "duration": clip["title_duration"],
-                    }
-                    for clip in clips
-                ],
-                "clips": [
-                    {
-                        **clip,
-                        "video": str(clip["video"]),
-                        "title_segment": str(clip["title_segment"]),
-                        "duration": durations[index],
-                    }
-                    for index, clip in enumerate(clips)
-                ],
-                "gaps": [
-                    {"start": start, "end": end} for start, end in gaps
-                ],
-            },
-        )
-
-    inputs = ["-i", cockpit_video]
-    for clip in clips:
-        inputs += ["-i", clip["video"]]
-    for title_segment in title_segments:
-        inputs += ["-i", title_segment]
-
     nix_ffmpeg(
         "ffmpeg",
         "-y",
         "-v",
         "error",
         "-nostats",
-        *inputs,
+        *sum((["-i", str(path)] for path in inputs), []),
         "-filter_complex",
         filter_complex,
         "-map",
-        "[out]",
+        f"[{current}]",
         "-c:v",
         "libvpx-vp9",
         "-deadline",
@@ -492,93 +193,62 @@ def compose_recording(cockpit_video, clips, output=None, timing_path=None):
         output,
         capture=False,
     )
+    if timing_path:
+        write_timing_manifest(
+            timing_path,
+            {
+                "cockpit_video": str(cockpit_video),
+                "clips": clips,
+                "output": str(output),
+            },
+        )
     return output
 
 
+def wait_for_task(page, name, timeout_ms=60000):
+    deadline = time.monotonic() + timeout_ms / 1000
+    while time.monotonic() < deadline:
+        page.goto(CASE, wait_until="load")
+        link = page.locator("a:visible").filter(has_text=name)
+        if link.count():
+            return link.first
+        page.wait_for_timeout(1000)
+    raise AssertionError(f"Task {name!r} did not appear")
+
+
+def add_document(page):
+    page.goto(CASE, wait_until="load")
+    human_click(page, page.get_by_role("link", name="Add new…"))
+    human_click(page, page.get_by_role("link", name="Page", exact=True))
+    page.locator("#form-widgets-IDublinCore-title").fill("Initial renovation document")
+    page.frame_locator("iframe").locator("body").first.fill(
+        "The case document requires independent owner and inspector review."
+    )
+    human_click(page, page.get_by_role("button", name="Save"))
+    page.wait_for_load_state("load")
+
+
+def workflow(page, action):
+    response = page.request.post(
+        f"{CASE}/@workflow/{action}",
+        headers={"Accept": "application/json", "Content-Type": "application/json"},
+        data="{}",
+    )
+    assert response.status == 200, response.text()
+
+
 def main():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.launch(
             headless=True,
             args=["--no-sandbox", "--disable-dev-shm-usage"],
         )
-
-        # --- Unrecorded setup, as the site manager ---------------------------
-        setup = browser.new_context(
+        manager = browser.new_context(
             extra_http_headers={"Authorization": basic_auth("manager", "manager")}
         )
-        setup_page = setup.new_page()
-        setup_page.goto(BASE, wait_until="load")
+        manager_page = manager.new_page()
+        manager_page.goto(CASE, wait_until="load")
 
-        # `make bootstrap-renovation-demo` is what gives the project a fresh
-        # "Drafting plan" state (including after a previous run closed it, which
-        # has no transition back) -- this script only clears deployments and any
-        # Work Log content a previous run left behind.
-        #
-        # Start with a clean Operaton engine so the process list and history
-        # belong only to this recording.
-        own_asset_names = (
-            "renovation-owner-approval.form",
-            "renovation-inspector-approval.form",
-            "renovation-extra-work-approval.form",
-            "renovation-confirm.form",
-            "renovation-plan-review.bpmn",
-            "renovation-work-and-extra-work.bpmn",
-            "renovation-final-review.bpmn",
-        )
-        deployments = setup_page.evaluate(
-            """async base => (await (await fetch(base + '/@bpmproxy-deployments', {
-              headers: {'Accept': 'application/json'}
-            })).json())""",
-            BASE,
-        )
-        for deployment in deployments:
-            setup_page.request.delete(
-                f"{BASE}/@bpmproxy-deployments",
-                headers={
-                    "Accept": "application/json",
-                    "Content-Type": "application/json",
-                },
-                data=json.dumps({"id": deployment["id"]}),
-            )
-
-        project_url = f"{BASE}/{PROJECT_PATH}"
-        delete_demo_content(
-            setup_page,
-            BASE,
-            ("contact-us", "plone-conference-2027-unveiled"),
-        )
-        children = setup_page.evaluate(
-            """async url => (await (await fetch(url + '?fullobjects=0', {
-              headers: {'Accept': 'application/json'}
-            })).json()).items || []""",
-            project_url,
-        )
-        for child in children:
-            setup_page.request.delete(
-                child["@id"], headers={"Accept": "application/json"}
-            )
-
-        assets = {path.name: path.read_text() for path in ASSETS.iterdir()}
-        for name in own_asset_names:
-            result = deploy(setup_page, name, assets[name])
-            assert result["status"] == 200, (name, result)
-
-        setup.close()
-
-        # Unrecorded, kept open for the whole script: wait_for_state()'s
-        # polling needs a live page throughout, separate from the recorded
-        # actor/Cockpit contexts (which open and close per turn -- reusing
-        # one of those here would either interfere with its recording or
-        # go stale the moment that context closes). Authenticated as manager
-        # -- an unauthenticated context can't even see the workflow state
-        # label once the project leaves "drafting_plan" (every later state's
-        # permission map excludes Anonymous).
-        poll_context = browser.new_context(
-            extra_http_headers={"Authorization": basic_auth("manager", "manager")}
-        )
-        poll_page = poll_context.new_page()
-
-        # --- Cockpit: observer, opens first and closes last -------------------
         cockpit_setup = browser.new_context()
         cockpit_setup_page = cockpit_setup.new_page()
         cockpit_setup_page.goto(f"{COCKPIT}/", wait_until="load")
@@ -601,27 +271,11 @@ def main():
         started = time.monotonic()
         clips = []
 
-        def follow_process(process_key):
-            """Re-enter Cockpit's process list and follow the latest instance.
+        cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
+        cockpit_page.get_by_role("link", name="renovation-case").click()
+        cockpit_page.wait_for_timeout(1200)
 
-            Navigates in-app (click "Processes", then the definition) rather
-            than reload() -- a reload re-bootstraps Cockpit's Angular SPA and
-            puts a blank flash in the recording; an in-app route change
-            re-queries the instance table without one.
-            """
-            human_click(
-                cockpit_page,
-                cockpit_page.get_by_role("link", name="Processes", exact=True).first,
-            )
-            cockpit_page.wait_for_timeout(1000)
-            human_click(
-                cockpit_page, cockpit_page.get_by_role("link", name=process_key)
-            )
-            cockpit_page.wait_for_timeout(1200)
-            instance_link = cockpit_page.locator('a[href*="/process-instance/"]').last
-            instance_link.wait_for(state="visible", timeout=30000)
-            human_click(cockpit_page, instance_link)
-            cockpit_page.wait_for_timeout(1200)
+        def configure_cockpit():
             ensure_cockpit_toggle(
                 cockpit_page, ".toggle-auto-refresh-button", "auto-refresh"
             )
@@ -629,324 +283,108 @@ def main():
                 cockpit_page, ".toggle-sequence-flow-button", "sequence-flow"
             )
 
-        def focus_instance_view():
-            cockpit_page.bring_to_front()
-            cockpit_page.wait_for_timeout(6000)
-
-        def record_turn(username, password, action):
-            """Open a short recorded context for one persona turn and run `action`.
-
-            `action(page)` drives the turn; the context is created immediately
-            before it and closed immediately after, per docs/AGENTS.md -- so
-            this is the unit every clip in `clips` corresponds to.
-            """
-            auth = browser.new_context(
-                extra_http_headers={"Authorization": basic_auth(username, password)}
-            )
-            auth_page = auth.new_page()
-            auth_page.goto(BASE, wait_until="load")
-            if auth_page.locator("#__ac_name").count():
-                auth_page.locator("#__ac_name").fill(username)
-                auth_page.locator("#__ac_password").fill(password)
-                auth_page.locator("#buttons-login").click()
-                auth_page.wait_for_load_state("load")
-            storage_state = auth.storage_state()
-            auth.close()
+        def record_turn(username, password, action, turn, title, subtitle):
             context = browser.new_context(
                 viewport=VIDEO_SIZE,
                 record_video_dir=str(DOCS),
                 record_video_size=VIDEO_SIZE,
-                extra_http_headers={"Authorization": basic_auth(username, password)},
-                storage_state=storage_state,
+                extra_http_headers={
+                    "Authorization": basic_auth(username, password)
+                },
             )
             context.add_init_script(CURSOR_SCRIPT)
             page = context.new_page()
             offset = time.monotonic() - started
-            action(page)
-            video_path = page.video.path()
+            action(page, turn, title, subtitle)
+            video = page.video.path()
             context.close()
-            # Give Cockpit's auto-refresh one full interval after each Plone
-            # submission before the next actor turn starts.
             cockpit_page.bring_to_front()
             cockpit_page.wait_for_timeout(6000)
             clips.append(
                 {
-                    "video": video_path,
+                    "video": str(video),
                     "offset": offset,
                     "title": getattr(page, "_bpmproxy_title", None),
                     "title_duration": ACTOR_SLIDE_DURATION,
                 }
             )
-            return video_path
 
-        # Cockpit follows Plan Review from the start -- there is nothing to see
-        # yet, but auto-refresh means the instance appears the moment the
-        # Contractor submits the plan, without this script reaching back into it.
+        def contractor_adds_document(page, turn, title, subtitle):
+            page.goto(CASE, wait_until="load")
+            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
+            add_document(page)
+            page.screenshot(
+                path=str(DOCS / "renovation-project-document-added.png"),
+                full_page=True,
+            )
+
+        record_turn(
+            "contractor",
+            "contractor",
+            contractor_adds_document,
+            1,
+            "Contractor",
+            "Adding a document to the renovation case",
+        )
+
         cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
-        cockpit_page.get_by_role("link", name=PROCESS_KEYS[0]).click()
-        cockpit_page.wait_for_timeout(800)
+        cockpit_page.get_by_role("link", name="renovation-page-review").click()
+        cockpit_page.wait_for_timeout(1200)
+        instance = cockpit_page.locator('a[href*="/process-instance/"]').last
+        instance.wait_for(state="visible", timeout=30000)
+        human_click(cockpit_page, instance)
+        configure_cockpit()
+        cockpit_page.screenshot(
+            path=str(DOCS / "renovation-project-cockpit-parallel-review.png"),
+            full_page=True,
+        )
 
-        # --- Contractor turn 1: draft and submit the plan ----------------------
-        def contractor_submits_plan(page):
-            page.goto(project_url, wait_until="load")
-            page.wait_for_timeout(600)
-            show_actor_slide(
-                page,
-                "Renovation project · 1 / 9",
-                "Contractor",
-                "Drafting the remodel plan",
-            )
-            human_click(page, page.get_by_role("link", name="Add new…"))
-            human_click(page, page.get_by_role("link", name="Page", exact=True))
-            human_fill(
-                page,
-                page.locator("#form-widgets-IDublinCore-title"),
-                "Plan: kitchen and bathroom remodel",
-            )
-            editor = page.frame_locator("iframe").locator("body").first
-            paste_text(page, editor, PLAN_BODY)
-            human_click(page, page.get_by_role("button", name="Save"))
+        def approves(page, turn, title, subtitle):
+            page.goto(CASE, wait_until="load")
+            task_name = "Owner reviews page" if title == "Owner" else "Inspector reviews page"
+            task = wait_for_task(page, task_name)
+            human_click(page, task)
+            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
+            human_click(page, page.get_by_label("Approved"))
+            human_click(page, page.get_by_role("button", name="Submit review"))
             page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-            page.goto(project_url, wait_until="load")
-            # Plone's workflow-menu dropdown toggle starts with
-            # pointer-events: none until Patternslib's dropdown pattern
-            # initializes on it, which wait_for_load_state alone can race --
-            # the same race review_process.py's author_submits() guards
-            # against on Simple Publication Workflow's own menu; this
-            # project's custom renovation_project_workflow uses the same
-            # generic #plone-contentmenu-workflow menu.
-            page.wait_for_function(
-                """() => {
-                  const a = document.querySelector('#plone-contentmenu-workflow a');
-                  return a && getComputedStyle(a).pointerEvents !== 'none';
-                }"""
-            )
-            human_click(page, page.get_by_role("link", name="State: Drafting plan"))
-            human_click(page, page.get_by_role("link", name="Submit plan"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(800)
-            text = page.locator("body").inner_text()
-            assert "Plan under review" in text
+
+        record_turn(
+            "owner", "owner", approves, 2, "Owner", "Reviewing the added page"
+        )
+        cockpit_page.reload(wait_until="load")
+        cockpit_page.wait_for_timeout(1200)
+        configure_cockpit()
+        record_turn(
+            "inspector",
+            "inspector",
+            approves,
+            3,
+            "Inspector",
+            "Reviewing the added page for compliance",
+        )
+
+        def manager_closes(page, turn, title, subtitle):
+            page.goto(CASE, wait_until="load")
+            show_actor_slide(page, f"Renovation case · {turn} / 4", title, subtitle)
+            workflow(page, "close-case")
+            page.reload(wait_until="load")
+            assert "Closed" in page.locator("body").inner_text()
             page.screenshot(
-                path=str(DOCS / "renovation-project-plan-submitted.png"), full_page=True
+                path=str(DOCS / "renovation-project-closed.png"), full_page=True
             )
 
-        record_turn("contractor", "contractor", contractor_submits_plan)
-
-        # Cockpit: the instance now exists -- re-enter to show the parallel
-        # Owner/Inspector review tasks before either persona acts.
-        follow_process(PROCESS_KEYS[0])
-        focus_instance_view()
-        cockpit_page.screenshot(
-            path=str(DOCS / "renovation-project-cockpit-plan-review.png"),
-            full_page=True,
+        record_turn(
+            "manager",
+            "manager",
+            manager_closes,
+            4,
+            "Case manager",
+            "Closing the completed renovation case",
         )
 
-        # --- Owner turn 1: approve the plan -------------------------------------
-        def owner_approves_plan(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Owner reviews plan")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page, "Renovation project · 2 / 9", "Owner", "Reviewing the plan"
-            )
-            human_click(page, page.get_by_label("Approved"))
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("owner", "owner", owner_approves_plan)
-        focus_instance_view()
-
-        # --- Inspector turn 1: approve the plan --------------------------------
-        def inspector_approves_plan(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Inspector reviews plan")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page,
-                "Renovation project · 3 / 9",
-                "Inspector",
-                "Reviewing the plan for compliance",
-            )
-            human_click(page, page.get_by_label("Approved"))
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("inspector", "inspector", inspector_approves_plan)
-        focus_instance_view()
-
-        # Both reviews are in -- renovation-bot transitions the project once it
-        # picks up the "Plone Workflow Transition" external task. Wait for it in
-        # the unrecorded Cockpit context before moving on, then follow the next
-        # process definition.
-        wait_for_state(poll_page, project_url, "Work in progress")
-        follow_process(PROCESS_KEYS[1])
-        focus_instance_view()
-        cockpit_page.screenshot(
-            path=str(DOCS / "renovation-project-cockpit-work-and-extra-work.png"),
-            full_page=True,
-        )
-
-        # --- Contractor turn 2: document completed work (auto-completes) -------
-        def contractor_documents_work(page):
-            page.goto(project_url, wait_until="load")
-            page.wait_for_timeout(600)
-            show_actor_slide(
-                page,
-                "Renovation project · 4 / 9",
-                "Contractor",
-                "Logging a week of completed work",
-            )
-            human_click(page, page.get_by_role("link", name="Add new…"))
-            human_click(page, page.get_by_role("link", name="Page", exact=True))
-            human_fill(
-                page,
-                page.locator("#form-widgets-IDublinCore-title"),
-                "Week 1 progress",
-            )
-            editor = page.frame_locator("iframe").locator("body").first
-            paste_text(page, editor, WORK_LOG_BODY)
-            # Not tagging this "Work Log" -- the pat-select2 Tags widget is
-            # configured with allowNewItems: false (only existing vocabulary
-            # terms are selectable) and the profile seeds no such term, so
-            # there is nothing to pick, even though the profile's own
-            # README.rst still describes this content as tagged that way
-            # (docs/renovation-project-scenario.md's persona table used to
-            # make the same claim; it now describes this actual behavior
-            # instead -- see that doc's *Fixture adaptations* section). See
-            # completeAddTask() in subscribers/tasks.py: it matches on
-            # portal_type/parent UUID, never on Subject, so this only affects
-            # discoverability (e.g. a future "Work Log" Collection), never
-            # the task auto-complete itself.
-            human_click(page, page.get_by_role("button", name="Save"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(900)
-            page.screenshot(
-                path=str(DOCS / "renovation-project-work-log.png"), full_page=True
-            )
-
-        record_turn("contractor", "contractor", contractor_documents_work)
-        focus_instance_view()
-
-        # --- Contractor turn 3: request extra work ------------------------------
-        def contractor_requests_extra_work(page):
-            page.goto(project_url, wait_until="load")
-            page.wait_for_timeout(600)
-            show_actor_slide(
-                page,
-                "Renovation project · 5 / 9",
-                "Contractor",
-                "Requesting extra work approval",
-            )
-            button = page.get_by_role("button", name="Request extra work")
-            human_click(page, button)
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("contractor", "contractor", contractor_requests_extra_work)
-        focus_instance_view()
-
-        # --- Owner turn 2: approve the extra-work request ------------------------
-        def owner_approves_extra_work(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Approve extra work")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page,
-                "Renovation project · 6 / 9",
-                "Owner",
-                "Approving the extra-work request",
-            )
-            human_click(page, page.get_by_label("Approved"))
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("owner", "owner", owner_approves_extra_work)
-        focus_instance_view()
-
-        # --- Contractor turn 4: submit for final review -------------------------
-        def contractor_submits_for_final_review(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Submit for final review")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page,
-                "Renovation project · 7 / 9",
-                "Contractor",
-                "Submitting the completed work for final review",
-            )
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("contractor", "contractor", contractor_submits_for_final_review)
-        focus_instance_view()
-
-        wait_for_state(poll_page, project_url, "Final review")
-        follow_process(PROCESS_KEYS[2])
-        focus_instance_view()
-        cockpit_page.screenshot(
-            path=str(DOCS / "renovation-project-cockpit-final-review.png"),
-            full_page=True,
-        )
-
-        # --- Owner turn 3: approve the final result -----------------------------
-        def owner_approves_final(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Owner reviews final result")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page,
-                "Renovation project · 8 / 9",
-                "Owner",
-                "Reviewing the final result",
-            )
-            human_click(page, page.get_by_label("Approved"))
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("owner", "owner", owner_approves_final)
-        focus_instance_view()
-
-        # --- Inspector turn 2: approve the final result -------------------------
-        def inspector_approves_final(page):
-            page.goto(project_url, wait_until="load")
-            task = wait_for_task(page, "Inspector reviews final result")
-            human_click(page, task)
-            page.wait_for_load_state("load")
-            show_actor_slide(
-                page,
-                "Renovation project · 9 / 9",
-                "Inspector",
-                "Reviewing the final result for compliance",
-            )
-            human_click(page, page.get_by_label("Approved"))
-            human_click(page, page.get_by_role("button", name="Submit"))
-            page.wait_for_load_state("load")
-            page.wait_for_timeout(700)
-
-        record_turn("inspector", "inspector", inspector_approves_final)
-        focus_instance_view()
-
-        wait_for_state(poll_page, project_url, "Closed")
+        cockpit_page.goto(f"{COCKPIT}/#/history", wait_until="load")
         cockpit_page.wait_for_timeout(2500)
-        cockpit_page.get_by_role("link", name="More", exact=True).first.evaluate(
-            "(element) => element.click()"
-        )
-        history_link = cockpit_page.get_by_text("History", exact=True).last
-        history_link.wait_for(state="visible", timeout=10000)
-        history_link.evaluate("(element) => element.click()")
-        cockpit_page.wait_for_timeout(5000)
         history_instance = cockpit_page.locator('a[href*="/process-instance/"]').last
         history_instance.wait_for(state="visible", timeout=30000)
         human_click(cockpit_page, history_instance)
@@ -958,29 +396,23 @@ def main():
             human_click(cockpit_page, info_panel.first)
         cockpit_page.wait_for_timeout(5000)
         cockpit_page.screenshot(
-            path=str(DOCS / "renovation-project-cockpit-completed.png"), full_page=True
+            path=str(DOCS / "renovation-project-cockpit-completed.png"),
+            full_page=True,
         )
-        poll_page.goto(project_url, wait_until="load")
-        poll_page.screenshot(
-            path=str(DOCS / "renovation-project-closed.png"), full_page=True
+
+        title_segments = prepare_title_segments(
+            nix_ffmpeg, clips, DOCS / "renovation-project-pip.webm"
         )
-        poll_context.close()
-
-        print("Scenario completed:", time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()))
-
+        for clip, segment in zip(clips, title_segments):
+            clip["title_segment"] = str(segment)
         cockpit_video = cockpit_page.video.path()
         cockpit.close()
+        manager.close()
         browser.close()
 
-        Path(cockpit_video).replace(DOCS / "renovation-project-cockpit.webm")
-        for clip in clips:
-            clip["video"] = Path(clip["video"])
-        compose_recording(
-            DOCS / "renovation-project-cockpit.webm",
-            clips,
-            output=DOCS / "renovation-project-pip.webm",
-            timing_path=TIMING_PATH,
-        )
+        output = DOCS / "renovation-project-pip.webm"
+        compose_recording(cockpit_video, clips, output, TIMING_PATH)
+        print(f"Scenario completed: {output}")
 
 
 if __name__ == "__main__":

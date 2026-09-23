@@ -1,4 +1,4 @@
-"""Install the renovation-project demo and its recording-only demo users.
+"""Install the renovation case demo and its recording-only demo users.
 
 Run it against a stopped instance with zconsole, after bootstrap_site.py,
 e.g.
@@ -23,20 +23,34 @@ ADMIN_USER = os.environ.get("PLONE_ADMIN_USER", "admin")
 
 PROFILE = "collective.bpmproxy:renovation_demo"
 
-# Recording-only demo accounts, one per persona in
-# docs/renovation-project-scenario.md. Not created by the profile itself --
-# it only creates the *groups* -- so the recording script has someone to log
-# in as for each of them.
+# Recording-only demo accounts, one per persona in the browser scenario.
 DEMO_USERS = {
     "owner": ("owner", "Renovation Owners"),
     "contractor": ("contractor", "Renovation Contractors"),
     "inspector": ("inspector", "Renovation Inspectors"),
 }
 
-# The profile creates "renovation-bot" with a random password (it's a
-# service account, never meant to be typed in). Reset it here to a known
-# value so examples/renovation-bot/secrets.json can authenticate as it.
-RENOVATION_BOT_PASSWORD = os.environ.get("RENOVATION_BOT_PASSWORD", "renovation-bot")
+GROUPS = tuple({group_id for _, group_id in DEMO_USERS.values()})
+
+
+def ensure_groups():
+    for group_id in GROUPS:
+        if api.group.get(group_id) is None:
+            api.group.create(groupname=group_id, title=group_id)
+
+
+def create_demo_case(site):
+    case = api.content.create(
+        container=site,
+        type="Renovation Project",
+        id="renovation-project-demo",
+        title="Demo renovation project",
+    )
+    case.manage_setLocalRoles("Renovation Contractors", ["Contributor", "Editor"])
+    case.manage_setLocalRoles("Renovation Owners", ["Reviewer"])
+    case.manage_setLocalRoles("Renovation Inspectors", ["Reviewer"])
+    case.reindexObjectSecurity()
+
 
 
 def main(app):
@@ -54,14 +68,8 @@ def main(app):
             "collective.bpmproxy is not installed -- run 'make bootstrap-site' first"
         )
 
-    # Delete a pre-existing demo project *before* reapplying the profile, so
-    # its post_handler (renovation_demo.install()) recreates it fresh --
-    # groups, roles and portlets included -- rather than leaving a project
-    # from a previous, possibly-closed recording run in place. install() only
-    # creates the project when it's absent, so this is what makes re-running
-    # this script (and the recording) idempotent across a project's full
-    # workflow lifecycle, including its terminal "closed" state that has no
-    # transition back to "drafting_plan".
+    # Delete the previous case before reapplying the profile so the fixture is
+    # recreated at the workflow's initial state.
     if "renovation-project-demo" in site:
         print("Removing existing 'renovation-project-demo' for a clean run ...")
         api.content.delete(obj=site["renovation-project-demo"])
@@ -75,6 +83,8 @@ def main(app):
     setup_tool = api.portal.get_tool("portal_setup")
     setup_tool.runAllImportStepsFromProfile(f"profile-{PROFILE}")
 
+    ensure_groups()
+
     for username, (password, group_id) in DEMO_USERS.items():
         if site.acl_users.getUserById(username) is None:
             print(f"Creating '{username}' (member of {group_id}) ...")
@@ -83,16 +93,7 @@ def main(app):
         else:
             print(f"'{username}' already exists")
 
-    if site.acl_users.getUserById("renovation-bot") is not None:
-        site.acl_users.source_users.updateUserPassword(
-            "renovation-bot", RENOVATION_BOT_PASSWORD
-        )
-        print("Reset 'renovation-bot' password for the recording's purjo worker")
-    else:
-        print(
-            "WARNING: 'renovation-bot' user not found -- "
-            f"did {PROFILE} install correctly?"
-        )
+    create_demo_case(site)
 
     transaction.commit()
     print("Done.")

@@ -29,22 +29,6 @@ CONTACT_FORM_ASSETS = [
 # the content-rule integration.
 LIFECYCLE = "example-plone-published-lifecycle"
 
-# examples/renovation-project: three chained processes correlated by the
-# project's UUID, signal/message-started -- see docs/renovation-project-
-# scenario.md. Used by the portlets scenario as its live fixture: the demo
-# project it creates carries the Tasks and Message portlets.
-RENOVATION_PROJECT = "renovation-project"
-RENOVATION_PROJECT_ASSETS = [
-    "renovation-owner-approval.form",
-    "renovation-inspector-approval.form",
-    "renovation-extra-work-approval.form",
-    "renovation-confirm.form",
-    "renovation-plan-review.bpmn",
-    "renovation-work-and-extra-work.bpmn",
-    "renovation-final-review.bpmn",
-]
-
-
 def minimal_bpmn(key):
     """The smallest deployable process: one start event, nothing else."""
     return f"""<?xml version="1.0" encoding="UTF-8"?>

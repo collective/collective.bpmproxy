@@ -1,241 +1,39 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<dc-workflow workflow_id="renovation_project_workflow" title="Renovation Project Workflow" description="Drafting the plan, BPM-managed plan review, work in progress, BPM-managed final review, and closing." state_variable="review_state" initial_state="drafting_plan" manager_bypass="False">
- <permission>Access contents information</permission>
- <permission>Add portal content</permission>
- <permission>Modify portal content</permission>
- <permission>View</permission>
- <state state_id="drafting_plan" title="Drafting plan">
-  <description>The Contractor drafts the plan and drawings. Re-entered after the plan is rejected.</description>
-  <exit-transition transition_id="submit-plan" />
-  <permission-map name="Access contents information" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Add portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Modify portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="View" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
- </state>
- <state state_id="plan_review" title="Plan under review">
-  <description>BPM-managed: the Plan Review process is running. Read-only until it approves or rejects the plan.</description>
-  <exit-transition transition_id="approve-plan" />
-  <exit-transition transition_id="reject-plan" />
-  <permission-map name="Access contents information" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Add portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Modify portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="View" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
- </state>
- <state state_id="in_progress" title="Work in progress">
-  <description>The Contractor documents completed work and may request extra work while the Work &amp; Extra-Work process is running.</description>
-  <exit-transition transition_id="submit-for-final-review" />
-  <permission-map name="Access contents information" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Add portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Modify portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="View" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
- </state>
- <state state_id="final_review" title="Final review">
-  <description>BPM-managed: the Final Review process is running. Read-only until it closes the project or sends it back for rework.</description>
-  <exit-transition transition_id="close-project" />
-  <exit-transition transition_id="reject-final-review" />
-  <permission-map name="Access contents information" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Add portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Modify portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="View" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
- </state>
- <state state_id="closed" title="Closed">
-  <description>The project is complete. Terminal state.</description>
-  <permission-map name="Access contents information" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
-  <permission-map name="Add portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-  </permission-map>
-  <permission-map name="Modify portal content" acquired="False">
-   <permission-role>Manager</permission-role>
-  </permission-map>
-  <permission-map name="View" acquired="False">
-   <permission-role>Manager</permission-role>
-   <permission-role>Contributor</permission-role>
-   <permission-role>Editor</permission-role>
-   <permission-role>Reader</permission-role>
-   <permission-role>Reviewer</permission-role>
-   <permission-role>Site Administrator</permission-role>
-  </permission-map>
- </state>
- <transition transition_id="submit-plan" title="Contractor submits the plan for review" new_state="plan_review" trigger="USER" before_script="" after_script="">
-  <description>The only manually triggered transition: nothing in Camunda exists yet to drive it.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=submit-plan">Submit plan</action>
-  <guard>
-   <guard-permission>Request review</guard-permission>
-  </guard>
- </transition>
- <transition transition_id="approve-plan" title="Plan Review process approves the plan" new_state="in_progress" trigger="USER" before_script="" after_script="">
-  <description>Performed by the renovation-bot purjo worker after the Owner and Inspector both approve.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=approve-plan">Approve plan</action>
-  <guard>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </transition>
- <transition transition_id="reject-plan" title="Plan Review process rejects the plan" new_state="drafting_plan" trigger="USER" before_script="" after_script="">
-  <description>Performed by the renovation-bot purjo worker when the Owner or Inspector rejects.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=reject-plan">Reject plan</action>
-  <guard>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </transition>
- <transition transition_id="submit-for-final-review" title="Contractor submits the work for final review" new_state="final_review" trigger="USER" before_script="" after_script="">
-  <description>Performed by the renovation-bot purjo worker after the Contractor completes the Camunda "Submit for final review" task.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=submit-for-final-review">Submit for final review</action>
-  <guard>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </transition>
- <transition transition_id="reject-final-review" title="Final Review process sends the project back" new_state="in_progress" trigger="USER" before_script="" after_script="">
-  <description>Performed by the renovation-bot purjo worker when the Owner or Inspector rejects the final result.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=reject-final-review">Reject final review</action>
-  <guard>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </transition>
- <transition transition_id="close-project" title="Final Review process closes the project" new_state="closed" trigger="USER" before_script="" after_script="">
-  <description>Performed by the renovation-bot purjo worker after the Owner and Inspector both approve the final result.</description>
-  <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=close-project">Close project</action>
-  <guard>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </transition>
- <variable variable_id="action" for_catalog="False" for_status="True" update_always="True">
-  <description>Previous transition</description>
-  <default>
-
-   <expression>transition/getId|nothing</expression>
-  </default>
-  <guard>
-  </guard>
- </variable>
- <variable variable_id="actor" for_catalog="False" for_status="True" update_always="True">
-  <description>The ID of the user who performed the previous transition</description>
-  <default>
-
-   <expression>user/getId</expression>
-  </default>
-  <guard>
-  </guard>
- </variable>
- <variable variable_id="comments" for_catalog="False" for_status="True" update_always="True">
-  <description>Comment about the last transition</description>
-  <default>
-
-   <expression>python:state_change.kwargs.get('comment', '')</expression>
-  </default>
-  <guard>
-  </guard>
- </variable>
- <variable variable_id="review_history" for_catalog="False" for_status="False" update_always="False">
-  <description>Provides access to workflow history</description>
-  <default>
-
-   <expression>state_change/getHistory</expression>
-  </default>
-  <guard>
-   <guard-permission>Request review</guard-permission>
-   <guard-permission>Review portal content</guard-permission>
-  </guard>
- </variable>
- <variable variable_id="time" for_catalog="False" for_status="True" update_always="True">
-  <description>When the previous transition was performed</description>
-  <default>
-
-   <expression>state_change/getDateTime</expression>
-  </default>
-  <guard>
-  </guard>
- </variable>
+<dc-workflow workflow_id="renovation_project_workflow" title="Renovation Case Workflow" description="The visible open/closed lifecycle for a BPMN-managed renovation case." state_variable="review_state" initial_state="open" manager_bypass="False">
+  <permission>Access contents information</permission>
+  <permission>Add portal content</permission>
+  <permission>Modify portal content</permission>
+  <permission>View</permission>
+  <state state_id="open" title="Open">
+    <description>The case accepts Documents and case events.</description>
+    <exit-transition transition_id="close-case" />
+    <permission-map name="Access contents information" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Contributor</permission-role><permission-role>Editor</permission-role><permission-role>Reader</permission-role><permission-role>Reviewer</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+    <permission-map name="Add portal content" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Contributor</permission-role><permission-role>Editor</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+    <permission-map name="Modify portal content" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Editor</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+    <permission-map name="View" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Contributor</permission-role><permission-role>Editor</permission-role><permission-role>Reader</permission-role><permission-role>Reviewer</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+  </state>
+  <state state_id="closed" title="Closed">
+    <description>The case is closed. It is retained for history.</description>
+    <permission-map name="Access contents information" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Contributor</permission-role><permission-role>Editor</permission-role><permission-role>Reader</permission-role><permission-role>Reviewer</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+    <permission-map name="Add portal content" acquired="False"><permission-role>Manager</permission-role></permission-map>
+    <permission-map name="Modify portal content" acquired="False"><permission-role>Manager</permission-role></permission-map>
+    <permission-map name="View" acquired="False">
+      <permission-role>Manager</permission-role><permission-role>Contributor</permission-role><permission-role>Editor</permission-role><permission-role>Reader</permission-role><permission-role>Reviewer</permission-role><permission-role>Site Administrator</permission-role>
+    </permission-map>
+  </state>
+  <transition transition_id="close-case" title="Close case" new_state="closed" trigger="USER" before_script="" after_script="">
+    <description>The case manager closes the case after its reviews and events are complete.</description>
+    <action category="workflow" url="%(content_url)s/content_status_modify?workflow_action=close-case">Close case</action>
+    <guard><guard-permission>Review portal content</guard-permission></guard>
+  </transition>
 </dc-workflow>

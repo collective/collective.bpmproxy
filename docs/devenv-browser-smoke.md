@@ -35,9 +35,9 @@ A headless Chromium walkthrough of the Plone modeler tabs, deployment view, and
 site front page is available as [renovation-project-pip.webm](renovation-project-pip.webm).
 
 The reproducible end-to-end scenario is documented in
-[renovation-project-scenario.md](renovation-project-scenario.md). It records three
-personas and Cockpit, composing them into a single focus-flipping picture-in-picture
-walkthrough.
+[renovation-project-scenario.md](renovation-project-scenario.md). It records the
+case personas and Cockpit, composing them into a single focus-flipping
+picture-in-picture walkthrough.
 
 ## Environment notes
 
