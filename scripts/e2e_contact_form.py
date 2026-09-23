@@ -627,6 +627,7 @@ def main():
             cockpit_page.wait_for_timeout(1800)
 
         cockpit_toggles_configured = False
+        statistics_toggle_configured = False
 
         def configure_cockpit_toggles():
             """Enable persistent Cockpit diagram toggles once per recording."""
@@ -643,15 +644,19 @@ def main():
 
         def refresh_definition_with_statistics():
             """Refresh the visible definition view after a new submission."""
+            nonlocal statistics_toggle_configured
             cockpit_page.bring_to_front()
             cockpit_page.goto(f"{COCKPIT}/#/processes", wait_until="load")
             cockpit_page.get_by_role("link", name=PROCESS_KEY).click()
             cockpit_page.wait_for_timeout(1200)
+            if statistics_toggle_configured:
+                return
             statistics = cockpit_page.locator(".toggle-history-statistics-button")
             statistics.wait_for(state="visible", timeout=10000)
             label = statistics.get_attribute("aria-label") or ""
             if label.startswith("Show"):
                 human_click(cockpit_page, statistics)
+            statistics_toggle_configured = True
 
         def refresh_definition_and_open_instance():
             """Refresh the definition, then show its newest process instance."""
