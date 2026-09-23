@@ -169,9 +169,7 @@ def compose_recording(cockpit_video, clips, output, timing_path=None):
     inputs = ["-i", cockpit_video] + sum(
         (["-i", str(clip["video"])] for clip in clips), []
     )
-    inputs += sum(
-        (["-i", str(clip["title_segment"])] for clip in clips), []
-    )
+    inputs += sum((["-i", str(clip["title_segment"])] for clip in clips), [])
 
     def cockpit_slice(label, start, end):
         filters.append(
