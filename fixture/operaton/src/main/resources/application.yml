@@ -1,0 +1,87 @@
+operaton.bpm:
+  admin-user:
+    id: admin
+    password: admin
+    firstName: Operaton
+    lastName: Admin
+    email: admin@example.com
+  authorization:
+    enabled: true
+  default-serialization-format: application/json
+  generic-properties:
+    properties:
+      default-number-of-retries: 3
+      job-executor-deployment-aware: false
+      deserialization-type-validation-enabled: true
+      enable-exceptions-after-unhandled-bpmn-error: true
+      enable-historic-instance-permissions: true
+      enforce-specific-variable-permission: true
+      history: full
+      history-removal-time-strategy: end
+      history-cleanup-strategy: removalTimeBased
+      history-cleanup-enabled: true
+      history-cleanup-batch-size: 100
+      history-cleanup-batch-window-start-time: "22:00"
+      history-cleanup-batch-window-end-time: "06:00"
+      history-cleanup-degree-of-parallelism: 1
+      history-time-to-live: P7D
+
+server:
+  port: 8081
+
+spring:
+  application:
+    name: camunda
+  datasource:
+    url: jdbc:h2:mem:operaton;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: ""
+
+plone:
+  public-key: ${PLONE_PUBLIC_KEY:ec-ed25519-pub-key.pem}
+
+---
+# OIDC login for the Operaton webapps (Cockpit/Tasklist/Admin/Welcome).
+# Requests from Plone to /engine-rest/* stay authenticated by the custom
+# JWT filter (see ProcessEngineConfig) in every profile; this profile only
+# adds OAuth2 login in front of the webapps. In development Keycloak is
+# provided by devenv (realm "plone", see devenv/keycloak/realm-plone.json).
+spring:
+  config:
+    activate:
+      on-profile: oauth2
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            provider: keycloak
+            client-id: operaton
+            client-secret: ${KEYCLOAK_CLIENT_SECRET:operaton-secret}
+            authorization-grant-type: authorization_code
+            scope: openid,profile,email
+        provider:
+          keycloak:
+            issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8082/realms/plone}
+            user-name-attribute: preferred_username
+
+operaton.bpm:
+  oauth2:
+    identity-provider:
+      enabled: true
+      group-name-attribute: groups
+    sso-logout:
+      enabled: true
+      post-logout-redirect-uri: ${OPERATON_POST_LOGOUT_REDIRECT_URI:http://localhost:8081/}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: jdbc:postgresql://localhost:5432/postgres
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: postgres

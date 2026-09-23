@@ -1,0 +1,24 @@
+{
+  "components": [
+    {
+      "action": "submit",
+      "label": "Start Simple Process",
+      "type": "button",
+      "layout": {
+        "row": "Row_0tolpqv",
+        "columns": null
+      },
+      "id": "Field_1cojy9z",
+      "key": "field_05fig8w"
+    }
+  ],
+  "type": "default",
+  "id": "Form_1",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.12.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.19.0",
+  "schemaVersion": 9
+}

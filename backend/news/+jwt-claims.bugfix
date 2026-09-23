@@ -1,0 +1,4 @@
+Verify JWT ``exp``/``nbf`` claims and the signing algorithm in the Operaton
+fixture, and re-verify the token in ``JWTIdentityService`` rather than trusting
+claims parsed from an unverified string. Previously a leaked token stayed valid
+indefinitely because Plone's one-hour expiry was never checked.

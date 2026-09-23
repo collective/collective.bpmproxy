@@ -1,0 +1,38 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="collective.bpmproxy">
+
+  <adapter
+    for="..behaviors.process_context.IProcessContext * *"
+    factory=".patterns.PatternsSettings"
+    provides="Products.CMFPlone.interfaces.IPatternsSettings"
+    name="collective_bpmproxy" />
+
+  <adapter
+    for="..actions.signal.IBpmSignalAction * *"
+    factory=".patterns.PatternsSettings"
+    provides="Products.CMFPlone.interfaces.IPatternsSettings"
+    name="collective_bpmproxy" />
+
+  <adapter
+    for="plone.uuid.interfaces.IUUIDAware"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.UUIDSubstitution"
+    name="uuid" />
+
+  <adapter
+    for="plone.uuid.interfaces.IUUIDAware"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.ParentUUIDSubstitution"
+    name="parent_uuid" />
+
+  <adapter
+    for="*"
+    provides="plone.stringinterp.interfaces.IStringSubstitution"
+    factory=".substitutions.CameFromSubstitution"
+    name="came_from"
+  />
+
+  <adapter factory=".security.AttachmentsLocalRoleProvider" />
+
+</configure>

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<object xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    name="Renovation Project"
+    meta_type="Dexterity FTI"
+    i18n:domain="collective.bpmproxy">
+  <property name="title">Renovation Project</property>
+  <property name="description">Folderish home-renovation case managed by a BPMN process.</property>
+  <property name="factory">Renovation Project</property>
+  <property name="icon_expr">string:contenttype/folder</property>
+  <property name="global_allow">True</property>
+  <property name="filter_content_types">True</property>
+  <property name="allowed_content_types">
+    <element value="Document"/>
+  </property>
+  <property name="klass">plone.dexterity.content.Container</property>
+  <property name="schema">plone.app.contenttypes.interfaces.IFolder</property>
+  <property name="behaviors" purge="false">
+    <element value="plone.namefromtitle"/>
+    <element value="plone.basic"/>
+    <element value="plone.categorization"/>
+    <element value="plone.ownership"/>
+    <element value="plone.publication"/>
+    <element value="plone.locking"/>
+  </property>
+  <property name="add_view_expr">string:${folder_url}/++add++Renovation%20Project</property>
+  <property name="default_view">view</property>
+  <property name="default_view_fallback">True</property>
+  <property name="view_methods">
+    <element value="view"/>
+  </property>
+  <alias from="(Default)" to="(dynamic view)"/>
+  <alias from="view" to="(selected layout)"/>
+</object>

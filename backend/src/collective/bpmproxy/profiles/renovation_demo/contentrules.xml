@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contentrules>
+  <rule name="renovation-case-created" title="Start renovation case process" cascading="False"
+      description="Start the case process only when a Renovation Project is created." enabled="True"
+      event="zope.lifecycleevent.interfaces.IObjectAddedEvent" stop-after="False">
+    <conditions>
+      <condition type="plone.conditions.PortalType">
+        <property name="check_types"><element>Renovation Project</element></property>
+      </condition>
+    </conditions>
+    <actions>
+      <action type="plone.actions.BpmMessage">
+        <property name="name">renovation-case-created</property>
+        <property name="correlationKeys">{}</property>
+        <property name="payload">{&#x27;caseUuid&#x27;: &#x27;${uuid}&#x27;, &#x27;caseUrl&#x27;: &#x27;${absolute_url}&#x27;, &#x27;title&#x27;: &#x27;${title}&#x27;}</property>
+      </action>
+    </actions>
+  </rule>
+
+  <rule name="renovation-case-closed" title="Notify process that case was closed" cascading="False"
+      description="Deliver a correlated message after close-case." enabled="True"
+      event="Products.CMFCore.interfaces.IActionSucceededEvent" stop-after="False">
+    <conditions>
+      <condition type="plone.conditions.PortalType">
+        <property name="check_types"><element>Renovation Project</element></property>
+      </condition>
+      <condition type="plone.conditions.WorkflowTransition">
+        <property name="wf_transitions"><element>close-case</element></property>
+      </condition>
+    </conditions>
+    <actions>
+      <action type="plone.actions.BpmMessage">
+        <property name="name">renovation-case-closed</property>
+        <property name="correlationKeys">{&#x27;caseUuid&#x27;: &#x27;${uuid}&#x27;}</property>
+        <property name="payload">{&#x27;caseUuid&#x27;: &#x27;${uuid}&#x27;}</property>
+      </action>
+    </actions>
+  </rule>
+
+  <rule name="renovation-case-document-created" title="Notify renovation case of new document" cascading="False"
+      description="Deliver a correlated message for every direct Document child of a case." enabled="True"
+      event="zope.lifecycleevent.interfaces.IObjectAddedEvent" stop-after="False">
+    <conditions>
+      <condition type="plone.conditions.PortalType">
+        <property name="check_types"><element>Document</element></property>
+      </condition>
+      <condition type="plone.conditions.TalesExpression">
+        <property name="tales_expression">python:object.aq_parent.portal_type == 'Renovation Project'</property>
+      </condition>
+    </conditions>
+    <actions>
+      <action type="plone.actions.BpmMessage">
+        <property name="name">renovation-case-document-created</property>
+        <property name="correlationKeys">{&#x27;caseUuid&#x27;: &#x27;${parent_uuid}&#x27;}</property>
+        <property name="payload">{&#x27;caseUuid&#x27;: &#x27;${parent_uuid}&#x27;, &#x27;childUuid&#x27;: &#x27;${uuid}&#x27;, &#x27;childTitle&#x27;: &#x27;${title}&#x27;, &#x27;childUrl&#x27;: &#x27;${absolute_url}&#x27;}</property>
+      </action>
+    </actions>
+  </rule>
+
+  <assignment location="" name="renovation-case-created" enabled="True" bubbles="True" insert-before="" />
+  <assignment location="" name="renovation-case-closed" enabled="True" bubbles="True" insert-before="" />
+  <assignment location="" name="renovation-case-document-created" enabled="True" bubbles="True" insert-before="" />
+</contentrules>

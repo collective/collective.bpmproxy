@@ -1,0 +1,72 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:genericsetup="http://namespaces.zope.org/genericsetup"
+    i18n_domain="collective.bpmproxy">
+
+  <genericsetup:registerProfile
+      name="default"
+      title="collective.bpmproxy Modeler"
+      directory="profiles/default"
+      description="Installs the BPMN/DMN and Form modelers for collective.bpmproxy."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+  <genericsetup:registerProfile
+      name="uninstall"
+      title="collective.bpmproxy Modeler (uninstall)"
+      directory="profiles/uninstall"
+      description="Uninstalls the BPMN/DMN and Form modelers for collective.bpmproxy."
+      provides="Products.GenericSetup.interfaces.EXTENSION"
+      />
+
+  <genericsetup:upgradeDepends
+      title="Reload bundles"
+      description="Reload the bundle registry for the modeler add-on"
+      source="1000"
+      destination="1001"
+      profile="collective.bpmproxy.modeler:default"
+      import_profile="collective.bpmproxy.modeler:default"
+      import_steps="plone.app.registry"
+      />
+
+  <genericsetup:upgradeDepends
+      title="Reload bundles (fix resources)"
+      description="Reload the bundle registry to fix resource URLs"
+      source="1001"
+      destination="1002"
+      profile="collective.bpmproxy.modeler:default"
+      import_profile="collective.bpmproxy.modeler:default"
+      import_steps="plone.app.registry"
+      />
+
+  <genericsetup:upgradeDepends
+      title="Reload bundles (remove expression)"
+      description="Reload the bundle registry to remove the loading expression"
+      source="1002"
+      destination="1003"
+      profile="collective.bpmproxy.modeler:default"
+      import_profile="collective.bpmproxy.modeler:default"
+      import_steps="plone.app.registry"
+      />
+
+  <genericsetup:upgradeSteps
+      source="1003"
+      destination="1004"
+      profile="collective.bpmproxy.modeler:default">
+
+    <genericsetup:upgradeDepends
+        title="Reload bundles (single modeler bundle)"
+        description="Register the self-contained modeler bundle"
+        import_profile="collective.bpmproxy.modeler:default"
+        import_steps="plone.app.registry"
+        />
+
+    <genericsetup:upgradeStep
+        title="Remove obsolete modeler resources"
+        description="Remove the resource records replaced by the modeler bundle"
+        handler=".upgrades.remove_legacy_modeler_records"
+        />
+
+  </genericsetup:upgradeSteps>
+
+</configure>

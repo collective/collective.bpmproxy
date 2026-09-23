@@ -1,0 +1,62 @@
+{
+  "components": [
+    {
+      "text": "# Contact Us\n\nPlease fill in your contact information and message.",
+      "type": "text",
+      "id": "Field_header"
+    },
+    {
+      "label": "Your Name",
+      "type": "textfield",
+      "id": "Field_senderName",
+      "key": "senderName",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Your Email",
+      "type": "textfield",
+      "id": "Field_senderEmail",
+      "key": "senderEmail",
+      "validate": {
+        "required": true,
+        "pattern": "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
+      }
+    },
+    {
+      "label": "Subject",
+      "type": "textfield",
+      "id": "Field_subject",
+      "key": "subject",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Message",
+      "type": "textarea",
+      "id": "Field_message",
+      "key": "message",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Send message",
+      "type": "button",
+      "id": "Field_submit",
+      "key": "field_submit"
+    }
+  ],
+  "type": "default",
+  "id": "contact-form-start",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 5
+}

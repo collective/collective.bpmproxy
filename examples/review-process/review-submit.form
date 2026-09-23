@@ -1,0 +1,59 @@
+{
+  "components": [
+    {
+      "text": "# Review Submission: ${title}\n\n**Author:** ${author}\n\n**Instructions:**\n${instructions}\n\nPlease enter your recommendation and review comments below.",
+      "type": "text",
+      "id": "Field_header"
+    },
+    {
+      "values": [
+        {
+          "label": "Approve",
+          "value": "Approve"
+        },
+        {
+          "label": "Request Changes",
+          "value": "Request Changes"
+        },
+        {
+          "label": "Reject",
+          "value": "Reject"
+        }
+      ],
+      "label": "Review Recommendation",
+      "type": "radio",
+      "id": "Field_recommendation",
+      "key": "recommendation",
+      "defaultValue": "Approve",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Review Comments",
+      "type": "textarea",
+      "id": "Field_comment",
+      "key": "comment",
+      "description": "Provide feedback, suggested revisions, or rationale.",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "action": "submit",
+      "label": "Submit Review",
+      "type": "button",
+      "id": "Field_submit",
+      "key": "field_submit"
+    }
+  ],
+  "type": "default",
+  "id": "review-submit",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 5
+}

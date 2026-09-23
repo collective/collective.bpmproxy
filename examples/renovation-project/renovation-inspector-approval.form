@@ -1,0 +1,11 @@
+{
+  "components": [
+    {"text": "# Inspector review", "type": "text", "id": "inspector-header"},
+    {"label": "Approved", "type": "checkbox", "id": "inspector-approved", "key": "inspectorApproved"},
+    {"label": "Comments", "type": "textarea", "id": "inspector-comments", "key": "inspectorComments"},
+    {"action": "submit", "label": "Submit review", "type": "button", "id": "inspector-submit"}
+  ],
+  "type": "default",
+  "id": "renovation-inspector-approval",
+  "schemaVersion": 4
+}

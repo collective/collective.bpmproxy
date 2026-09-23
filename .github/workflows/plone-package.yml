@@ -1,50 +1,95 @@
-# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# For more information see: https://help.github.com/actions/language-and-framework-guides/using-python-with-github-actions
-
-name: Plone package
+name: collective.bpmproxy
 
 on:
-    push:
-        branches: [main]
-    pull_request:
-        branches: [main]
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
 
 jobs:
-    build:
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                python-version: [3.7, 3.8, 3.9, 2.7]
+  lint:
+    runs-on: ubuntu-latest
+    # The package lives under backend/ since the monorepo restructure.
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Ruff check
+        run: uvx ruff check src ../scripts
+      - name: Ruff format
+        run: uvx ruff format --check src ../scripts
 
-        steps:
-            - uses: actions/checkout@v2
-            - uses: actions/cache@v2
-              with:
-                  path: |
-                    ~/.cache/pip
-                    ~/buildout-cache
-                    ~/extends
-                  key: ${{ runner.os }}-tox-${{ hashFiles('**/setup.py') }}-${{ hashFiles('**/requirements.txt') }}-${{ hashFiles('**/tox.ini') }}
-                  restore-keys: |
-                    ${{ runner.os }}-tox-
-            - name: Set up Python ${{ matrix.python-version }}
-              uses: actions/setup-python@v2
-              with:
-                  python-version: ${{ matrix.python-version }}
-            - name: Install system libraries
-              run: sudo apt-get install libxml2-dev libxslt1-dev libjpeg-dev
-            - name: setup buildout cache
-              run: |
-                  mkdir -p ~/buildout-cache/{eggs,downloads}
-                  mkdir ~/.buildout
-                  echo "[buildout]" > $HOME/.buildout/default.cfg
-                  echo "download-cache = $HOME/buildout-cache/downloads" >> $HOME/.buildout/default.cfg
-                  echo "eggs-directory = $HOME/buildout-cache/eggs" >> $HOME/.buildout/default.cfg
-            - name: Install dependencies
-              run: |
-                  python -m pip install --upgrade pip
-                  pip install tox tox-gh-actions
-            - name: Test with tox
-              run: |
-                  tox -r
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: uv sync --extra test --locked
+      - name: Run tests
+        run: uv run pytest
+
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - name: Build package
+        run: uv build
+      - name: Check package
+        run: uvx twine check dist/*
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend-classic/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend-classic
+      - name: Type-check sources
+        run: npm run typecheck
+        working-directory: frontend-classic
+      - name: Build bundles
+        run: npm run build
+        working-directory: frontend-classic
+      # The built bundles are committed (they ship in the sdist), so a stale
+      # commit of them has to fail here rather than in someone's browser.
+      - name: Built bundles are up to date
+        run: git diff --exit-code -- backend/src/collective/bpmproxy/browser/static
+
+  operaton-fixture:
+    name: Operaton fixture (Java)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: fixture/operaton
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      # Uses the tracked Maven wrapper, so this also guards against the
+      # wrapper's .mvn/wrapper/maven-wrapper.properties going missing again.
+      - name: Run tests
+        run: ./mvnw -B test

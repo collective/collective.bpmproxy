@@ -1,0 +1,21 @@
+<div i18n:domain="collective.bpmproxy"
+     tal:condition="view/view/attachments_enabled">
+  <section tal:define="context nocall:view/attachments_context"
+           tal:condition="nocall:context">
+  <h2 i18n:translate="">Attachments</h2>
+  <div metal:use-macro="view/macros/listing"
+       tal:define="view nocall:context/@@tabular_view;
+                   portal_state nocall:context/@@plone_portal_state;
+                   icons nocall:context/@@iconresolver" />
+  </section>
+  <!-- POST with an authenticator: @@add-attachment creates the attachment
+       container on first use, and plone.protect answers a write made by an
+       unauthenticated GET with a "Confirm action" interstitial instead of the
+       add form. -->
+  <form method="post" action="${view/view/task_id}/@@add-attachment">
+    <span tal:replace="structure context/@@authenticator/authenticator"/>
+    <input type="submit" value="Add attachment"
+           class="btn btn-secondary"
+           i18n:attributes="value" />
+  </form>
+</div>

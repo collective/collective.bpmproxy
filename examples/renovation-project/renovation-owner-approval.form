@@ -1,0 +1,11 @@
+{
+  "components": [
+    {"text": "# Owner review", "type": "text", "id": "owner-header"},
+    {"label": "Approved", "type": "checkbox", "id": "owner-approved", "key": "ownerApproved"},
+    {"label": "Comments", "type": "textarea", "id": "owner-comments", "key": "ownerComments"},
+    {"action": "submit", "label": "Submit review", "type": "button", "id": "owner-submit"}
+  ],
+  "type": "default",
+  "id": "renovation-owner-approval",
+  "schemaVersion": 4
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<registry>
+
+  <records prefix="plone.bundles/collective.bpmproxy.form"
+           interface='Products.CMFPlone.interfaces.IBundleRegistry'>
+    <value key="enabled">True</value>
+    <value key="jscompilation">++plone++collective.bpmproxy/form.js</value>
+    <value key="csscompilation">++plone++collective.bpmproxy/form.css</value>
+    <value key="load_async">True</value>
+    <value key="load_defer">False</value>
+    <value key="expression">python:request.get('bpmproxy_form_required', False)</value>
+  </records>
+
+  <records prefix="plone.bundles/collective.bpmproxy.diagram"
+           interface='Products.CMFPlone.interfaces.IBundleRegistry'>
+    <value key="enabled">True</value>
+    <value key="jscompilation">++plone++collective.bpmproxy/diagram.js</value>
+    <value key="csscompilation">++plone++collective.bpmproxy/diagram.css</value>
+    <value key="load_async">True</value>
+    <value key="load_defer">False</value>
+    <value key="expression">python:request.get('bpmproxy_diagram_required', False)</value>
+  </records>
+
+</registry>

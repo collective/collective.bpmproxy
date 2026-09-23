@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<registry>
+
+  <!-- One self-contained bundle with the BPMN modeler, the DMN modeler and
+       the form playground; only loaded by the deployments control panel. -->
+  <records prefix="plone.bundles/collective.bpmproxy.modeler"
+           interface='Products.CMFPlone.interfaces.IBundleRegistry'>
+    <value key="enabled">True</value>
+    <value key="jscompilation">++plone++collective.bpmproxy/modeler.js</value>
+    <value key="csscompilation">++plone++collective.bpmproxy/modeler.css</value>
+    <value key="load_async">True</value>
+    <value key="load_defer">False</value>
+    <value key="expression">python:request.get('bpmproxy_modeler_required', False)</value>
+  </records>
+
+</registry>

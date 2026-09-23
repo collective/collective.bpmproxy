@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_review_process" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0">
+  <bpmn:message id="Message_review_requested" name="plone-content-submitted-to-review" />
+  <bpmn:collaboration id="Collaboration_0rvsz6b">
+    <bpmn:participant id="Participant_079v67w" name="Parallel Review Process" processRef="example-plone-review-process" />
+  </bpmn:collaboration>
+  <bpmn:process id="example-plone-review-process" name="Example: Parallel Plone Review Process" isExecutable="true" camunda:historyTimeToLive="P30D">
+    <bpmn:laneSet id="LaneSet_08hwjc2">
+      <bpmn:lane id="Lane_0v79g8d" name="Lead Reviewer">
+        <bpmn:flowNodeRef>StartEvent_review_requested</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_bind_key</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_select_reviewers</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_init_reviews</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_main_review</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_decision</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_set_publish</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_set_reject</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_transition</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Event_review_completed</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Gateway_101b7ym</bpmn:flowNodeRef>
+      </bpmn:lane>
+      <bpmn:lane id="Lane_05ii5a3" name="Invited Reviewers">
+        <bpmn:flowNodeRef>Activity_format_reviews</bpmn:flowNodeRef>
+        <bpmn:flowNodeRef>Activity_review_subprocess</bpmn:flowNodeRef>
+      </bpmn:lane>
+    </bpmn:laneSet>
+    <bpmn:sequenceFlow id="Flow_init_to_sub" sourceRef="Activity_init_reviews" targetRef="Activity_review_subprocess" />
+    <bpmn:sequenceFlow id="Flow_1uzkag7" sourceRef="Activity_review_subprocess" targetRef="Activity_format_reviews" />
+    <bpmn:sequenceFlow id="Flow_114qpzv" sourceRef="Activity_format_reviews" targetRef="Activity_main_review" />
+    <bpmn:sequenceFlow id="Flow_start_to_bind" sourceRef="StartEvent_review_requested" targetRef="Activity_bind_key" />
+    <bpmn:sequenceFlow id="Flow_bind_to_select" sourceRef="Activity_bind_key" targetRef="Activity_select_reviewers" />
+    <bpmn:sequenceFlow id="Flow_select_to_init" sourceRef="Activity_select_reviewers" targetRef="Activity_init_reviews" />
+    <bpmn:sequenceFlow id="Flow_main_to_gateway" sourceRef="Activity_main_review" targetRef="Gateway_decision" />
+    <bpmn:sequenceFlow id="Flow_decision_to_publish" name="Publish" sourceRef="Gateway_decision" targetRef="Activity_set_publish">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${decision == "publish"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_decision_to_reject" name="Reject" sourceRef="Gateway_decision" targetRef="Activity_set_reject" />
+    <bpmn:sequenceFlow id="Flow_0qldnj9" sourceRef="Activity_set_publish" targetRef="Gateway_101b7ym" />
+    <bpmn:sequenceFlow id="Flow_reject_to_transition" sourceRef="Activity_set_reject" targetRef="Gateway_101b7ym" />
+    <bpmn:sequenceFlow id="Flow_1mokplj" sourceRef="Gateway_101b7ym" targetRef="Activity_transition" />
+    <bpmn:sequenceFlow id="Flow_transition_to_end" sourceRef="Activity_transition" targetRef="Event_review_completed" />
+    <bpmn:startEvent id="StartEvent_review_requested" name="Review requested">
+      <bpmn:outgoing>Flow_start_to_bind</bpmn:outgoing>
+      <bpmn:messageEventDefinition id="MessageEventDefinition_start" messageRef="Message_review_requested" />
+    </bpmn:startEvent>
+    <bpmn:scriptTask id="Activity_bind_key" name="Bind process to Plone content">
+      <bpmn:incoming>Flow_start_to_bind</bpmn:incoming>
+      <bpmn:outgoing>Flow_bind_to_select</bpmn:outgoing>
+      <bpmn:script>${execution.setBusinessKey(uuid.concat(':').concat(execution.getProcessInstanceId()))}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:userTask id="Activity_select_reviewers" name="Choose reviewers" camunda:formRef="review-select-reviewers" camunda:formRefBinding="latest" camunda:candidateGroups="Reviewers">
+      <bpmn:incoming>Flow_bind_to_select</bpmn:incoming>
+      <bpmn:outgoing>Flow_select_to_init</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:scriptTask id="Activity_init_reviews" name="Initialize review transcript">
+      <bpmn:incoming>Flow_select_to_init</bpmn:incoming>
+      <bpmn:outgoing>Flow_init_to_sub</bpmn:outgoing>
+      <bpmn:script>${execution.setVariable("reviews", "")}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_format_reviews" name="Consolidate reviews">
+      <bpmn:incoming>Flow_1uzkag7</bpmn:incoming>
+      <bpmn:outgoing>Flow_114qpzv</bpmn:outgoing>
+      <bpmn:script>${execution.setVariable("reviewSummary", reviews)}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:userTask id="Activity_main_review" name="Consolidate review &#38; decide" camunda:formRef="review-decision" camunda:formRefBinding="latest" camunda:assignee="reviewer3">
+      <bpmn:incoming>Flow_114qpzv</bpmn:incoming>
+      <bpmn:outgoing>Flow_main_to_gateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_decision" name="Review decision?" default="Flow_decision_to_reject">
+      <bpmn:incoming>Flow_main_to_gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_decision_to_publish</bpmn:outgoing>
+      <bpmn:outgoing>Flow_decision_to_reject</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:scriptTask id="Activity_set_publish" name="Set publish transition">
+      <bpmn:incoming>Flow_decision_to_publish</bpmn:incoming>
+      <bpmn:outgoing>Flow_0qldnj9</bpmn:outgoing>
+      <bpmn:script>${execution.setVariable("transition", "publish")}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:scriptTask id="Activity_set_reject" name="Set reject transition">
+      <bpmn:incoming>Flow_decision_to_reject</bpmn:incoming>
+      <bpmn:outgoing>Flow_reject_to_transition</bpmn:outgoing>
+      <bpmn:script>${execution.setVariable("transition", "retract")}</bpmn:script>
+    </bpmn:scriptTask>
+    <bpmn:serviceTask id="Activity_transition" name="Transition Plone workflow" camunda:type="external" camunda:topic="Plone Workflow Transition">
+      <bpmn:extensionElements>
+        <camunda:inputOutput>
+          <camunda:inputParameter name="uuid">${uuid}</camunda:inputParameter>
+          <camunda:inputParameter name="transition">${transition}</camunda:inputParameter>
+          <camunda:inputParameter name="reviews">${reviews}</camunda:inputParameter>
+          <camunda:inputParameter name="mainReviewerComment">${execution.hasVariable("mainReviewerComment") ? mainReviewerComment : ""}</camunda:inputParameter>
+        </camunda:inputOutput>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1mokplj</bpmn:incoming>
+      <bpmn:outgoing>Flow_transition_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_review_completed" name="Review process completed">
+      <bpmn:incoming>Flow_transition_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:exclusiveGateway id="Gateway_101b7ym">
+      <bpmn:incoming>Flow_reject_to_transition</bpmn:incoming>
+      <bpmn:incoming>Flow_0qldnj9</bpmn:incoming>
+      <bpmn:outgoing>Flow_1mokplj</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:subProcess id="Activity_review_subprocess" name="Parallel review">
+      <bpmn:incoming>Flow_init_to_sub</bpmn:incoming>
+      <bpmn:outgoing>Flow_1uzkag7</bpmn:outgoing>
+      <bpmn:multiInstanceLoopCharacteristics camunda:collection="${reviewers.elements()}" camunda:elementVariable="reviewer" />
+      <bpmn:startEvent id="Event_sub_start" name="Start individual review">
+        <bpmn:outgoing>Flow_substart_to_submit</bpmn:outgoing>
+      </bpmn:startEvent>
+      <bpmn:sequenceFlow id="Flow_substart_to_submit" sourceRef="Event_sub_start" targetRef="Activity_submit_review" />
+      <bpmn:userTask id="Activity_submit_review" name="Submit review" camunda:formRef="review-submit" camunda:formRefBinding="latest" camunda:assignee="${reviewer.stringValue()}">
+        <bpmn:extensionElements>
+          <camunda:inputOutput>
+            <camunda:inputParameter name="recommendation">${""}</camunda:inputParameter>
+            <camunda:inputParameter name="comment">${""}</camunda:inputParameter>
+            <camunda:outputParameter name="reviewText">${reviewer.stringValue().concat(": [").concat(recommendation).concat("] ").concat(comment)}</camunda:outputParameter>
+          </camunda:inputOutput>
+        </bpmn:extensionElements>
+        <bpmn:incoming>Flow_substart_to_submit</bpmn:incoming>
+        <bpmn:outgoing>Flow_submit_to_record</bpmn:outgoing>
+      </bpmn:userTask>
+      <bpmn:sequenceFlow id="Flow_submit_to_record" sourceRef="Activity_submit_review" targetRef="Activity_record_review" />
+      <bpmn:scriptTask id="Activity_record_review" name="Record review" camunda:asyncBefore="true">
+        <bpmn:incoming>Flow_submit_to_record</bpmn:incoming>
+        <bpmn:outgoing>Flow_record_to_subend</bpmn:outgoing>
+        <bpmn:script>${execution.setVariable("reviews", reviews.concat("- ").concat(reviewText).concat("
+"))}</bpmn:script>
+      </bpmn:scriptTask>
+      <bpmn:sequenceFlow id="Flow_record_to_subend" sourceRef="Activity_record_review" targetRef="Event_sub_end" />
+      <bpmn:endEvent id="Event_sub_end" name="Individual review complete">
+        <bpmn:incoming>Flow_record_to_subend</bpmn:incoming>
+      </bpmn:endEvent>
+    </bpmn:subProcess>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Collaboration_0rvsz6b">
+      <bpmndi:BPMNShape id="Participant_079v67w_di" bpmnElement="Participant_079v67w" isHorizontal="true">
+        <dc:Bounds x="25" y="40" width="1475" height="660" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_0v79g8d_di" bpmnElement="Lane_0v79g8d" isHorizontal="true">
+        <dc:Bounds x="55" y="40" width="1445" height="360" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_05ii5a3_di" bpmnElement="Lane_05ii5a3" isHorizontal="true">
+        <dc:Bounds x="55" y="400" width="1445" height="300" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_review_requested_di" bpmnElement="StartEvent_review_requested">
+        <dc:Bounds x="124" y="112" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="98" y="158" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_bind_key_di" bpmnElement="Activity_bind_key">
+        <dc:Bounds x="220" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_select_reviewers_di" bpmnElement="Activity_select_reviewers">
+        <dc:Bounds x="380" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_init_reviews_di" bpmnElement="Activity_init_reviews">
+        <dc:Bounds x="540" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_format_reviews_di" bpmnElement="Activity_format_reviews">
+        <dc:Bounds x="700" y="510" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_main_review_di" bpmnElement="Activity_main_review">
+        <dc:Bounds x="700" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_decision_di" bpmnElement="Gateway_decision" isMarkerVisible="true">
+        <dc:Bounds x="860" y="105" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="842" y="85" width="86" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_set_publish_di" bpmnElement="Activity_set_publish">
+        <dc:Bounds x="970" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_set_reject_di" bpmnElement="Activity_set_reject">
+        <dc:Bounds x="970" y="250" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_transition_di" bpmnElement="Activity_transition">
+        <dc:Bounds x="1240" y="90" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_review_completed_di" bpmnElement="Event_review_completed">
+        <dc:Bounds x="1400" y="112" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1379" y="152" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_101b7ym_di" bpmnElement="Gateway_101b7ym" isMarkerVisible="true">
+        <dc:Bounds x="1130" y="105" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_review_subprocess_di" bpmnElement="Activity_review_subprocess" isExpanded="true">
+        <dc:Bounds x="120" y="450" width="514" height="200" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_sub_start_di" bpmnElement="Event_sub_start">
+        <dc:Bounds x="150" y="507" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="132" y="554" width="73" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_submit_review_di" bpmnElement="Activity_submit_review">
+        <dc:Bounds x="246" y="485" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_record_review_di" bpmnElement="Activity_record_review">
+        <dc:Bounds x="406" y="485" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_sub_end_di" bpmnElement="Event_sub_end">
+        <dc:Bounds x="566" y="507" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="543" y="554" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_substart_to_submit_di" bpmnElement="Flow_substart_to_submit">
+        <di:waypoint x="186" y="525" />
+        <di:waypoint x="246" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_submit_to_record_di" bpmnElement="Flow_submit_to_record">
+        <di:waypoint x="346" y="525" />
+        <di:waypoint x="406" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_record_to_subend_di" bpmnElement="Flow_record_to_subend">
+        <di:waypoint x="506" y="525" />
+        <di:waypoint x="566" y="525" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_init_to_sub_di" bpmnElement="Flow_init_to_sub">
+        <di:waypoint x="590" y="170" />
+        <di:waypoint x="590" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1uzkag7_di" bpmnElement="Flow_1uzkag7">
+        <di:waypoint x="634" y="550" />
+        <di:waypoint x="700" y="550" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_114qpzv_di" bpmnElement="Flow_114qpzv">
+        <di:waypoint x="750" y="510" />
+        <di:waypoint x="750" y="170" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_start_to_bind_di" bpmnElement="Flow_start_to_bind">
+        <di:waypoint x="160" y="130" />
+        <di:waypoint x="220" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_bind_to_select_di" bpmnElement="Flow_bind_to_select">
+        <di:waypoint x="320" y="130" />
+        <di:waypoint x="380" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_select_to_init_di" bpmnElement="Flow_select_to_init">
+        <di:waypoint x="480" y="130" />
+        <di:waypoint x="540" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_main_to_gateway_di" bpmnElement="Flow_main_to_gateway">
+        <di:waypoint x="800" y="130" />
+        <di:waypoint x="860" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_decision_to_publish_di" bpmnElement="Flow_decision_to_publish">
+        <di:waypoint x="910" y="130" />
+        <di:waypoint x="970" y="130" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="913" y="133" width="37" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_decision_to_reject_di" bpmnElement="Flow_decision_to_reject">
+        <di:waypoint x="885" y="155" />
+        <di:waypoint x="885" y="290" />
+        <di:waypoint x="970" y="290" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="902" y="293" width="32" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0qldnj9_di" bpmnElement="Flow_0qldnj9">
+        <di:waypoint x="1070" y="130" />
+        <di:waypoint x="1130" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_reject_to_transition_di" bpmnElement="Flow_reject_to_transition">
+        <di:waypoint x="1070" y="290" />
+        <di:waypoint x="1155" y="290" />
+        <di:waypoint x="1155" y="155" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1mokplj_di" bpmnElement="Flow_1mokplj">
+        <di:waypoint x="1180" y="130" />
+        <di:waypoint x="1240" y="130" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_transition_to_end_di" bpmnElement="Flow_transition_to_end">
+        <di:waypoint x="1340" y="130" />
+        <di:waypoint x="1400" y="130" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

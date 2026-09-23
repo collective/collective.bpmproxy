@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<contentrules>
+ <rule name="plone-content-submitted-to-review" title="BPMN message: content submitted to review" cascading="False"
+    description="Sends a BPMN message to start the parallel review process when content is submitted for review." enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>submit</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmMessage">
+    <property name="name">plone-content-submitted-to-review</property>
+    <property name="businessKey"></property>
+    <property name="correlationKeys">{}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;title&#x27;: &#x27;${title}&#x27;, &#x27;author&#x27;: &#x27;${user_fullname}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <rule name="plone-content-retracted" title="BPMN signal: content retracted from review" cascading="False"
+    description="Fires BPMN signal when content is retracted from review." enabled="True"
+    event="Products.CMFCore.interfaces.IActionSucceededEvent"
+    stop-after="False">
+  <conditions>
+   <condition type="plone.conditions.WorkflowTransition">
+    <property name="wf_transitions">
+     <element>retract</element>
+    </property>
+   </condition>
+  </conditions>
+  <actions>
+   <action type="plone.actions.BpmSignal">
+    <property name="name">plone-content-retracted:${uuid}</property>
+    <property
+       name="payload">{&#x27;uuid&#x27;: &#x27;${uuid}&#x27;, &#x27;portalUrl&#x27;: &#x27;${portal_url}&#x27;}</property>
+   </action>
+  </actions>
+ </rule>
+ <assignment location="" name="plone-content-submitted-to-review" enabled="True" bubbles="True" insert-before="" />
+ <assignment location="" name="plone-content-retracted" enabled="True" bubbles="True" insert-before="" />
+</contentrules>

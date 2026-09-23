@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<registry>
+
+  <records prefix="plone.bundles/collective.bpmproxy.modeler"
+           interface='Products.CMFPlone.interfaces.IBundleRegistry'
+           remove="true" />
+
+  <!-- Removed in 1004, kept here so older installations are cleaned up too -->
+  <records prefix="plone.bundles/collective-bpmproxy-modeler"
+           interface='Products.CMFPlone.interfaces.IBundleRegistry'
+           remove="true" />
+
+  <records prefix="plone.resources/collective-bpmproxy-modeler"
+           interface='Products.CMFPlone.interfaces.IResourceRegistry'
+           remove="true" />
+
+  <records prefix="plone.resources/collective-bpmproxy-dmn"
+           interface='Products.CMFPlone.interfaces.IResourceRegistry'
+           remove="true" />
+
+  <records prefix="plone.resources/collective-bpmproxy-form-playground"
+           interface='Products.CMFPlone.interfaces.IResourceRegistry'
+           remove="true" />
+
+</registry>

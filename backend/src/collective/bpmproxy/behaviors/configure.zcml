@@ -1,0 +1,18 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:plone="http://namespaces.plone.org/plone"
+    i18n_domain="collective.bpmproxy">
+
+  <include package="plone.behavior" file="meta.zcml" />
+
+  <plone:behavior
+      name="collective.bpmproxy.process_context"
+      title="BPM process context"
+      description="Configures content to start and host BPM processes."
+      factory=".process_context.ProcessContextBehavior"
+      provides=".process_context.IProcessContextBehavior"
+      for="plone.dexterity.interfaces.IDexterityContent"
+      marker=".process_context.IProcessContext"
+  />
+
+</configure>

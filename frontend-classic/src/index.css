@@ -1,0 +1,22 @@
+.bpmproxy.autotabs section { display: none; }
+
+/* The modeler is embedded in Plone, which does not load Bootstrap's tab CSS. */
+#bpmproxyTabsContent > .tab-pane { display: none; }
+#bpmproxyTabsContent > .tab-pane.show.active { display: block; }
+#bpmproxy-deployments-app .tab-content { min-height: 600px; }
+
+.gutter {
+  background-color: #eee;
+  background-repeat: no-repeat;
+  background-position: 50%;
+}
+
+.gutter.gutter-horizontal {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIIDA9NBRg0gDIAAMAAA/iAB/Q3Z0qQAAAAASUVORK5CYII=');
+  cursor: col-resize;
+}
+
+.gutter.gutter-vertical {
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyCBKUAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFBgIAAHwwEDwB8BwAAAAABJRU5ErkJggg==');
+  cursor: row-resize;
+}

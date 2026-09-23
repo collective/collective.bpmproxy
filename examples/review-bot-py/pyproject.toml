@@ -1,0 +1,9 @@
+[project]
+name = "bpmproxy-review-bot-py"
+version = "0.1.0"
+description = "operaton-tasks worker for the BPM proxy review-process example"
+requires-python = ">=3.10"
+dependencies = [
+    "aiohttp",
+    "operaton-tasks",
+]

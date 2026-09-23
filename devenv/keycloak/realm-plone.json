@@ -1,0 +1,113 @@
+{
+  "realm": "plone",
+  "enabled": true,
+  "sslRequired": "none",
+  "registrationAllowed": false,
+  "clients": [
+    {
+      "clientId": "operaton",
+      "name": "Operaton WebApps",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "operaton-secret",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "rootUrl": "http://localhost:8081",
+      "baseUrl": "/operaton",
+      "redirectUris": ["http://localhost:8081/*"],
+      "webOrigins": ["http://localhost:8081"],
+      "attributes": {
+        "post.logout.redirect.uris": "http://localhost:8081/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "operaton-worker",
+      "name": "Operaton Worker",
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "secret": "operaton-worker-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocolMappers": [
+        {
+          "name": "operaton_username",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-hardcoded-claim-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "operaton_username",
+            "claim.value": "admin",
+            "jsonType.label": "String",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        },
+        {
+          "name": "groups",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-group-membership-mapper",
+          "consentRequired": false,
+          "config": {
+            "claim.name": "groups",
+            "full.path": "false",
+            "id.token.claim": "false",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "false"
+          }
+        }
+      ]
+    }
+  ],
+  "groups": [
+    {
+      "name": "camunda-admin",
+      "path": "/camunda-admin"
+    }
+  ],
+  "users": [
+    {
+      "username": "admin",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Operaton",
+      "lastName": "Admin",
+      "email": "admin@example.com",
+      "credentials": [{ "type": "password", "value": "admin", "temporary": false }],
+      "groups": ["/camunda-admin"]
+    },
+    {
+      "username": "user",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Test",
+      "lastName": "User",
+      "email": "user@example.com",
+      "credentials": [{ "type": "password", "value": "user", "temporary": false }],
+      "groups": []
+    },
+    {
+      "username": "service-account-operaton-worker",
+      "enabled": true,
+      "serviceAccountClientId": "operaton-worker",
+      "groups": ["/camunda-admin"]
+    }
+  ]
+}

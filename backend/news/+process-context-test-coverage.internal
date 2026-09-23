@@ -1,0 +1,5 @@
+Add integration test coverage for the ``process_context`` behavior on a
+type other than ``Bpm Proxy``: start-form rendering, the ``PatternsSettings``
+adapter registration, orphan-attachment detection, and the nested-process-
+context case (the attachments-tasks viewlet taking the nearest ancestor)
+that motivated that fix and previously had no test exercising real content.

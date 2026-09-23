@@ -1,0 +1,52 @@
+{
+  "components": [
+    {
+      "text": "# Final Review Decision: ${title}\n\n**Author:** ${author}\n\n### Reviewer Feedback:\n${reviewSummary}",
+      "type": "text",
+      "id": "Field_header"
+    },
+    {
+      "values": [
+        {
+          "label": "Publish page",
+          "value": "publish"
+        },
+        {
+          "label": "Retract page back to draft",
+          "value": "retract"
+        }
+      ],
+      "label": "Final Decision",
+      "type": "radio",
+      "id": "Field_decision",
+      "key": "decision",
+      "defaultValue": "publish",
+      "validate": {
+        "required": true
+      }
+    },
+    {
+      "label": "Coordinator Comments",
+      "type": "textarea",
+      "id": "Field_mainReviewerComment",
+      "key": "mainReviewerComment",
+      "description": "Additional comment to record in Plone's workflow history."
+    },
+    {
+      "action": "submit",
+      "label": "Complete Review",
+      "type": "button",
+      "id": "Field_submit",
+      "key": "field_submit"
+    }
+  ],
+  "type": "default",
+  "id": "review-decision",
+  "exporter": {
+    "name": "Camunda Modeler",
+    "version": "5.20.0"
+  },
+  "executionPlatform": "Camunda Platform",
+  "executionPlatformVersion": "7.20.0",
+  "schemaVersion": 5
+}

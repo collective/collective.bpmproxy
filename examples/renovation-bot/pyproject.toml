@@ -1,0 +1,18 @@
+[project]
+name = "bpmproxy-renovation-bot"
+version = "0.1.0"
+description = "Purjo Robot Framework task for the BPM proxy renovation-project example"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.32.0",
+    "robotframework>=7.4b2",
+]
+
+[tool.purjo.topics."Plone Workflow Transition"]
+name = "Transition content"
+on-fail = "ERROR"
+process-variables = true
+
+[tool.purjo.secrets.default]
+provider = "file"
+path = "secrets.json"

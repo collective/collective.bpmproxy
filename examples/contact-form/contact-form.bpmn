@@ -1,0 +1,183 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_contact_form" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.20.0" modeler:executionPlatform="Camunda Platform" modeler:executionPlatformVersion="7.20.0">
+  <bpmn:process id="example-contact-form" name="Example: Contact form" isExecutable="true" camunda:historyTimeToLive="P1D">
+    <bpmn:startEvent id="StartEvent_contact_form" name="Contact form submitted" camunda:formRef="contact-form-start" camunda:formRefBinding="latest" camunda:initiator="author">
+      <bpmn:outgoing>Flow_start_to_review</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:sequenceFlow id="Flow_start_to_review" sourceRef="StartEvent_contact_form" targetRef="Activity_review_contact_form" />
+    <bpmn:userTask id="Activity_review_contact_form" name="Review contact" camunda:formRef="contact-form-review" camunda:formRefBinding="latest" camunda:candidateGroups="Administrators">
+      <bpmn:incoming>Flow_start_to_review</bpmn:incoming>
+      <bpmn:outgoing>Flow_review_to_gateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_review_action" name="Review&#10;decision?" default="Flow_review_to_abandon">
+      <bpmn:incoming>Flow_review_to_gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_review_to_email</bpmn:outgoing>
+      <bpmn:outgoing>Flow_review_to_delegate</bpmn:outgoing>
+      <bpmn:outgoing>Flow_review_to_abandon</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_review_to_gateway" sourceRef="Activity_review_contact_form" targetRef="Gateway_review_action" />
+    <bpmn:sequenceFlow id="Flow_review_to_email" name="Reply" sourceRef="Gateway_review_action" targetRef="Gateway_email_merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "reply"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_review_to_delegate" name="Delegate" sourceRef="Gateway_review_action" targetRef="Activity_delegated_review">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "delegate"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_review_to_abandon" name="Abandon" sourceRef="Gateway_review_action" targetRef="Gateway_abandon_merge" />
+    <bpmn:userTask id="Activity_delegated_review" name="Handle delegated contact" camunda:formRef="contact-form-delegated" camunda:formRefBinding="latest" camunda:assignee="${assignedUser}">
+      <bpmn:incoming>Flow_review_to_delegate</bpmn:incoming>
+      <bpmn:outgoing>Flow_delegate_to_gateway</bpmn:outgoing>
+    </bpmn:userTask>
+    <bpmn:exclusiveGateway id="Gateway_delegated_action" name="Delegated decision?" default="Flow_delegate_to_abandon">
+      <bpmn:incoming>Flow_delegate_to_gateway</bpmn:incoming>
+      <bpmn:outgoing>Flow_delegate_to_email</bpmn:outgoing>
+      <bpmn:outgoing>Flow_delegate_to_abandon</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_delegate_to_gateway" sourceRef="Activity_delegated_review" targetRef="Gateway_delegated_action" />
+    <bpmn:sequenceFlow id="Flow_delegate_to_email" name="Reply" sourceRef="Gateway_delegated_action" targetRef="Gateway_email_merge">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">${action == "reply"}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_delegate_to_abandon" name="Abandon" sourceRef="Gateway_delegated_action" targetRef="Gateway_abandon_merge" />
+    <bpmn:exclusiveGateway id="Gateway_email_merge">
+      <bpmn:incoming>Flow_review_to_email</bpmn:incoming>
+      <bpmn:incoming>Flow_delegate_to_email</bpmn:incoming>
+      <bpmn:outgoing>Flow_email_merge_to_send</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_email_merge_to_send" sourceRef="Gateway_email_merge" targetRef="Activity_send_email" />
+    <bpmn:exclusiveGateway id="Gateway_abandon_merge">
+      <bpmn:incoming>Flow_review_to_abandon</bpmn:incoming>
+      <bpmn:incoming>Flow_delegate_to_abandon</bpmn:incoming>
+      <bpmn:outgoing>Flow_abandon_merge_to_end</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    <bpmn:sequenceFlow id="Flow_abandon_merge_to_end" sourceRef="Gateway_abandon_merge" targetRef="Event_contact_form_abandoned" />
+    <bpmn:serviceTask id="Activity_send_email" name="Send reply email" camunda:type="external" camunda:topic="contact-form-email">
+      <bpmn:incoming>Flow_email_merge_to_send</bpmn:incoming>
+      <bpmn:outgoing>Flow_email_to_end</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="Event_reply_sent" name="Reply sent">
+      <bpmn:incoming>Flow_email_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="Flow_email_to_end" sourceRef="Activity_send_email" targetRef="Event_reply_sent" />
+    <bpmn:endEvent id="Event_contact_form_abandoned" name="Contact abandoned">
+      <bpmn:incoming>Flow_abandon_merge_to_end</bpmn:incoming>
+    </bpmn:endEvent>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_example-contact-form">
+    <bpmndi:BPMNPlane id="BPMNPlane_example-contact-form" bpmnElement="example-contact-form">
+      <bpmndi:BPMNShape id="StartEvent_contact_form_di" bpmnElement="StartEvent_contact_form">
+        <dc:Bounds x="100" y="167" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="86.5" y="206.5" width="63" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_review_contact_form_di" bpmnElement="Activity_review_contact_form">
+        <dc:Bounds x="196" y="145" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_review_action_di" bpmnElement="Gateway_review_action" isMarkerVisible="true">
+        <dc:Bounds x="356" y="160" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="326" y="133" width="47" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_delegated_review_di" bpmnElement="Activity_delegated_review">
+        <dc:Bounds x="466" y="145" width="100" height="80" />
+        <bpmndi:BPMNLabel />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_delegated_action_di" bpmnElement="Gateway_delegated_action" isMarkerVisible="true">
+        <dc:Bounds x="636" y="160" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="635.5" y="220" width="51" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_email_merge_di" bpmnElement="Gateway_email_merge" isMarkerVisible="true">
+        <dc:Bounds x="636" y="40" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="616.5" y="20" width="89" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_abandon_merge_di" bpmnElement="Gateway_abandon_merge" isMarkerVisible="true">
+        <dc:Bounds x="756" y="285" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="742" y="344.5" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_send_email_di" bpmnElement="Activity_send_email">
+        <dc:Bounds x="731" y="25" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_reply_sent_di" bpmnElement="Event_reply_sent">
+        <dc:Bounds x="898" y="47" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="890" y="93" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_contact_form_abandoned_di" bpmnElement="Event_contact_form_abandoned">
+        <dc:Bounds x="898" y="292" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="889" y="332" width="56" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_start_to_review_di" bpmnElement="Flow_start_to_review">
+        <di:waypoint x="136" y="185" />
+        <di:waypoint x="196" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_review_to_gateway_di" bpmnElement="Flow_review_to_gateway">
+        <di:waypoint x="296" y="185" />
+        <di:waypoint x="356" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_review_to_email_di" bpmnElement="Flow_review_to_email">
+        <di:waypoint x="381" y="160" />
+        <di:waypoint x="381" y="65" />
+        <di:waypoint x="636" y="65" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="423" y="43" width="29" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_review_to_delegate_di" bpmnElement="Flow_review_to_delegate">
+        <di:waypoint x="406" y="185" />
+        <di:waypoint x="466" y="185" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="413" y="162" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_review_to_abandon_di" bpmnElement="Flow_review_to_abandon">
+        <di:waypoint x="381" y="210" />
+        <di:waypoint x="381" y="310" />
+        <di:waypoint x="756" y="310" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="417" y="287" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_delegate_to_gateway_di" bpmnElement="Flow_delegate_to_gateway">
+        <di:waypoint x="566" y="185" />
+        <di:waypoint x="636" y="185" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_delegate_to_email_di" bpmnElement="Flow_delegate_to_email">
+        <di:waypoint x="661" y="160" />
+        <di:waypoint x="661" y="90" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="628" y="118" width="29" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_delegate_to_abandon_di" bpmnElement="Flow_delegate_to_abandon">
+        <di:waypoint x="686" y="185" />
+        <di:waypoint x="781" y="185" />
+        <di:waypoint x="781" y="285" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="709" y="162" width="45" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_email_merge_to_send_di" bpmnElement="Flow_email_merge_to_send">
+        <di:waypoint x="686" y="65" />
+        <di:waypoint x="731" y="65" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_abandon_merge_to_end_di" bpmnElement="Flow_abandon_merge_to_end">
+        <di:waypoint x="806" y="310" />
+        <di:waypoint x="898" y="310" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_email_to_end_di" bpmnElement="Flow_email_to_end">
+        <di:waypoint x="831" y="65" />
+        <di:waypoint x="898" y="65" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

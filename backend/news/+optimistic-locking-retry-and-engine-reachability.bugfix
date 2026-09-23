@@ -1,0 +1,29 @@
+Task completion (``client.complete_task``, used by both a Plone user
+submitting a BPM task form and the ``completeEditTask``/``completeAddTask``
+auto-complete subscribers) now retries a few times, with a short randomized
+backoff, when Operaton reports its own optimistic-locking conflict -- the
+race two parallel multi-instance branches (e.g. two reviewers submitting
+within the same instant, see ``examples/review-process``) can hit on the
+same execution's variable scope. Previously this surfaced straight back as
+"Unexpected error on submit."
+
+Every deferred BPM side effect dispatched through a ``SideEffectDataManager``
+(BPM Signal/Message content rule actions, and the two auto-complete
+subscribers) now also votes on the Plone transaction it is joined to: a
+quick, unauthenticated ``GET .../engine`` check that the engine is reachable
+before the transaction commits (``client.check_engine_reachable``).
+Previously an unreachable engine was only discovered after Plone's own
+state had already committed, in a background thread, with the failure only
+logged -- Plone and Operaton silently drifted out of sync instead of the
+whole action being refused up front. This check is memoized per
+transaction, so joining more than one side effect to the same transaction
+(e.g. an edit that both auto-completes a task and fires a content rule
+action) still only probes the engine once. The new ``client.join_side_effect``
+helper centralizes joining a ``SideEffectDataManager`` with this vote wired
+in, so a future call site cannot forget it.
+
+The shared background executor these deferred side effects run on
+(``utils.SIDE_EFFECT_WORKER``) is no longer a single thread: with
+``complete_task``'s retry backoff now sleeping in it, one task's
+optimistic-locking retries would otherwise queue up every other unrelated
+BPM side effect site-wide behind it.

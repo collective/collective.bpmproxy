@@ -1,0 +1,6 @@
+Bump the Operaton fixture's two hand-pinned JWT/PKI dependencies to current
+releases: ``org.bouncycastle:bcpkix-jdk15to18`` 1.71 -> 1.80 and
+``com.nimbusds:nimbus-jose-jwt`` 9.31 -> 10.3. Both sit directly on the JWT
+verification path. Verified live: a freshly minted token still gets 200 from
+``/engine-rest/task/count``, and a token expired beyond the 60s clock-skew
+tolerance still gets 401.

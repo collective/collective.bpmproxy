@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<portlets>
+  <assignment
+      manager="plone.rightcolumn"
+      category="content_type"
+      key="Renovation Project"
+      type="collective.bpmproxy.portlets.Tasks"
+      name="renovation-case-tasks"
+      >
+    <property name="header">Case tasks</property>
+    <property name="use_context">True</property>
+  </assignment>
+  <assignment
+      manager="plone.rightcolumn"
+      category="content_type"
+      key="Document"
+      type="collective.bpmproxy.portlets.Tasks"
+      name="renovation-page-review-tasks"
+      >
+    <property name="header">Page review tasks</property>
+    <property name="use_context">True</property>
+  </assignment>
+</portlets>

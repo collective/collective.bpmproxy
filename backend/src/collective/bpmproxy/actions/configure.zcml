@@ -1,0 +1,69 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:plone="http://namespaces.plone.org/plone"
+  i18n_domain="collective.bpmproxy">
+
+  <!-- BpmSignal action definition -->
+
+  <include package="plone.app.contentrules" />
+
+  <adapter factory=".signal.BpmSignalActionExecutor"/>
+
+  <browser:page
+    for="plone.app.contentrules.browser.interfaces.IRuleActionAdding"
+    name="plone.actions.BpmSignal"
+    class=".signal.BpmSignalAddFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <browser:page
+    for="collective.bpmproxy.actions.signal.IBpmSignalAction"
+    name="edit"
+    class=".signal.BpmSignalEditFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <plone:ruleAction
+    name="plone.actions.BpmSignal"
+    title="Broadcast BPMN Signal"
+    description="Call an signal related to the triggering object"
+    for="*"
+    event="*"
+    addview="plone.actions.BpmSignal"
+    editview="edit"
+    schema=".signal.IBpmSignalAction"
+    factory=".signal.BpmSignalAction"
+  />
+
+  <!-- BpmMessage action definition -->
+
+  <adapter factory=".message.BpmMessageActionExecutor"/>
+
+  <browser:page
+    for="plone.app.contentrules.browser.interfaces.IRuleActionAdding"
+    name="plone.actions.BpmMessage"
+    class=".message.BpmMessageAddFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <browser:page
+    for="collective.bpmproxy.actions.message.IBpmMessageAction"
+    name="edit"
+    class=".message.BpmMessageEditFormView"
+    permission="plone.app.contentrules.ManageContentRules"
+  />
+
+  <plone:ruleAction
+    name="plone.actions.BpmMessage"
+    title="Deliver BPMN Message"
+    description="Correlate and deliver a BPMN message to a single matching process instance"
+    for="*"
+    event="*"
+    addview="plone.actions.BpmMessage"
+    editview="edit"
+    schema=".message.IBpmMessageAction"
+    factory=".message.BpmMessageAction"
+  />
+
+</configure>
