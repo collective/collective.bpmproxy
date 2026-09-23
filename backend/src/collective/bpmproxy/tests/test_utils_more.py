@@ -236,15 +236,11 @@ def test_validate_camunda_form_required_if():
         "components": [
             {
                 "key": "assignedUser",
-                "validate": {
-                    "requiredIf": {"field": "action", "equals": "delegate"}
-                },
+                "validate": {"requiredIf": {"field": "action", "equals": "delegate"}},
             },
             {
                 "key": "replyMessage",
-                "validate": {
-                    "requiredIf": {"field": "action", "equals": "reply"}
-                },
+                "validate": {"requiredIf": {"field": "action", "equals": "reply"}},
             },
         ]
     }

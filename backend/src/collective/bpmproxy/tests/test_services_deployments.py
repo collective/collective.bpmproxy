@@ -39,7 +39,9 @@ def make_service(factory, method, body=None):
 class TestServicesDeployments(unittest.TestCase):
     @mock.patch("collective.bpmproxy.services.deployments.get_deployments")
     @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
-    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    @mock.patch(
+        "collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi"
+    )
     def test_get_deployments(
         self, mock_deployment_api, _mock_client, mock_get_deployments
     ):
@@ -53,8 +55,7 @@ class TestServicesDeployments(unittest.TestCase):
             resource
         ]
         mock_deployment_api.return_value.get_deployment_resources.side_effect = (
-            lambda **_kwargs: self.assertFalse(client.closed)
-            or [resource]
+            lambda **_kwargs: self.assertFalse(client.closed) or [resource]
         )
 
         result = make_service(DeploymentsGet, "GET").reply()
@@ -69,7 +70,9 @@ class TestServicesDeployments(unittest.TestCase):
         self.assertTrue(client.closed)
 
     @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
-    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    @mock.patch(
+        "collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi"
+    )
     def test_get_deployment_resource_bytes(self, mock_deployment_api, _mock_client):
         mock_deployment_api.return_value.get_deployment_resource_data.return_value = (
             b"<bpmn:definitions />"
@@ -84,16 +87,16 @@ class TestServicesDeployments(unittest.TestCase):
         self.assertEqual(result["content"], "<bpmn:definitions />")
 
     @mock.patch("collective.bpmproxy.services.deployments.camunda_client")
-    @mock.patch("collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi")
+    @mock.patch(
+        "collective.bpmproxy.services.deployments.generic_camunda_client.DeploymentApi"
+    )
     def test_get_deployment_resource_temporary_file(
         self, mock_deployment_api, _mock_client
     ):
         with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8") as resource:
             resource.write("resource content")
             resource.flush()
-            mock_deployment_api.return_value.get_deployment_resource_data.return_value = (
-                resource.name
-            )
+            mock_deployment_api.return_value.get_deployment_resource_data.return_value = resource.name
             service = make_service(DeploymentResourceGet, "GET")
             service.request.form = {
                 "deployment_id": "dep-123",
